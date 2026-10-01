@@ -1,0 +1,151 @@
+<Window x:Class="MiniPrinter.Tray.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="MiniPrinter" Width="720" Height="560" MinWidth="560" MinHeight="440"
+        WindowStartupLocation="CenterScreen" FontSize="13">
+    <DockPanel Margin="12">
+        <Border x:Name="Banner" DockPanel.Dock="Top" Background="#FFF8C5" BorderBrush="#D4A72C" BorderThickness="1"
+                CornerRadius="4" Padding="10,6" Margin="0,0,0,10" Visibility="Collapsed">
+            <TextBlock x:Name="BannerText" TextWrapping="Wrap" />
+        </Border>
+
+        <TabControl x:Name="Tabs">
+            <!-- Estado -->
+            <TabItem Header="Estado">
+                <DockPanel Margin="10">
+                    <Grid DockPanel.Dock="Top">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition />
+                        </Grid.RowDefinitions>
+                        <TextBlock Style="{StaticResource Label}" Grid.Row="0" Text="Impresora" />
+                        <TextBlock Style="{StaticResource Value}" Grid.Row="0" Grid.Column="1" x:Name="PrinterText" FontWeight="SemiBold" />
+                        <TextBlock Style="{StaticResource Label}" Grid.Row="1" Text="Conexión" />
+                        <TextBlock Style="{StaticResource Value}" Grid.Row="1" Grid.Column="1" x:Name="LinkText" />
+                        <TextBlock Style="{StaticResource Label}" Grid.Row="2" Text="Estado" />
+                        <TextBlock Style="{StaticResource Value}" Grid.Row="2" Grid.Column="1" x:Name="StateText" />
+                        <TextBlock Style="{StaticResource Label}" Grid.Row="3" Text="Batería" />
+                        <TextBlock Style="{StaticResource Value}" Grid.Row="3" Grid.Column="1" x:Name="BatteryText" />
+                        <TextBlock Style="{StaticResource Label}" Grid.Row="4" Text="Firmware" />
+                        <TextBlock Style="{StaticResource Value}" Grid.Row="4" Grid.Column="1" x:Name="FirmwareText" />
+                        <TextBlock Style="{StaticResource Label}" Grid.Row="5" Text="Imprimir desde" />
+                        <TextBlock Style="{StaticResource Value}" Grid.Row="5" Grid.Column="1" x:Name="UrlsText" />
+                        <TextBlock Style="{StaticResource Label}" Grid.Row="6" Text="Servicio" />
+                        <TextBlock Style="{StaticResource Value}" Grid.Row="6" Grid.Column="1" x:Name="ServiceText" />
+                    </Grid>
+                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,12">
+                        <Button x:Name="ConnectButton" Content="Conectar" Click="OnConnect" />
+                        <Button Content="Página de prueba" Click="OnTestPrint" />
+                        <Button Content="Avanzar papel" Click="OnFeed" />
+                        <Button Content="Vista previa del último trabajo" Click="OnPreview" />
+                    </StackPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="Trabajos" FontWeight="SemiBold" Margin="0,4" />
+                    <DockPanel>
+                        <Button DockPanel.Dock="Bottom" HorizontalAlignment="Left" Margin="0,8,0,0" Content="Cancelar trabajo" Click="OnCancelJob" />
+                        <ListView x:Name="JobsList">
+                            <ListView.View>
+                                <GridView>
+                                    <GridViewColumn Header="#" Width="40" DisplayMemberBinding="{Binding Id}" />
+                                    <GridViewColumn Header="Documento" Width="200" DisplayMemberBinding="{Binding Name}" />
+                                    <GridViewColumn Header="Estado" Width="110" DisplayMemberBinding="{Binding State}" />
+                                    <GridViewColumn Header="Detalle" Width="200" DisplayMemberBinding="{Binding Message}" />
+                                    <GridViewColumn Header="Hora" Width="70" DisplayMemberBinding="{Binding Created, StringFormat=HH:mm:ss}" />
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+                    </DockPanel>
+                </DockPanel>
+            </TabItem>
+
+            <!-- Buscar -->
+            <TabItem Header="Buscar impresoras" x:Name="SearchTab">
+                <DockPanel Margin="10">
+                    <TextBlock DockPanel.Dock="Top" TextWrapping="Wrap" Margin="0,0,0,8"
+                               Text="Enciende la impresora (pulsación larga). Se listan los dispositivos Bluetooth emparejados y cercanos; las impresoras reconocidas aparecen arriba." />
+                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,8">
+                        <Button x:Name="ScanButton" Content="Buscar" Click="OnScan" />
+                        <CheckBox x:Name="OnlyPrinters" Content="Solo impresoras reconocidas" IsChecked="True" VerticalAlignment="Center"
+                                  Checked="OnFilterChanged" Unchecked="OnFilterChanged" />
+                        <TextBlock x:Name="ScanStatus" Margin="12,0,0,0" VerticalAlignment="Center" Foreground="#57606A" />
+                    </StackPanel>
+                    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,8,0,0">
+                        <Button Content="Emparejar" Click="OnPair" />
+                        <Button Content="Usar esta impresora" Click="OnUsePrinter" FontWeight="SemiBold" />
+                        <TextBlock Text="Conexión:" VerticalAlignment="Center" Margin="8,0,6,0" />
+                        <ComboBox x:Name="TransportCombo" Width="190" SelectedIndex="0">
+                            <ComboBoxItem Content="Bluetooth RFCOMM (recomendado)" Tag="Rfcomm" />
+                            <ComboBoxItem Content="Puerto COM" Tag="Serial" />
+                            <ComboBoxItem Content="Simulada (pruebas)" Tag="Simulated" />
+                        </ComboBox>
+                    </StackPanel>
+                    <ListView x:Name="DevicesList" MouseDoubleClick="OnUsePrinter">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="Nombre" Width="170" DisplayMemberBinding="{Binding Name}" />
+                                <GridViewColumn Header="Dirección" Width="140" DisplayMemberBinding="{Binding Address}" />
+                                <GridViewColumn Header="Modelo" Width="190" DisplayMemberBinding="{Binding Model}" />
+                                <GridViewColumn Header="Emparejada" Width="85" DisplayMemberBinding="{Binding PairedText}" />
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                </DockPanel>
+            </TabItem>
+
+            <!-- Ajustes -->
+            <TabItem Header="Ajustes">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <Grid Margin="10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition />
+                        </Grid.RowDefinitions>
+                        <TextBlock Style="{StaticResource Label}" Grid.Row="0" Text="Oscuridad" />
+                        <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Margin="0,6">
+                            <Slider x:Name="DarknessSlider" Minimum="1" Maximum="5" TickFrequency="1" IsSnapToTickEnabled="True" Width="200" TickPlacement="BottomRight" />
+                            <TextBlock Text="{Binding Value, ElementName=DarknessSlider}" Margin="8,0" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource Label}" Grid.Row="1" Text="Tramado" />
+                        <ComboBox x:Name="DitherCombo" Grid.Row="1" Grid.Column="1" Width="260" HorizontalAlignment="Left" Margin="0,6">
+                            <ComboBoxItem Content="Automático (texto nítido, fotos tramadas)" Tag="Auto" />
+                            <ComboBoxItem Content="Atkinson (fotos)" Tag="Atkinson" />
+                            <ComboBoxItem Content="Floyd–Steinberg" Tag="FloydSteinberg" />
+                            <ComboBoxItem Content="Umbral (solo texto)" Tag="Threshold" />
+                        </ComboBox>
+                        <TextBlock Style="{StaticResource Label}" Grid.Row="2" Text="Avance extra al final" />
+                        <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Margin="0,6">
+                            <Slider x:Name="FeedSlider" Minimum="0" Maximum="6" TickFrequency="1" IsSnapToTickEnabled="True" Width="200" TickPlacement="BottomRight" />
+                            <TextBlock Text="{Binding Value, ElementName=FeedSlider, StringFormat={}{0} × 6 mm}" Margin="8,0" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource Label}" Grid.Row="3" Text="Desconectar tras" />
+                        <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Margin="0,6">
+                            <TextBox x:Name="IdleBox" Width="60" />
+                            <TextBlock Text="segundos sin uso (libera la impresora para el móvil)" Margin="8,0" VerticalAlignment="Center" Foreground="#57606A" />
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource Label}" Grid.Row="4" Text="Nombre en Windows" />
+                        <TextBox x:Name="NameBox" Grid.Row="4" Grid.Column="1" Width="260" HorizontalAlignment="Left" Margin="0,6" />
+                        <TextBlock Style="{StaticResource Label}" Grid.Row="5" Text="Imprimir desde" VerticalAlignment="Top" />
+                        <StackPanel Grid.Row="5" Grid.Column="1" Margin="0,6">
+                            <RadioButton x:Name="LocalRadio" Content="Solo este PC" GroupName="Net" Margin="0,2" />
+                            <RadioButton x:Name="LanRadio" Content="Toda la red local (otros PCs, iPhone y Android la encuentran solos)" GroupName="Net" Margin="0,2" />
+                            <TextBlock Text="En modo red local solo se comparte la impresión; este panel nunca es accesible desde la red."
+                                       Foreground="#57606A" TextWrapping="Wrap" Margin="0,4,0,0" />
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource Label}" Grid.Row="6" Text="Puerto IPP" />
+                        <TextBox x:Name="PortBox" Grid.Row="6" Grid.Column="1" Width="80" HorizontalAlignment="Left" Margin="0,6" />
+                        <StackPanel Grid.Row="7" Grid.Column="1" Orientation="Horizontal" Margin="0,16,0,0">
+                            <Button Content="Guardar" Click="OnSaveSettings" FontWeight="SemiBold" />
+                            <Button Content="Recargar" Click="OnLoadSettings" />
+                            <TextBlock x:Name="SettingsStatus" VerticalAlignment="Center" Foreground="#57606A" />
+                        </StackPanel>
+                    </Grid>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+    </DockPanel>
+</Window>

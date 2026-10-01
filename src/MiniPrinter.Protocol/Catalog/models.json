@@ -1,0 +1,716 @@
+{
+ "_source": {
+  "source": "https://github.com/Dejniel/TiMini-Print",
+  "commit": "7be93f5",
+  "license": "Apache-2.0",
+  "note": "Subset: protocol family \"tiny\" without packet variant. Generated; do not edit by hand."
+ },
+ "models": [
+  {
+   "key": "iprintit",
+   "profile": "x5",
+   "prefixes": [
+    "IprintIt",
+    "DY01",
+    "LP6"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "pocket_printer",
+   "profile": "d1",
+   "prefixes": [
+    "Pocket Printer",
+    "Luxorp.PX10",
+    "EMX-040256",
+    "SeznikEcho",
+    "TCM690464",
+    "UXPORTMIP",
+    "DL_GE225",
+    "ML-MP-01",
+    "ROSSMANN",
+    "0019B-C",
+    "0019B-D",
+    "DTR-R0",
+    "GB03PL",
+    "HT0125",
+    "RT034h",
+    "DT1-0",
+    "SC03h",
+    "SC04h",
+    "X103h",
+    "DY03",
+    "X100",
+    "X2h",
+    "X5h",
+    "X6h",
+    "X7h",
+    "XC9",
+    "D1",
+    "X18",
+    "DT1-R",
+    "TD-11308",
+    "XC9-FL01",
+    "P1",
+    "P2"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "ewtto_et_z0504",
+   "profile": "x6h",
+   "prefixes": [
+    "ewtto ET-Z0504",
+    "IM.04",
+    "X103H",
+    "SC05",
+    "X102",
+    "X5HP",
+    "X6HP",
+    "P7H",
+    "X2H",
+    "X5H",
+    "X6H",
+    "X7H"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "seznikneo",
+   "profile": "cp01",
+   "prefixes": [
+    "SeznikNeo",
+    "RS9000",
+    "XiaoWa",
+    "JRX01",
+    "QDX01",
+    "wts07",
+    "CP01",
+    "DY49",
+    "S5A",
+    "P20 max",
+    "S9A",
+    "DY33A",
+    "YMS-BT01",
+    "WJ-HOT-PRT"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "cmt_0510",
+   "profile": "gb03",
+   "prefixes": [
+    "CMT-0510",
+    "SC03",
+    "SC04",
+    "GV-MA211"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "dl_x2pro",
+   "profile": "p5",
+   "prefixes": [
+    "DL_X2Pro",
+    "P5"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "shipping_printer",
+   "profile": "shipping_printer",
+   "prefixes": [
+    "Shipping Printer"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "gb02sh",
+   "profile": "gb02sh",
+   "prefixes": [
+    "GB02SH"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "gb03ph",
+   "profile": "gb03ph",
+   "prefixes": [
+    "GB03PH",
+    "GB03SH"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "gb03sl",
+   "profile": "gb03sl",
+   "prefixes": [
+    "GB03SL"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "label_printer",
+   "profile": "label_printer",
+   "prefixes": [
+    "Label Printer"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "mini_printer",
+   "profile": "mini_printer",
+   "prefixes": [
+    "Mini Printer"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "dl_x2",
+   "profile": "dl_x2",
+   "prefixes": [
+    "DL_X2"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "dl_x7",
+   "profile": "dl_x7",
+   "prefixes": [
+    "DL_X7"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "dl_x7pro",
+   "profile": "dl_x7pro",
+   "prefixes": [
+    "DL_X7Pro"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "lgm01",
+   "profile": "x7hp",
+   "prefixes": [
+    "LGM01",
+    "X7HP"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "pt001",
+   "profile": "pt001",
+   "prefixes": [
+    "PT001"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "sc03h",
+   "profile": "fc02",
+   "prefixes": [
+    "SC03H",
+    "FC02"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "x101h_2",
+   "profile": "x101h",
+   "prefixes": [
+    "X101H"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "15p3",
+   "profile": "15p3",
+   "prefixes": [
+    "15P3",
+    "YK06"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "wq02",
+   "profile": "wq02",
+   "prefixes": [
+    "WQ02"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "l1_u2",
+   "profile": "l1_u2",
+   "prefixes": [
+    "L1",
+    "U2"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "58p5",
+   "profile": "58p5",
+   "prefixes": [
+    "58P5",
+    "WL01"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "an01",
+   "profile": "an01",
+   "prefixes": [
+    "AN01"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "d100",
+   "profile": "d100",
+   "prefixes": [
+    "D100"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "fl01",
+   "profile": "fl01",
+   "prefixes": [
+    "FL01",
+    "KF-5"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "gb01",
+   "profile": "gb01",
+   "prefixes": [
+    "GB01"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "gb02",
+   "profile": "gb02",
+   "prefixes": [
+    "GB02"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "gb03",
+   "profile": "gb03_2",
+   "prefixes": [
+    "GB03",
+    "GB06"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "gb04",
+   "profile": "gb04",
+   "prefixes": [
+    "GB04"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "gb05",
+   "profile": "gb05",
+   "prefixes": [
+    "GB05"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "gt01",
+   "profile": "gt01",
+   "prefixes": [
+    "GT01",
+    "GT03"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "gt02",
+   "profile": "gt02",
+   "prefixes": [
+    "GT02"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "gt04",
+   "profile": "gt04",
+   "prefixes": [
+    "GT04"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "jx001",
+   "profile": "jx001",
+   "prefixes": [
+    "JX001",
+    "JX002",
+    "JX003",
+    "JX004",
+    "JX005",
+    "JX006"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "lt01",
+   "profile": "lt01",
+   "prefixes": [
+    "LT01"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "ly01",
+   "profile": "ly01",
+   "prefixes": [
+    "LY01"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "ly02",
+   "profile": "ly02",
+   "prefixes": [
+    "LY02"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "ly03",
+   "profile": "ly03",
+   "prefixes": [
+    "LY03"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "ly05",
+   "profile": "ly05",
+   "prefixes": [
+    "LY05"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "p5ai",
+   "profile": "m01",
+   "prefixes": [
+    "P5AI",
+    "PR07",
+    "XW003",
+    "XW009",
+    "M01",
+    "AI01"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "pr02",
+   "profile": "pr02",
+   "prefixes": [
+    "PR02",
+    "XW008"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "xw001",
+   "profile": "xw001",
+   "prefixes": [
+    "XW001"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "pr30",
+   "profile": "pr30",
+   "prefixes": [
+    "PR30"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "xw002",
+   "profile": "xw002",
+   "prefixes": [
+    "XW002"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "xw004",
+   "profile": "pr35",
+   "prefixes": [
+    "XW004",
+    "PR35"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "s101",
+   "profile": "s101",
+   "prefixes": [
+    "S101"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "s102",
+   "profile": "s102_2",
+   "prefixes": [
+    "S102"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "zhhc",
+   "profile": "zhhc",
+   "prefixes": [
+    "ZHHC"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "a33",
+   "profile": "a33",
+   "prefixes": [
+    "A33"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "hd1",
+   "profile": "hd1",
+   "prefixes": [
+    "HD1"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "p10",
+   "profile": "p10",
+   "prefixes": [
+    "P10"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "s01",
+   "profile": "s01",
+   "prefixes": [
+    "S01"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "x16",
+   "profile": "x16",
+   "prefixes": [
+    "X16",
+    "Audio Print",
+    "A2",
+    "A3"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "m2",
+   "profile": "m2",
+   "prefixes": [
+    "M2"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "p6",
+   "profile": "p6",
+   "prefixes": [
+    "P6"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "p7",
+   "profile": "p7",
+   "prefixes": [
+    "P7"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "u1",
+   "profile": "u1",
+   "prefixes": [
+    "U1"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "x1",
+   "profile": "x1",
+   "prefixes": [
+    "X1"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "x5",
+   "profile": "x5_2",
+   "prefixes": [
+    "X5"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "x6",
+   "profile": "x6",
+   "prefixes": [
+    "X6"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  },
+  {
+   "key": "x7",
+   "profile": "x7",
+   "prefixes": [
+    "X7"
+   ],
+   "origin": [
+    "com.frogtosea.tinyPrint"
+   ]
+  }
+ ]
+}

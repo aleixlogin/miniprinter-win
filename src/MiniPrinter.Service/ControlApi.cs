@@ -1,0 +1,219 @@
+using System.Reflection;
+using System.Security.AccessControl;
+using System.Security.Cryptography;
+using System.Security.Principal;
+using System.Text.Json;
+using System.Threading.Channels;
+using MiniPrinter.Control;
+using MiniPrinter.Ipp;
+using MiniPrinter.Protocol;
+using MiniPrinter.Transport;
+
+namespace MiniPrinter.Service;
+
+/// <summary>Loopback-only JSON API used by the tray app (design.md D6).</summary>
+public static class ControlApi
+{
+    private static readonly string Version =
+        typeof(ControlApi).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "0";
+
+    public static void Map(WebApplication app, string token)
+    {
+        var api = app.MapGroup("/api");
+        api.AddEndpointFilter(async (context, next) =>
+        {
+            var http = context.HttpContext;
+            if (!http.Request.Headers.TryGetValue(ControlDefaults.TokenHeader, out var supplied)
+                || !CryptographicOperations.FixedTimeEquals(System.Text.Encoding.UTF8.GetBytes(supplied.ToString()), System.Text.Encoding.UTF8.GetBytes(token)))
+                return Results.Json(new ApiError("Missing or invalid control token."), ControlDefaults.Json, statusCode: 401);
+            try
+            {
+                return await next(context);
+            }
+            catch (PrinterNotConfiguredException ex)
+            {
+                return Results.Json(new ApiError(ex.Message), ControlDefaults.Json, statusCode: 409);
+            }
+            catch (TransportException ex)
+            {
+                return Results.Json(new ApiError($"{ex.Kind}: {ex.Message}"), ControlDefaults.Json, statusCode: 503);
+            }
+            catch (TimeoutException)
+            {
+                return Results.Json(new ApiError("The printer did not answer in time."), ControlDefaults.Json, statusCode: 504);
+            }
+        });
+
+        api.MapGet("/status", (StatusBuilder status) => Json(status.Build()));
+
+        api.MapGet("/settings", (SettingsStore settings) => Json(settings.Current));
+
+        api.MapPut("/settings", async (HttpContext http, SettingsStore settings) =>
+        {
+            var body = await http.Request.ReadFromJsonAsync<ServiceSettings>(ControlDefaults.Json);
+            if (body is null)
+                return Results.Json(new ApiError("Missing settings."), ControlDefaults.Json, statusCode: 400);
+            // The printer is only changed through POST /printer: a client holding an older copy of
+            // the settings must not clear or replace the selection when it saves other options.
+            return Json(settings.Update(current => body with { Printer = current.Printer }));
+        });
+
+        api.MapPost("/printer", async (HttpContext http, SettingsStore settings, StatusBuilder status) =>
+        {
+            var printer = await http.Request.ReadFromJsonAsync<PrinterSelection>(ControlDefaults.Json);
+            if (printer is null || (printer.Transport != TransportChoice.Simulated && !BluetoothAddress.TryParse(printer.Address, out _)))
+                return Results.Json(new ApiError("A printer name and a valid Bluetooth address are required."), ControlDefaults.Json, statusCode: 400);
+            if (Protocol.Catalog.PrinterCatalog.Default.GetProfile(printer.ProfileKey) is null)
+                return Results.Json(new ApiError($"Unknown profile '{printer.ProfileKey}'."), ControlDefaults.Json, statusCode: 400);
+            settings.Update(s => s with { Printer = printer });
+            await Task.Delay(100); // let the session be recreated
+            return Json(status.Build());
+        });
+
+        api.MapPost("/connect", async (PrinterManager printer, StatusBuilder status, CancellationToken ct) =>
+        {
+            await printer.RefreshAsync(ct);
+            return Json(status.Build());
+        });
+
+        api.MapPost("/disconnect", async (PrinterManager printer, StatusBuilder status) =>
+        {
+            await printer.DisconnectAsync();
+            return Json(status.Build());
+        });
+
+        api.MapPost("/feed", async (PrinterManager printer, StatusBuilder status, CancellationToken ct) =>
+        {
+            await printer.FeedAsync(96, ct);
+            return Json(status.Build());
+        });
+
+        api.MapPost("/test-print", (PrinterManager printer, JobQueue queue) =>
+        {
+            printer.RequireSession();
+            var job = queue.SubmitBitmap("Test page", TestPatterns.Calibration(printer.Profile.WidthPx));
+            return Json(ToDto(job));
+        });
+
+        api.MapGet("/jobs/last/pages/{page:int}", (int page, JobQueue queue) =>
+        {
+            var path = Path.Combine(queue.DiagnosticsDirectory, $"page-{page}.png");
+            return File.Exists(path)
+                ? Results.File(File.ReadAllBytes(path), "image/png")
+                : Results.Json(new ApiError("No preview for that page."), ControlDefaults.Json, statusCode: 404);
+        });
+
+        api.MapGet("/jobs", (JobQueue queue) => Json(queue.AllJobs().Select(ToDto).ToList()));
+
+        api.MapDelete("/jobs/{id:int}", (int id, JobQueue queue) =>
+            queue.CancelJob(id) ? Results.NoContent() : Results.Json(new ApiError("Job not found or already finished."), ControlDefaults.Json, statusCode: 404));
+
+        api.MapGet("/events", async (HttpContext http, StatusBuilder status, CancellationToken ct) =>
+        {
+            http.Response.Headers.ContentType = "text/event-stream";
+            http.Response.Headers.CacheControl = "no-cache";
+            var updates = Channel.CreateBounded<StatusDto>(new BoundedChannelOptions(8) { FullMode = BoundedChannelFullMode.DropOldest });
+            void OnChange() => updates.Writer.TryWrite(status.Build());
+            status.Changed += OnChange;
+            try
+            {
+                OnChange();
+                await foreach (var dto in updates.Reader.ReadAllAsync(ct))
+                {
+                    await http.Response.WriteAsync($"data: {JsonSerializer.Serialize(dto, ControlDefaults.Json)}\n\n", ct);
+                    await http.Response.Body.FlushAsync(ct);
+                }
+            }
+            catch (OperationCanceledException) { }
+            finally
+            {
+                status.Changed -= OnChange;
+            }
+        });
+    }
+
+    public static JobDto ToDto(JobInfo job) => new(job.Id, job.Name, job.UserName, job.State.ToString(), job.StateMessage,
+        job.Created, job.Completed, job.PagesCompleted, job.SizeBytes);
+
+    private static IResult Json<T>(T value) => Results.Json(value, ControlDefaults.Json);
+
+    /// <summary>Creates the token file once; readable by local users, writable by SYSTEM/Administrators.</summary>
+    public static string EnsureToken(ServicePaths paths, ILogger logger)
+    {
+        if (File.Exists(paths.TokenPath))
+        {
+            var existing = File.ReadAllText(paths.TokenPath).Trim();
+            if (existing.Length >= 32)
+                return existing;
+        }
+
+        var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+        File.WriteAllText(paths.TokenPath, token);
+        try
+        {
+            var security = new FileSecurity();
+            security.SetAccessRuleProtection(isProtected: true, preserveInheritance: false);
+            security.AddAccessRule(new FileSystemAccessRule(new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null), FileSystemRights.FullControl, AccessControlType.Allow));
+            security.AddAccessRule(new FileSystemAccessRule(new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null), FileSystemRights.FullControl, AccessControlType.Allow));
+            security.AddAccessRule(new FileSystemAccessRule(new SecurityIdentifier(WellKnownSidType.InteractiveSid, null), FileSystemRights.Read, AccessControlType.Allow));
+            // The account that runs the service (in development, the current user).
+            security.AddAccessRule(new FileSystemAccessRule(WindowsIdentity.GetCurrent().User!, FileSystemRights.FullControl, AccessControlType.Allow));
+            new FileInfo(paths.TokenPath).SetAccessControl(security);
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or PlatformNotSupportedException or InvalidOperationException)
+        {
+            logger.LogWarning(ex, "Could not restrict access to {Path}", paths.TokenPath);
+        }
+        return token;
+    }
+}
+
+/// <summary>Builds <see cref="StatusDto"/> and signals when anything visible changes.</summary>
+public sealed class StatusBuilder
+{
+    private readonly PrinterManager _printer;
+    private readonly JobQueue _queue;
+    private readonly SettingsStore _settings;
+    private readonly IppHost _ipp;
+    private readonly string _version;
+
+    public StatusBuilder(PrinterManager printer, JobQueue queue, SettingsStore settings, IppHost ipp)
+    {
+        _printer = printer;
+        _queue = queue;
+        _settings = settings;
+        _ipp = ipp;
+        _version = typeof(StatusBuilder).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "0";
+        printer.StatusChanged += _ => Changed?.Invoke();
+        queue.JobsChanged += () => Changed?.Invoke();
+        settings.Changed += (_, _) => Changed?.Invoke();
+    }
+
+    public event Action? Changed;
+
+    public StatusDto Build()
+    {
+        var s = _printer.Status;
+        var state = s.State;
+        return new StatusDto
+        {
+            Link = s.Link.ToString(),
+            Printer = _printer.Selection,
+            Ready = s.Link == LinkState.Connected && state is { IsReady: true },
+            AlarmByte = state?.AlarmByte,
+            Alarms = state is null || state.IsReady ? [] : Enum.GetValues<PrinterAlarms>()
+                .Where(a => a != PrinterAlarms.None && state.Alarms.HasFlag(a)).Select(a => a.ToString()).ToList(),
+            BatteryLevel = state?.BatteryLevel,
+            PaperSensor = state?.PaperSensor,
+            Firmware = s.Firmware,
+            Printing = s.Printing,
+            LastError = s.LastError,
+            LastErrorKind = s.LastErrorKind?.ToString(),
+            LastSeen = s.LastSeen,
+            NetworkMode = _settings.Current.NetworkMode,
+            IppUrls = _ipp.Urls,
+            QueuedJobs = _queue.GetPrinter().QueuedJobs,
+            Version = _version,
+        };
+    }
+}

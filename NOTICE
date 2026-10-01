@@ -1,0 +1,15 @@
+MiniPrinter
+Copyright (c) 2026 aleixlogin
+
+This product includes printer model/profile data and a port of the "tiny"
+protocol job recipe from TiMini-Print (https://github.com/Dejniel/TiMini-Print),
+licensed under the Apache License, Version 2.0. Copyright TiMini-Print authors.
+You may obtain a copy of the Apache License at
+http://www.apache.org/licenses/LICENSE-2.0
+
+Protocol knowledge (frame format, CRC-8 table) was also cross-checked against
+the reverse-engineering notes in https://github.com/lisp3r/bluetooth-thermal-printer.
+No code from that repository is included.
+
+This product uses SixLabors.ImageSharp (https://github.com/SixLabors/ImageSharp),
+licensed under the Six Labors Split License (Apache License 2.0 for qualifying use).

@@ -1,0 +1,1684 @@
+{
+ "_source": {
+  "source": "https://github.com/Dejniel/TiMini-Print",
+  "commit": "7be93f5",
+  "license": "Apache-2.0",
+  "note": "Subset: protocol family \"tiny\" without packet variant. Generated; do not edit by hand."
+ },
+ "profiles": [
+  {
+   "key": "15p3",
+   "dpi": 200,
+   "widthPx": 90,
+   "paperWidthPx": 96,
+   "useSpp": true,
+   "encoding": "rle",
+   "chunkSize": 180,
+   "delayMs": 4,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 10,
+    "text": 10
+   },
+   "energy": {
+    "image": {
+     "low": 5000,
+     "middle": 5000,
+     "high": 5000
+    },
+    "text": {
+     "low": 8000,
+     "middle": 8000,
+     "high": 8000
+    }
+   }
+  },
+  {
+   "key": "58p5",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": false,
+   "encoding": "rle",
+   "chunkSize": 123,
+   "delayMs": 6,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 10,
+    "text": 10
+   },
+   "energy": {
+    "image": {
+     "low": 6500,
+     "middle": 6500,
+     "high": 6500
+    },
+    "text": {
+     "low": 0,
+     "middle": 0,
+     "high": 0
+    }
+   }
+  },
+  {
+   "key": "a33",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": true,
+   "encoding": "rle",
+   "chunkSize": 183,
+   "delayMs": 4,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 25,
+    "text": 25
+   },
+   "energy": {
+    "image": {
+     "low": 9500,
+     "middle": 9500,
+     "high": 9500
+    },
+    "text": {
+     "low": 9500,
+     "middle": 9500,
+     "high": 9500
+    }
+   }
+  },
+  {
+   "key": "an01",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": false,
+   "encoding": "rle",
+   "chunkSize": 103,
+   "delayMs": 4,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 10,
+    "text": 10
+   },
+   "energy": {
+    "image": {
+     "low": 4000,
+     "middle": 5000,
+     "high": 6000
+    },
+    "text": {
+     "low": 5000,
+     "middle": 5000,
+     "high": 5000
+    }
+   }
+  },
+  {
+   "key": "cp01",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": false,
+   "encoding": "raw",
+   "chunkSize": 183,
+   "delayMs": 4,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 20,
+    "text": 10
+   },
+   "energy": {
+    "image": {
+     "low": 12000,
+     "middle": 12000,
+     "high": 12000
+    },
+    "text": {
+     "low": 13000,
+     "middle": 13000,
+     "high": 13000
+    }
+   }
+  },
+  {
+   "key": "d1",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": true,
+   "encoding": "rle",
+   "chunkSize": 180,
+   "delayMs": 4,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 10,
+    "text": 10
+   },
+   "energy": {
+    "image": {
+     "low": 5000,
+     "middle": 5000,
+     "high": 5000
+    },
+    "text": {
+     "low": 8000,
+     "middle": 8000,
+     "high": 8000
+    }
+   }
+  },
+  {
+   "key": "d100",
+   "dpi": 200,
+   "widthPx": 864,
+   "paperWidthPx": 864,
+   "useSpp": true,
+   "encoding": "rle",
+   "chunkSize": 180,
+   "delayMs": 4,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 10,
+    "text": 10
+   },
+   "energy": {
+    "image": {
+     "low": 5000,
+     "middle": 5000,
+     "high": 5000
+    },
+    "text": {
+     "low": 8000,
+     "middle": 8000,
+     "high": 8000
+    }
+   }
+  },
+  {
+   "key": "dl_x2",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": true,
+   "encoding": "rle",
+   "chunkSize": 180,
+   "delayMs": 4,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 10,
+    "text": 10
+   },
+   "energy": {
+    "image": {
+     "low": 8000,
+     "middle": 8000,
+     "high": 8000
+    },
+    "text": {
+     "low": 8000,
+     "middle": 8000,
+     "high": 8000
+    }
+   }
+  },
+  {
+   "key": "dl_x7",
+   "dpi": 200,
+   "widthPx": 864,
+   "paperWidthPx": 864,
+   "useSpp": true,
+   "encoding": "rle",
+   "chunkSize": 512,
+   "delayMs": 4,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 10,
+    "text": 10
+   },
+   "energy": {
+    "image": {
+     "low": 7000,
+     "middle": 7000,
+     "high": 7000
+    },
+    "text": {
+     "low": 8000,
+     "middle": 8000,
+     "high": 8000
+    }
+   }
+  },
+  {
+   "key": "dl_x7pro",
+   "dpi": 300,
+   "widthPx": 1280,
+   "paperWidthPx": 1280,
+   "useSpp": true,
+   "encoding": "rle",
+   "chunkSize": 512,
+   "delayMs": 4,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 10,
+    "text": 10
+   },
+   "energy": {
+    "image": {
+     "low": 7000,
+     "middle": 7000,
+     "high": 7000
+    },
+    "text": {
+     "low": 8000,
+     "middle": 8000,
+     "high": 8000
+    }
+   }
+  },
+  {
+   "key": "fc02",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": true,
+   "encoding": "rle",
+   "chunkSize": 180,
+   "delayMs": 4,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 25,
+    "text": 25
+   },
+   "energy": {
+    "image": {
+     "low": 20000,
+     "middle": 20000,
+     "high": 20000
+    },
+    "text": {
+     "low": 20000,
+     "middle": 20000,
+     "high": 20000
+    }
+   }
+  },
+  {
+   "key": "fl01",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": true,
+   "encoding": "raw",
+   "chunkSize": 183,
+   "delayMs": 4,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 20,
+    "text": 10
+   },
+   "energy": {
+    "image": {
+     "low": 7500,
+     "middle": 7500,
+     "high": 7500
+    },
+    "text": {
+     "low": 7500,
+     "middle": 7500,
+     "high": 7500
+    }
+   }
+  },
+  {
+   "key": "gb01",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": false,
+   "encoding": "raw",
+   "chunkSize": 63,
+   "delayMs": 6,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 35,
+    "text": 25
+   },
+   "energy": {
+    "image": {
+     "low": 8000,
+     "middle": 12000,
+     "high": 17500
+    },
+    "text": {
+     "low": 0,
+     "middle": 0,
+     "high": 0
+    }
+   }
+  },
+  {
+   "key": "gb02",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": false,
+   "encoding": "raw",
+   "chunkSize": 83,
+   "delayMs": 6,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 26,
+    "text": 25
+   },
+   "energy": {
+    "image": {
+     "low": 8600,
+     "middle": 12000,
+     "high": 16000
+    },
+    "text": {
+     "low": 0,
+     "middle": 0,
+     "high": 0
+    }
+   }
+  },
+  {
+   "key": "gb02sh",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": true,
+   "encoding": "rle",
+   "chunkSize": 180,
+   "delayMs": 4,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 25,
+    "text": 25
+   },
+   "energy": {
+    "image": {
+     "low": 7000,
+     "middle": 7000,
+     "high": 7000
+    },
+    "text": {
+     "low": 9500,
+     "middle": 9500,
+     "high": 9500
+    }
+   }
+  },
+  {
+   "key": "gb03",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": false,
+   "encoding": "rle",
+   "chunkSize": 83,
+   "delayMs": 6,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 30,
+    "text": 10
+   },
+   "energy": {
+    "image": {
+     "low": 7500,
+     "middle": 7500,
+     "high": 7500
+    },
+    "text": {
+     "low": 8000,
+     "middle": 8000,
+     "high": 8000
+    }
+   }
+  },
+  {
+   "key": "gb03_2",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": false,
+   "encoding": "rle",
+   "chunkSize": 83,
+   "delayMs": 6,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 10,
+    "text": 10
+   },
+   "energy": {
+    "image": {
+     "low": 9000,
+     "middle": 9000,
+     "high": 9000
+    },
+    "text": {
+     "low": 8000,
+     "middle": 8000,
+     "high": 8000
+    }
+   }
+  },
+  {
+   "key": "gb03ph",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": true,
+   "encoding": "rle",
+   "chunkSize": 180,
+   "delayMs": 4,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 25,
+    "text": 25
+   },
+   "energy": {
+    "image": {
+     "low": 9500,
+     "middle": 9500,
+     "high": 9500
+    },
+    "text": {
+     "low": 9500,
+     "middle": 9500,
+     "high": 9500
+    }
+   }
+  },
+  {
+   "key": "gb03sl",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": true,
+   "encoding": "rle",
+   "chunkSize": 180,
+   "delayMs": 10,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 10,
+    "text": 10
+   },
+   "energy": {
+    "image": {
+     "low": 5000,
+     "middle": 5000,
+     "high": 5000
+    },
+    "text": {
+     "low": 8000,
+     "middle": 8000,
+     "high": 8000
+    }
+   }
+  },
+  {
+   "key": "gb04",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": false,
+   "encoding": "raw",
+   "chunkSize": 83,
+   "delayMs": 6,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 26,
+    "text": 25
+   },
+   "energy": {
+    "image": {
+     "low": 8600,
+     "middle": 12000,
+     "high": 16000
+    },
+    "text": {
+     "low": 0,
+     "middle": 0,
+     "high": 0
+    }
+   }
+  },
+  {
+   "key": "gb05",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": false,
+   "encoding": "rle",
+   "chunkSize": 123,
+   "delayMs": 6,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 26,
+    "text": 25
+   },
+   "energy": {
+    "image": {
+     "low": 10000,
+     "middle": 10000,
+     "high": 10000
+    },
+    "text": {
+     "low": 12000,
+     "middle": 12000,
+     "high": 12000
+    }
+   }
+  },
+  {
+   "key": "gt01",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": false,
+   "encoding": "rle",
+   "chunkSize": 123,
+   "delayMs": 4,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 30,
+    "text": 25
+   },
+   "energy": {
+    "image": {
+     "low": 12000,
+     "middle": 12000,
+     "high": 12000
+    },
+    "text": {
+     "low": 0,
+     "middle": 0,
+     "high": 0
+    }
+   }
+  },
+  {
+   "key": "gt02",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": false,
+   "encoding": "rle",
+   "chunkSize": 123,
+   "delayMs": 4,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 30,
+    "text": 25
+   },
+   "energy": {
+    "image": {
+     "low": 9000,
+     "middle": 9000,
+     "high": 9000
+    },
+    "text": {
+     "low": 8000,
+     "middle": 8000,
+     "high": 8000
+    }
+   }
+  },
+  {
+   "key": "gt04",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": false,
+   "encoding": "rle",
+   "chunkSize": 123,
+   "delayMs": 4,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 30,
+    "text": 25
+   },
+   "energy": {
+    "image": {
+     "low": 8000,
+     "middle": 8000,
+     "high": 8000
+    },
+    "text": {
+     "low": 0,
+     "middle": 0,
+     "high": 0
+    }
+   }
+  },
+  {
+   "key": "hd1",
+   "dpi": 200,
+   "widthPx": 576,
+   "paperWidthPx": 576,
+   "useSpp": false,
+   "encoding": "rle",
+   "chunkSize": 183,
+   "delayMs": 6,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 40,
+    "text": 35
+   },
+   "energy": {
+    "image": {
+     "low": 8500,
+     "middle": 8500,
+     "high": 8500
+    },
+    "text": {
+     "low": 0,
+     "middle": 0,
+     "high": 0
+    }
+   }
+  },
+  {
+   "key": "jx001",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": false,
+   "encoding": "rle",
+   "chunkSize": 180,
+   "delayMs": 3,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 90,
+    "text": 45
+   },
+   "energy": {
+    "image": {
+     "low": 0,
+     "middle": 0,
+     "high": 0
+    },
+    "text": {
+     "low": 0,
+     "middle": 0,
+     "high": 0
+    }
+   }
+  },
+  {
+   "key": "l1_u2",
+   "dpi": 200,
+   "widthPx": 90,
+   "paperWidthPx": 96,
+   "useSpp": true,
+   "encoding": "rle",
+   "chunkSize": 180,
+   "delayMs": 4,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 8,
+    "text": 8
+   },
+   "energy": {
+    "image": {
+     "low": 1500,
+     "middle": 1500,
+     "high": 1500
+    },
+    "text": {
+     "low": 1500,
+     "middle": 1500,
+     "high": 1500
+    }
+   }
+  },
+  {
+   "key": "label_printer",
+   "dpi": 200,
+   "widthPx": 90,
+   "paperWidthPx": 96,
+   "useSpp": true,
+   "encoding": "raw",
+   "chunkSize": 180,
+   "delayMs": 4,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 10,
+    "text": 10
+   },
+   "energy": {
+    "image": {
+     "low": 1400,
+     "middle": 1400,
+     "high": 1400
+    },
+    "text": {
+     "low": 1400,
+     "middle": 1400,
+     "high": 1400
+    }
+   }
+  },
+  {
+   "key": "lt01",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": false,
+   "encoding": "rle",
+   "chunkSize": 83,
+   "delayMs": 6,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 10,
+    "text": 10
+   },
+   "energy": {
+    "image": {
+     "low": 4500,
+     "middle": 4500,
+     "high": 4500
+    },
+    "text": {
+     "low": 8000,
+     "middle": 8000,
+     "high": 8000
+    }
+   }
+  },
+  {
+   "key": "ly01",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": false,
+   "encoding": "rle",
+   "chunkSize": 180,
+   "delayMs": 4,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 40,
+    "text": 25
+   },
+   "energy": {
+    "image": {
+     "low": 0,
+     "middle": 9500,
+     "high": 20000
+    },
+    "text": {
+     "low": 0,
+     "middle": 0,
+     "high": 0
+    }
+   }
+  },
+  {
+   "key": "ly02",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": false,
+   "encoding": "rle",
+   "chunkSize": 180,
+   "delayMs": 2,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 45,
+    "text": 35
+   },
+   "energy": {
+    "image": {
+     "low": 0,
+     "middle": 0,
+     "high": 0
+    },
+    "text": {
+     "low": 0,
+     "middle": 0,
+     "high": 0
+    }
+   }
+  },
+  {
+   "key": "ly03",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": false,
+   "encoding": "rle",
+   "chunkSize": 83,
+   "delayMs": 6,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 10,
+    "text": 10
+   },
+   "energy": {
+    "image": {
+     "low": 7500,
+     "middle": 7500,
+     "high": 7500
+    },
+    "text": {
+     "low": 0,
+     "middle": 0,
+     "high": 0
+    }
+   }
+  },
+  {
+   "key": "ly05",
+   "dpi": 200,
+   "widthPx": 576,
+   "paperWidthPx": 576,
+   "useSpp": false,
+   "encoding": "rle",
+   "chunkSize": 153,
+   "delayMs": 6,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 40,
+    "text": 35
+   },
+   "energy": {
+    "image": {
+     "low": 12000,
+     "middle": 12000,
+     "high": 12000
+    },
+    "text": {
+     "low": 0,
+     "middle": 0,
+     "high": 0
+    }
+   }
+  },
+  {
+   "key": "m01",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": false,
+   "encoding": "rle",
+   "chunkSize": 180,
+   "delayMs": 5,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 45,
+    "text": 25
+   },
+   "energy": {
+    "image": {
+     "low": 0,
+     "middle": 0,
+     "high": 0
+    },
+    "text": {
+     "low": 0,
+     "middle": 0,
+     "high": 0
+    }
+   }
+  },
+  {
+   "key": "m2",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": false,
+   "encoding": "rle",
+   "chunkSize": 83,
+   "delayMs": 4,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 10,
+    "text": 10
+   },
+   "energy": {
+    "image": {
+     "low": 4500,
+     "middle": 4500,
+     "high": 4500
+    },
+    "text": {
+     "low": 8000,
+     "middle": 8000,
+     "high": 8000
+    }
+   }
+  },
+  {
+   "key": "mini_printer",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": true,
+   "encoding": "rle",
+   "chunkSize": 180,
+   "delayMs": 4,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 20,
+    "text": 20
+   },
+   "energy": {
+    "image": {
+     "low": 14000,
+     "middle": 14000,
+     "high": 14000
+    },
+    "text": {
+     "low": 14000,
+     "middle": 14000,
+     "high": 14000
+    }
+   }
+  },
+  {
+   "key": "p10",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": false,
+   "encoding": "rle",
+   "chunkSize": 123,
+   "delayMs": 6,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 10,
+    "text": 10
+   },
+   "energy": {
+    "image": {
+     "low": 5500,
+     "middle": 5500,
+     "high": 5500
+    },
+    "text": {
+     "low": 9500,
+     "middle": 9500,
+     "high": 9500
+    }
+   }
+  },
+  {
+   "key": "p5",
+   "dpi": 300,
+   "widthPx": 576,
+   "paperWidthPx": 576,
+   "useSpp": true,
+   "encoding": "rle",
+   "chunkSize": 280,
+   "delayMs": 4,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 10,
+    "text": 10
+   },
+   "energy": {
+    "image": {
+     "low": 5000,
+     "middle": 5000,
+     "high": 5000
+    },
+    "text": {
+     "low": 8000,
+     "middle": 8000,
+     "high": 8000
+    }
+   }
+  },
+  {
+   "key": "p6",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": true,
+   "encoding": "rle",
+   "chunkSize": 180,
+   "delayMs": 4,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 10,
+    "text": 10
+   },
+   "energy": {
+    "image": {
+     "low": 9500,
+     "middle": 9500,
+     "high": 9500
+    },
+    "text": {
+     "low": 8000,
+     "middle": 8000,
+     "high": 8000
+    }
+   }
+  },
+  {
+   "key": "p7",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": true,
+   "encoding": "rle",
+   "chunkSize": 183,
+   "delayMs": 4,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 30,
+    "text": 10
+   },
+   "energy": {
+    "image": {
+     "low": 7500,
+     "middle": 7500,
+     "high": 7500
+    },
+    "text": {
+     "low": 0,
+     "middle": 0,
+     "high": 0
+    }
+   }
+  },
+  {
+   "key": "pr02",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": false,
+   "encoding": "rle",
+   "chunkSize": 123,
+   "delayMs": 6,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 10,
+    "text": 10
+   },
+   "energy": {
+    "image": {
+     "low": 5500,
+     "middle": 5500,
+     "high": 5500
+    },
+    "text": {
+     "low": 11000,
+     "middle": 11000,
+     "high": 11000
+    }
+   }
+  },
+  {
+   "key": "pr30",
+   "dpi": 200,
+   "widthPx": 576,
+   "paperWidthPx": 576,
+   "useSpp": false,
+   "encoding": "rle",
+   "chunkSize": 183,
+   "delayMs": 4,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 18,
+    "text": 18
+   },
+   "energy": {
+    "image": {
+     "low": 5,
+     "middle": 10,
+     "high": 12
+    },
+    "text": {
+     "low": 9,
+     "middle": 9,
+     "high": 9
+    }
+   }
+  },
+  {
+   "key": "pr35",
+   "dpi": 200,
+   "widthPx": 576,
+   "paperWidthPx": 576,
+   "useSpp": false,
+   "encoding": "rle",
+   "chunkSize": 183,
+   "delayMs": 6,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 18,
+    "text": 18
+   },
+   "energy": {
+    "image": {
+     "low": 12000,
+     "middle": 12000,
+     "high": 12000
+    },
+    "text": {
+     "low": 0,
+     "middle": 0,
+     "high": 0
+    }
+   }
+  },
+  {
+   "key": "pt001",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": true,
+   "encoding": "rle",
+   "chunkSize": 180,
+   "delayMs": 4,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 10,
+    "text": 10
+   },
+   "energy": {
+    "image": {
+     "low": 20000,
+     "middle": 20000,
+     "high": 20000
+    },
+    "text": {
+     "low": 8000,
+     "middle": 8000,
+     "high": 8000
+    }
+   }
+  },
+  {
+   "key": "s01",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": false,
+   "encoding": "rle",
+   "chunkSize": 123,
+   "delayMs": 6,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 10,
+    "text": 10
+   },
+   "energy": {
+    "image": {
+     "low": 6500,
+     "middle": 6500,
+     "high": 6500
+    },
+    "text": {
+     "low": 0,
+     "middle": 0,
+     "high": 0
+    }
+   }
+  },
+  {
+   "key": "s101",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": false,
+   "encoding": "rle",
+   "chunkSize": 123,
+   "delayMs": 6,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 30,
+    "text": 10
+   },
+   "energy": {
+    "image": {
+     "low": 7500,
+     "middle": 7500,
+     "high": 7500
+    },
+    "text": {
+     "low": 0,
+     "middle": 0,
+     "high": 0
+    }
+   }
+  },
+  {
+   "key": "s102_2",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": false,
+   "encoding": "rle",
+   "chunkSize": 123,
+   "delayMs": 6,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 30,
+    "text": 10
+   },
+   "energy": {
+    "image": {
+     "low": 7500,
+     "middle": 7500,
+     "high": 7500
+    },
+    "text": {
+     "low": 0,
+     "middle": 0,
+     "high": 0
+    }
+   }
+  },
+  {
+   "key": "shipping_printer",
+   "dpi": 200,
+   "widthPx": 864,
+   "paperWidthPx": 864,
+   "useSpp": true,
+   "encoding": "rle",
+   "chunkSize": 180,
+   "delayMs": 4,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 10,
+    "text": 10
+   },
+   "energy": {
+    "image": {
+     "low": 8000,
+     "middle": 8000,
+     "high": 8000
+    },
+    "text": {
+     "low": 8000,
+     "middle": 8000,
+     "high": 8000
+    }
+   }
+  },
+  {
+   "key": "u1",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": true,
+   "encoding": "rle",
+   "chunkSize": 180,
+   "delayMs": 4,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 10,
+    "text": 10
+   },
+   "energy": {
+    "image": {
+     "low": 20000,
+     "middle": 20000,
+     "high": 20000
+    },
+    "text": {
+     "low": 8000,
+     "middle": 8000,
+     "high": 8000
+    }
+   }
+  },
+  {
+   "key": "wq02",
+   "dpi": 200,
+   "widthPx": 90,
+   "paperWidthPx": 96,
+   "useSpp": true,
+   "encoding": "raw",
+   "chunkSize": 180,
+   "delayMs": 4,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 10,
+    "text": 10
+   },
+   "energy": {
+    "image": {
+     "low": 5000,
+     "middle": 5000,
+     "high": 5000
+    },
+    "text": {
+     "low": 8000,
+     "middle": 8000,
+     "high": 8000
+    }
+   }
+  },
+  {
+   "key": "x1",
+   "dpi": 200,
+   "widthPx": 576,
+   "paperWidthPx": 576,
+   "useSpp": false,
+   "encoding": "rle",
+   "chunkSize": 183,
+   "delayMs": 6,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 40,
+    "text": 35
+   },
+   "energy": {
+    "image": {
+     "low": 8500,
+     "middle": 8500,
+     "high": 8500
+    },
+    "text": {
+     "low": 8500,
+     "middle": 8500,
+     "high": 8500
+    }
+   }
+  },
+  {
+   "key": "x101h",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": true,
+   "encoding": "rle",
+   "chunkSize": 180,
+   "delayMs": 10,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 10,
+    "text": 10
+   },
+   "energy": {
+    "image": {
+     "low": 9500,
+     "middle": 9500,
+     "high": 9500
+    },
+    "text": {
+     "low": 9500,
+     "middle": 9500,
+     "high": 9500
+    }
+   }
+  },
+  {
+   "key": "x16",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": true,
+   "encoding": "rle",
+   "chunkSize": 180,
+   "delayMs": 4,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 10,
+    "text": 10
+   },
+   "energy": {
+    "image": {
+     "low": 5000,
+     "middle": 5000,
+     "high": 5000
+    },
+    "text": {
+     "low": 8000,
+     "middle": 8000,
+     "high": 8000
+    }
+   }
+  },
+  {
+   "key": "x5",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": false,
+   "encoding": "rle",
+   "chunkSize": 123,
+   "delayMs": 6,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 30,
+    "text": 10
+   },
+   "energy": {
+    "image": {
+     "low": 7500,
+     "middle": 7500,
+     "high": 7500
+    },
+    "text": {
+     "low": 0,
+     "middle": 0,
+     "high": 0
+    }
+   }
+  },
+  {
+   "key": "x5_2",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": false,
+   "encoding": "rle",
+   "chunkSize": 123,
+   "delayMs": 6,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 10,
+    "text": 10
+   },
+   "energy": {
+    "image": {
+     "low": 7500,
+     "middle": 7500,
+     "high": 7500
+    },
+    "text": {
+     "low": 13000,
+     "middle": 13000,
+     "high": 13000
+    }
+   }
+  },
+  {
+   "key": "x6",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": false,
+   "encoding": "rle",
+   "chunkSize": 123,
+   "delayMs": 4,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 10,
+    "text": 10
+   },
+   "energy": {
+    "image": {
+     "low": 9000,
+     "middle": 9000,
+     "high": 9000
+    },
+    "text": {
+     "low": 0,
+     "middle": 0,
+     "high": 0
+    }
+   }
+  },
+  {
+   "key": "x6h",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": true,
+   "encoding": "rle",
+   "chunkSize": 180,
+   "delayMs": 4,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 10,
+    "text": 10
+   },
+   "energy": {
+    "image": {
+     "low": 9500,
+     "middle": 9500,
+     "high": 9500
+    },
+    "text": {
+     "low": 9500,
+     "middle": 9500,
+     "high": 9500
+    }
+   }
+  },
+  {
+   "key": "x7",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": false,
+   "encoding": "rle",
+   "chunkSize": 123,
+   "delayMs": 6,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 10,
+    "text": 10
+   },
+   "energy": {
+    "image": {
+     "low": 7500,
+     "middle": 7500,
+     "high": 7500
+    },
+    "text": {
+     "low": 0,
+     "middle": 0,
+     "high": 0
+    }
+   }
+  },
+  {
+   "key": "x7hp",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": true,
+   "encoding": "rle",
+   "chunkSize": 180,
+   "delayMs": 4,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 10,
+    "text": 10
+   },
+   "energy": {
+    "image": {
+     "low": 20000,
+     "middle": 20000,
+     "high": 20000
+    },
+    "text": {
+     "low": 20000,
+     "middle": 20000,
+     "high": 20000
+    }
+   }
+  },
+  {
+   "key": "xw001",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": false,
+   "encoding": "raw",
+   "chunkSize": 180,
+   "delayMs": 2,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 45,
+    "text": 35
+   },
+   "energy": {
+    "image": {
+     "low": 0,
+     "middle": 0,
+     "high": 0
+    },
+    "text": {
+     "low": 0,
+     "middle": 0,
+     "high": 0
+    }
+   }
+  },
+  {
+   "key": "xw002",
+   "dpi": 300,
+   "widthPx": 576,
+   "paperWidthPx": 576,
+   "useSpp": false,
+   "encoding": "rle",
+   "chunkSize": 180,
+   "delayMs": 2,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 45,
+    "text": 35
+   },
+   "energy": {
+    "image": {
+     "low": 0,
+     "middle": 0,
+     "high": 0
+    },
+    "text": {
+     "low": 0,
+     "middle": 0,
+     "high": 0
+    }
+   }
+  },
+  {
+   "key": "zhhc",
+   "dpi": 200,
+   "widthPx": 384,
+   "paperWidthPx": 384,
+   "useSpp": false,
+   "encoding": "rle",
+   "chunkSize": 123,
+   "delayMs": 4,
+   "postPrintFeedCount": 2,
+   "speed": {
+    "image": 10,
+    "text": 10
+   },
+   "energy": {
+    "image": {
+     "low": 9000,
+     "middle": 9000,
+     "high": 9000
+    },
+    "text": {
+     "low": 0,
+     "middle": 0,
+     "high": 0
+    }
+   }
+  }
+ ]
+}

@@ -1,0 +1,18 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+TestResults/
+publish/
+artifacts/
+
+# Local reference clones (not part of this project)
+reference/
+
+# Python helper environments
+.venv/
+venv*/
+__pycache__/
+artifacts/

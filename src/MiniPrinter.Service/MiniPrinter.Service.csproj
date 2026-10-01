@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>$(WinTfm)</TargetFramework>
+    <AssemblyName>MiniPrinter.Service</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="8.0.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\MiniPrinter.Protocol\MiniPrinter.Protocol.csproj" />
+    <ProjectReference Include="..\MiniPrinter.Transport\MiniPrinter.Transport.csproj" />
+    <ProjectReference Include="..\MiniPrinter.Imaging\MiniPrinter.Imaging.csproj" />
+    <ProjectReference Include="..\MiniPrinter.Ipp\MiniPrinter.Ipp.csproj" />
+    <ProjectReference Include="..\MiniPrinter.Control\MiniPrinter.Control.csproj" />
+  </ItemGroup>
+</Project>

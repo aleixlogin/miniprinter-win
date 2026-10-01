@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(WinTfm)</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.8" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.11" />
+    <PackageReference Include="xunit" Version="2.5.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\MiniPrinter.Service\MiniPrinter.Service.csproj" />
+    <ProjectReference Include="..\..\src\MiniPrinter.Control\MiniPrinter.Control.csproj" />
+    <ProjectReference Include="..\..\src\MiniPrinter.Transport\MiniPrinter.Transport.csproj" />
+    <ProjectReference Include="..\..\src\MiniPrinter.Protocol\MiniPrinter.Protocol.csproj" />
+    <ProjectReference Include="..\..\src\MiniPrinter.Ipp\MiniPrinter.Ipp.csproj" />
+    <ProjectReference Include="..\..\src\MiniPrinter.Imaging\MiniPrinter.Imaging.csproj" />
+  </ItemGroup>
+</Project>
