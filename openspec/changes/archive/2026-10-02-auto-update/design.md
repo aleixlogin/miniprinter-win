@@ -66,3 +66,11 @@ Conectar `origin` y subir la rama de trabajo como `main` (el repositorio remoto 
 ## Open Questions
 
 - (Resuelta) Algoritmo de firma: ECDSA P-256 de .NET en lugar de Ed25519, para no añadir dependencias.
+
+## Verification (2026-10-02)
+
+- CI y Release funcionan en GitHub Actions; releases `v0.4.0` y `v0.4.1` publicadas con instalador, `SHA256SUMS` y `SHA256SUMS.sig`.
+- 0.4.0 instalada desde la release: no ofrece actualización y muestra su versión.
+- 0.4.0 → 0.4.1 desde la bandeja: aviso, descarga verificada, UAC, actualización silenciosa y reapertura de la bandeja, probado por el usuario.
+- Manipulación, con los archivos reales de 0.4.1: un instalador modificado no coincide con `SHA256SUMS`, y un `SHA256SUMS` reescrito no supera la firma.
+- **Pendiente**: comprobar con la próxima versión real el mensaje que sale al rechazar el UAC (error 1223); la app debe seguir funcionando.

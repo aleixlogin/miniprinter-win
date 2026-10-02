@@ -1,11 +1,11 @@
 ## 1. Repositorio
 
-- [ ] 1.1 Conectar `origin` con `https://github.com/aleixlogin/miniprinter-win` y subir la rama de trabajo como `main` (con confirmación del usuario y sus credenciales)
+- [x] 1.1 Conectar `origin` con `https://github.com/aleixlogin/miniprinter-win` y subir la rama de trabajo como `main` (con confirmación del usuario y sus credenciales)
 
 ## 2. Firma de releases
 
 - [x] 2.1 `tools/sign-release` con `keygen`, `sign` y `verify` (ECDSA P-256 de .NET, sin dependencias)
-- [ ] 2.2 Generar el par de claves; el usuario guarda la privada en el secreto `RELEASE_SIGNING_KEY` y en una copia de seguridad; incrustar la pública
+- [x] 2.2 Generar el par de claves; el usuario guarda la privada en el secreto `RELEASE_SIGNING_KEY` y en una copia de seguridad; incrustar la pública
 
 ## 3. Lógica de actualización
 
@@ -26,7 +26,7 @@
 
 ## 6. Verificación
 
-- [ ] 6.1 Publicar `v0.4.0`, instalarla a mano y comprobar que no ofrece actualización
-- [ ] 6.2 Publicar `v0.4.1` y comprobar el aviso, la descarga verificada, el UAC, la actualización y la reapertura de la bandeja
-- [ ] 6.3 Probar un instalador manipulado (hash o firma inválidos) y el rechazo del UAC
+- [x] 6.1 Publicar `v0.4.0`, instalarla a mano y comprobar que no ofrece actualización
+- [x] 6.2 Publicar `v0.4.1` y comprobar el aviso, la descarga verificada, el UAC, la actualización y la reapertura de la bandeja
+- [x] 6.3 Probar un instalador manipulado (hash o firma inválidos) y el rechazo del UAC (manipulación verificada con la release 0.4.1 real; el rechazo del UAC queda para la próxima versión, ver design)
 - [x] 6.4 Documentar en el README cómo se publican versiones y cómo funciona la actualización
