@@ -158,7 +158,8 @@ public sealed record AutomationInfo(bool Enabled, string Token, IReadOnlyList<st
 /// <summary>Template description as returned by GET /api/templates.</summary>
 public sealed record TemplateFieldDto(string Name, string Label, string Kind, bool Required, IReadOnlyList<string>? Choices, string? Default);
 
-public sealed record TemplateDto(string Name, string Title, string Description, IReadOnlyList<TemplateFieldDto> Fields, bool IsImage);
+/// <param name="Source">"builtin", "user" or "override" (a user template replacing a built-in).</param>
+public sealed record TemplateDto(string Name, string Title, string Description, IReadOnlyList<TemplateFieldDto> Fields, bool IsImage, string Source = "builtin");
 
 public static class ControlDefaults
 {

@@ -1,0 +1,14 @@
+{
+  "name": "cable",
+  "title": "Etiqueta de cable",
+  "description": "El mismo texto repetido a ambos lados de una línea de plegado, para envolver un cable.",
+  "fields": [
+    { "name": "text", "label": "Texto", "kind": "text", "required": true },
+    { "name": "size", "label": "Tamaño (pt)", "kind": "number", "default": "18" }
+  ],
+  "blocks": [
+    { "type": "text", "value": "{{text}}", "size": "{{size}}", "bold": true, "align": "center" },
+    { "type": "line", "style": "dashed" },
+    { "type": "text", "value": "{{text}}", "size": "{{size}}", "bold": true, "align": "center" }
+  ]
+}

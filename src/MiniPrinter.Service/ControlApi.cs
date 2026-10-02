@@ -158,18 +158,21 @@ public static class ControlApi
             return Json(AutomationInfoOf(settings, automation, ipp));
         });
 
-        api.MapGet("/templates", () => Json(Imaging.TemplateRenderer.Definitions));
+        TemplateEndpoints.Map(api, app.Services.GetRequiredService<Imaging.TemplateCatalog>());
 
         api.MapPost("/templates/{name}/preview", async (string name, HttpContext http, PrintRequests print) =>
         {
-            var bitmap = print.RenderTemplate(name, await ReadFields(http));
+            var bitmap = print.RenderTemplate(name, (await TemplateEndpoints.ReadRequest(http)).PreviewFields());
             using var png = new MemoryStream();
             Imaging.MonoPng.Save(bitmap, png);
             return Results.File(png.ToArray(), "image/png");
         });
 
         api.MapPost("/print/template/{name}", async (string name, HttpContext http, PrintRequests print) =>
-            Json(ToDto(print.PrintTemplate(name, await ReadFields(http), Environment.UserName))));
+        {
+            var request = await TemplateEndpoints.ReadRequest(http);
+            return Json(ToDto(print.PrintTemplate(name, request.Fields, Environment.UserName, request.Darkness, request.Copies, request.Rows)));
+        });
 
         api.MapGet("/jobs", (JobQueue queue) => Json(queue.AllJobs().Select(ToDto).ToList()));
 

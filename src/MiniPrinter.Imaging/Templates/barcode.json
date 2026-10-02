@@ -1,0 +1,14 @@
+{
+  "name": "barcode",
+  "title": "Código de barras",
+  "description": "Code 128 (cualquier texto), Code 39, EAN-13 (12 o 13 dígitos) o UPC-A (11 o 12 dígitos).",
+  "fields": [
+    { "name": "data", "label": "Contenido", "kind": "text", "required": true },
+    { "name": "format", "label": "Formato", "kind": "choice", "choices": ["code128", "code39", "ean13", "upca"], "default": "code128" },
+    { "name": "caption", "label": "Texto debajo (por defecto, el contenido)", "kind": "text" },
+    { "name": "height", "label": "Altura en mm (vacío = 12)", "kind": "number" }
+  ],
+  "blocks": [
+    { "type": "barcode", "data": "{{data}}", "format": "{{format}}", "caption": "{{caption}}", "height": "{{height}}" }
+  ]
+}

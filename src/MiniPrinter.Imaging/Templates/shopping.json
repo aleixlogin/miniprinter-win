@@ -1,0 +1,14 @@
+{
+  "name": "shopping",
+  "title": "Lista de la compra",
+  "description": "Un artículo por línea; la cantidad va después de un punto y coma (por ejemplo, Leche;2).",
+  "gap": 6,
+  "fields": [
+    { "name": "title", "label": "Título", "kind": "text", "default": "Compra" },
+    { "name": "items", "label": "Artículos (uno por línea, Artículo;cantidad)", "kind": "multiline", "required": true }
+  ],
+  "blocks": [
+    { "type": "text", "value": "{{title}}", "size": 16, "bold": true },
+    { "type": "list", "items": "{{items}}", "marker": "box", "quantities": true }
+  ]
+}

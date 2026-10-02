@@ -29,12 +29,14 @@ public sealed class PrintRequests
     private readonly JobQueue _queue;
     private readonly SettingsStore _settings;
     private readonly PrinterManager _printer;
+    private readonly TemplateCatalog _templates;
 
-    public PrintRequests(JobQueue queue, SettingsStore settings, PrinterManager printer)
+    public PrintRequests(JobQueue queue, SettingsStore settings, PrinterManager printer, TemplateCatalog templates)
     {
         _queue = queue;
         _settings = settings;
         _printer = printer;
+        _templates = templates;
     }
 
     public Protocol.MonoBitmap RenderText(TextPrintRequest request)
@@ -64,7 +66,7 @@ public sealed class PrintRequests
     {
         try
         {
-            return TemplateRenderer.Render(name, fields, _printer.Profile.WidthPx);
+            return _templates.Render(name, fields, new RenderOptions { Width = _printer.Profile.WidthPx });
         }
         catch (TemplateException ex)
         {
@@ -72,12 +74,25 @@ public sealed class PrintRequests
         }
     }
 
-    /// <summary>Prints a template; line-art templates use text mode, the sticker image mode.</summary>
-    public JobInfo PrintTemplate(string name, IReadOnlyDictionary<string, string> fields, string user, int? darkness = null)
+    /// <summary>
+    /// Prints a template as one queued job. <paramref name="rows"/> prints one label per row (each row
+    /// overrides the base fields) and <paramref name="copies"/> repeats every label in a row; counters
+    /// advance once per distinct label. Nothing is printed (and no counter consumed) if any row is invalid.
+    /// </summary>
+    public JobInfo PrintTemplate(string name, IReadOnlyDictionary<string, string> fields, string user, int? darkness = null,
+        int copies = 1, IReadOnlyList<IReadOnlyDictionary<string, string>>? rows = null)
     {
-        var bitmap = RenderTemplate(name, fields);
-        var definition = TemplateRenderer.Find(name)!;
-        return _queue.SubmitBitmap($"{definition.Title}", bitmap, isText: !definition.IsImage, user, darkness);
+        var definition = _templates.Find(name) ?? throw new PrintRequestException(
+            $"Unknown template '{name}'. Available: {string.Join(", ", _templates.Definitions.Select(d => d.Name))}.");
+        try
+        {
+            var pages = _templates.RenderBatch(name, fields, rows, copies, new RenderOptions { Width = _printer.Profile.WidthPx });
+            return _queue.SubmitBitmaps(definition.Title, pages, isText: !definition.IsImage, user, darkness);
+        }
+        catch (TemplateException ex)
+        {
+            throw new PrintRequestException(ex.Message);
+        }
     }
 
     public JobInfo PrintQr(string data, string? caption, string user, int? darkness = null) =>

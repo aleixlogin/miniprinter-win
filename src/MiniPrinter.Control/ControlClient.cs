@@ -109,19 +109,85 @@ public sealed class ControlClient : IDisposable
     public Task<IReadOnlyList<TemplateDto>> GetTemplatesAsync(CancellationToken ct = default) =>
         Get<IReadOnlyList<TemplateDto>>("templates", ct);
 
-    public async Task<byte[]> PreviewTemplateAsync(string name, IReadOnlyDictionary<string, string> fields, CancellationToken ct = default)
+    /// <summary>PNG preview of a template (counters are not consumed). With <paramref name="rows"/>, the first label.</summary>
+    public async Task<byte[]> PreviewTemplateAsync(string name, IReadOnlyDictionary<string, string> fields,
+        IReadOnlyList<IReadOnlyDictionary<string, string>>? rows = null, CancellationToken ct = default)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, $"templates/{Uri.EscapeDataString(name)}/preview")
         {
-            Content = JsonContent.Create(fields, options: ControlDefaults.Json),
+            Content = JsonContent.Create(TemplateBody(fields, 1, rows), options: ControlDefaults.Json),
         };
         using var response = await _http.SendAsync(request, ct).ConfigureAwait(false);
         await EnsureSuccess(response, ct).ConfigureAwait(false);
         return await response.Content.ReadAsByteArrayAsync(ct).ConfigureAwait(false);
     }
 
-    public Task<JobDto> PrintTemplateAsync(string name, IReadOnlyDictionary<string, string> fields, CancellationToken ct = default) =>
-        Send<JobDto>(HttpMethod.Post, $"print/template/{Uri.EscapeDataString(name)}", fields, ct);
+    /// <summary>Prints a template as one job: <paramref name="copies"/> of each label, one label per row.</summary>
+    public Task<JobDto> PrintTemplateAsync(string name, IReadOnlyDictionary<string, string> fields, int copies = 1,
+        IReadOnlyList<IReadOnlyDictionary<string, string>>? rows = null, CancellationToken ct = default) =>
+        Send<JobDto>(HttpMethod.Post, $"print/template/{Uri.EscapeDataString(name)}", TemplateBody(fields, copies, rows), ct);
+
+    private static Dictionary<string, object?> TemplateBody(IReadOnlyDictionary<string, string> fields, int copies,
+        IReadOnlyList<IReadOnlyDictionary<string, string>>? rows)
+    {
+        var body = new Dictionary<string, object?>(fields.Select(f => new KeyValuePair<string, object?>(f.Key, f.Value)));
+        if (copies != 1)
+            body["copies"] = copies;
+        if (rows is not null)
+            body["rows"] = rows;
+        return body;
+    }
+
+    /// <summary>The JSON of a template (the user's file, or the built-in one).</summary>
+    public async Task<string> GetTemplateJsonAsync(string name, CancellationToken ct = default)
+    {
+        using var response = await _http.GetAsync($"templates/{Uri.EscapeDataString(name)}", ct).ConfigureAwait(false);
+        await EnsureSuccess(response, ct).ConfigureAwait(false);
+        return await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+    }
+
+    /// <summary>Creates or replaces a user template (validated by the service).</summary>
+    public async Task<TemplateDto> SaveTemplateAsync(string name, string json, CancellationToken ct = default)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Put, $"templates/{Uri.EscapeDataString(name)}")
+        {
+            Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json"),
+        };
+        using var response = await _http.SendAsync(request, ct).ConfigureAwait(false);
+        await EnsureSuccess(response, ct).ConfigureAwait(false);
+        return (await response.Content.ReadFromJsonAsync<TemplateDto>(ControlDefaults.Json, ct).ConfigureAwait(false))!;
+    }
+
+    public async Task DeleteTemplateAsync(string name, CancellationToken ct = default)
+    {
+        using var response = await _http.DeleteAsync($"templates/{Uri.EscapeDataString(name)}", ct).ConfigureAwait(false);
+        await EnsureSuccess(response, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>Checks a template without saving it; throws <see cref="ControlApiException"/> with the reason if invalid.</summary>
+    public async Task ValidateTemplateAsync(string json, CancellationToken ct = default)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, "templates/validate")
+        {
+            Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json"),
+        };
+        using var response = await _http.SendAsync(request, ct).ConfigureAwait(false);
+        await EnsureSuccess(response, ct).ConfigureAwait(false);
+    }
+
+    public async Task SaveTemplateAssetAsync(string template, string file, byte[] content, CancellationToken ct = default)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Put,
+            $"templates/{Uri.EscapeDataString(template)}/assets/{Uri.EscapeDataString(file)}") { Content = new ByteArrayContent(content) };
+        using var response = await _http.SendAsync(request, ct).ConfigureAwait(false);
+        await EnsureSuccess(response, ct).ConfigureAwait(false);
+    }
+
+    public async Task DeleteTemplateAssetAsync(string template, string file, CancellationToken ct = default)
+    {
+        using var response = await _http.DeleteAsync($"templates/{Uri.EscapeDataString(template)}/assets/{Uri.EscapeDataString(file)}", ct).ConfigureAwait(false);
+        await EnsureSuccess(response, ct).ConfigureAwait(false);
+    }
 
     public Task<AutomationInfo> GetAutomationAsync(CancellationToken ct = default) => Get<AutomationInfo>("automation", ct);
 

@@ -11,4 +11,8 @@
   <ItemGroup>
     <ProjectReference Include="..\MiniPrinter.Protocol\MiniPrinter.Protocol.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="MiniPrinter.Imaging.Tests" />
+    <EmbeddedResource Include="Templates\*.json" />
+  </ItemGroup>
 </Project>

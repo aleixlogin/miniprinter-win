@@ -74,7 +74,7 @@ public static class AutomationApi
 
     private static readonly JsonSerializerOptions Json = ControlDefaults.Json;
 
-    public static void Map(WebApplication app, SettingsStore settings, AutomationToken token, PrintRequests print, JobQueue queue)
+    public static void Map(WebApplication app, SettingsStore settings, AutomationToken token, PrintRequests print, JobQueue queue, TemplateCatalog templates)
     {
         var api = app.MapGroup("/api/v1");
         api.AddEndpointFilter(async (context, next) =>
@@ -151,11 +151,12 @@ public static class AutomationApi
             return Accepted(print.PrintQr(body.Data, body.Caption, User(http), body.Darkness));
         });
 
+        TemplateEndpoints.Map(api, templates);
+
         api.MapPost("/print/template/{name}", async (string name, HttpContext http) =>
         {
-            var fields = await ControlApi.ReadFields(http);
-            int? darkness = fields.Remove("darkness", out var d) && int.TryParse(d, out var parsed) ? parsed : null;
-            return Accepted(print.PrintTemplate(name, fields, User(http), darkness));
+            var request = await TemplateEndpoints.ReadRequest(http);
+            return Accepted(print.PrintTemplate(name, request.Fields, User(http), request.Darkness, request.Copies, request.Rows));
         });
 
         api.MapGet("/jobs/{id:int}", (int id) =>

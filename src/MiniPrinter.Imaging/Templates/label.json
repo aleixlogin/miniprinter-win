@@ -1,0 +1,19 @@
+{
+  "name": "label",
+  "title": "Etiqueta",
+  "description": "Título grande y una o dos líneas de texto, con tamaño, alineación y marco opcionales.",
+  "frame": "{{border}}",
+  "fields": [
+    { "name": "title", "label": "Título", "kind": "text", "required": true },
+    { "name": "line1", "label": "Línea 1", "kind": "text" },
+    { "name": "line2", "label": "Línea 2", "kind": "text" },
+    { "name": "size", "label": "Tamaño del título (pt)", "kind": "number", "default": "26" },
+    { "name": "align", "label": "Alineación", "kind": "choice", "choices": ["center", "left", "right"], "default": "center" },
+    { "name": "border", "label": "Marco alrededor", "kind": "boolean" }
+  ],
+  "blocks": [
+    { "type": "text", "value": "{{title}}", "size": "{{size}}", "bold": true, "align": "{{align}}" },
+    { "type": "text", "value": "{{line1}}", "size": 14, "align": "{{align}}" },
+    { "type": "text", "value": "{{line2}}", "size": 14, "align": "{{align}}" }
+  ]
+}

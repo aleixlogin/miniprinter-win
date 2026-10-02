@@ -68,7 +68,7 @@ La clave privada de firma **no está en el repositorio**: vive solo en el secret
 |---|---|
 | **Estado** | Conexión, alarmas (sin papel o tapa abierta), batería, firmware, URL de impresión, cola de trabajos con cancelación, página de prueba, avance de papel, vista previa del último trabajo, muestreo y exportación del registro de batería. |
 | **Buscar impresoras** | Lista dispositivos Bluetooth emparejados y cercanos, reconoce el modelo por su nombre (`X5h-…` → perfil `d1`), empareja y selecciona la impresora. |
-| **Plantillas** | QR, código de barras (Code 128 / EAN-13), lista de tareas, etiqueta y pegatina, con vista previa a tamaño real. Recuerda los últimos valores. |
+| **Plantillas** | QR, códigos de barras, listas, etiquetas, Wi-Fi, tiques y más, definidas en JSON (también las tuyas), con vista previa en vivo a tamaño real, favoritos con nombre, copias y lotes desde CSV. |
 | **Ajustes** | Oscuridad, mantener activa (keep-alive), modo de impresión (automático / imagen / texto), tramado, avance final, páginas continuas, unidad y aviso de batería, desconexión por inactividad, nombre en Windows, alcance de red, puerto IPP, API de automatización y atajo de la nota rápida. |
 
 Puedes **soltar archivos** (PNG, JPEG, PDF, PWG, TXT) sobre la ventana del panel para imprimirlos.
@@ -114,10 +114,15 @@ Base: `http://<equipo>:8631/api/v1` · Cabecera: `Authorization: Bearer <token>`
 | `POST /print/text` | JSON: `text` (obligatorio), `fontSize` (pt), `align` (`Left`/`Center`/`Right`), `bold`, `darkness` (1–5) |
 | `POST /print/image` | PNG, JPEG o PDF en el cuerpo (con su `Content-Type`) o `multipart/form-data` con un archivo; `?darkness=` opcional |
 | `POST /print/qr` | JSON: `data` (obligatorio), `caption`, `darkness` |
-| `POST /print/template/{nombre}` | JSON con los campos de la plantilla (`qr`, `barcode`, `todo`, `label`, `sticker`; ver `miniprinter templates`) |
+| `POST /print/template/{nombre}` | JSON con los campos de la plantilla (ver `miniprinter templates`); admite `copies` y `rows` |
 | `GET /jobs/{id}` | Estado: `pending`, `processing`, `completed`, `canceled` o `aborted` |
+| `GET /templates` · `GET /templates/{nombre}` | Lista las plantillas (con `source`: `builtin`, `user` o `override`) y lee el JSON de una |
+| `PUT /templates/{nombre}` | JSON de la plantilla (ver [Plantillas](#plantillas)): la valida y la crea o reemplaza. `200` con su definición |
+| `DELETE /templates/{nombre}` | Borra una plantilla de usuario y sus imágenes (`204`). Las integradas no se pueden borrar |
+| `POST /templates/validate` | Valida un JSON de plantilla sin guardarlo |
+| `PUT` · `DELETE /templates/{nombre}/assets/{archivo}` | Sube o borra una imagen (PNG/JPEG, hasta 1 MB) de la plantilla, para un bloque `image` con `source` |
 
-Límites: 16 MB por petición y 20 000 caracteres de texto. Los errores devuelven `400 {"error": "…"}` (`401` sin token válido, `404` si la API está desactivada).
+Límites: 16 MB por petición y 20 000 caracteres de texto; plantillas de hasta 64 KB, 50 copias y 200 filas por petición. Los errores devuelven `400 {"error": "…"}` (`401` sin token válido, `404` si la API está desactivada).
 
 **curl**
 
@@ -166,9 +171,86 @@ miniprinter print      --mac 7A:E0:0C:1D:87:AE foto.jpg   # imprime un archivo (
 miniprinter print      --rfcomm 7A:E0:0C:1D:87:AE doc.pdf --pages 2-3   # solo algunas páginas
 miniprinter templates                                     # plantillas disponibles y sus campos
 miniprinter template   qr --rfcomm 7A:E0:0C:1D:87:AE --data "https://example.com" --caption "Escanéame"
+miniprinter template   label --rfcomm 7A:E0:0C:1D:87:AE --csv etiquetas.csv --copies 2   # lote desde CSV
+miniprinter template   list | show label | validate mitique.json   # gestión sin impresora
+miniprinter template   add mitique.json | remove mitique           # alta y baja (vía el servicio)
 miniprinter stripes    --rfcomm 7A:E0:0C:1D:87:AE --rows 1200 --log   # trabajo largo + control de flujo
 miniprinter find-port  7A:E0:0C:1D:87:AE                  # qué COM corresponde a la impresora
 ```
+
+
+## Plantillas
+
+Las plantillas son **datos**, no código: un JSON con campos y una lista de bloques que se apilan de arriba abajo a 384 px. Vienen integradas `qr`, `barcode`, `todo`, `label`, `sticker`, `shopping`, `wifi`, `contact`, `cable`, `receipt`, `bookmark` y `countdown`, y puedes añadir las tuyas en `%ProgramData%\MiniPrinter\templates\*.json` (o con `miniprinter template add` o la API; la bandeja las usa y las previsualiza, pero no tiene editor). Una plantilla tuya con el nombre de una integrada la sustituye; al borrarla vuelve la integrada.
+
+Ejemplo, un tique con fecha, número consecutivo y precios alineados:
+
+```json
+{
+  "name": "mitique",
+  "title": "Mi tique",
+  "fields": [
+    { "name": "items", "label": "Líneas (Producto;precio)", "kind": "multiline", "required": true },
+    { "name": "total", "label": "Total", "kind": "text" }
+  ],
+  "blocks": [
+    { "type": "text", "value": "BAR PACO", "size": 16, "bold": true, "align": "center" },
+    { "type": "text", "value": "{{now:dd/MM/yyyy HH:mm}} · Nº {{counter:tique}}", "size": 10, "align": "center" },
+    { "type": "line", "style": "dotted" },
+    { "type": "list", "items": "{{items}}", "marker": "none", "quantities": true, "leader": "dots" },
+    { "type": "columns", "when": "{{total}}", "left": "TOTAL", "right": "{{total}}", "bold": true }
+  ]
+}
+```
+
+- **Campos**: `kind` = `text`, `multiline`, `choice` (con `choices`), `image` (Base64), `number`, `boolean`; `required`, `default`, `label`.
+- **Marcadores** en cualquier texto: `{{campo}}`, `{{now}}` / `{{now:formato}}`, `{{counter}}` / `{{counter:nombre}}` (numeración persistente: avanza al imprimir, no en la vista previa) y filtros `{{campo|upper|lower|wifi|vcard|days|daysleft}}`.
+- **Bloques**: `text` (`size`, `bold`, `align`), `qr` (`data`, `caption`, `ecc`, `module`), `barcode` (`format`: `code128`, `code39`, `ean13`, `upca`; `height` en mm), `image` (`data` en Base64 o `source` = archivo de `templates\assets\<plantilla>\`), `line` (`style`, `thickness`), `spacer` (`mm`), `columns` (`left`, `right`, `leader`), `list` (`items`, `marker` = `box`/`bullet`/`number`/`none`, `quantities`, `leader`). Todos admiten `when` (solo se imprimen si ese campo tiene valor). A nivel de plantilla: `gap` (hueco entre bloques), `frame` (marco) y `mode` (`text` o `image`).
+- **Límites**: 64 KB por plantilla, 100 bloques, imágenes de hasta 1 MB, 1 m de papel.
+
+**Plantillas integradas**
+
+| Nombre | Para qué | Campos principales |
+|---|---|---|
+| `qr` | Código QR con texto debajo | `data`, `caption`, `ecc` (L/M/Q/H), `module` |
+| `barcode` | Código de barras | `data`, `format` (`code128`, `code39`, `ean13`, `upca`), `caption`, `height` |
+| `todo` | Lista de tareas | `title`, `items`, `marker` (`box`/`bullet`/`number`), `size` |
+| `label` | Etiqueta con título grande | `title`, `line1`, `line2`, `size`, `align`, `border` |
+| `sticker` | Imagen con texto opcional | `image` (Base64 o ruta en la CLI), `caption` |
+| `shopping` | Lista de la compra con cantidades | `title`, `items` (`Leche;2`) |
+| `wifi` | QR para conectarse a una red Wi-Fi | `ssid`, `password`, `security` (`WPA`/`WEP`/`nopass`) |
+| `contact` | QR con una tarjeta de contacto (vCard) | `name`, `org`, `phone`, `email` |
+| `cable` | Etiqueta de cable con el texto repetido a ambos lados de una línea de plegado | `text`, `size` |
+| `receipt` | Tique con líneas, total, fecha y número consecutivo | `title`, `items` (`Café;1,50`), `total`, `note` |
+| `bookmark` | Marcador de lectura | `title`, `author`, `quote` |
+| `countdown` | Días que faltan hasta una fecha | `title`, `date` (`2026-12-31`) |
+
+**En la bandeja** (pestaña *Plantillas*): la vista previa a tamaño real se actualiza sola 400 ms después de dejar de escribir y los errores de validación salen junto a ella; el botón **↻** (y abrir la pestaña) vuelve a pedir la lista, así que las plantillas creadas por API o CLI aparecen sin reiniciar la bandeja. Puedes guardar los valores del formulario como **favorito** con nombre (por plantilla), elegir el número de **copias** e imprimir un **lote desde CSV**. Si una plantilla tuya sustituye a una integrada, la bandeja lo avisa.
+
+**Dónde se guardan los datos**: las plantillas, sus imágenes (`templates\assets\<plantilla>\`) y el contador de numeración (`counters.json`) viven en `%ProgramData%\MiniPrinter\`, que los usuarios solo pueden leer: se escriben a través del servicio (API, `miniprinter template add`). Los últimos valores y los favoritos de la bandeja están en `%LocalAppData%\MiniPrinter\` (`templates.json`, `favorites.json`). El desinstalador pregunta si conservar esta carpeta. Una orden `miniprinter template …` ejecutada sin permisos de administrador no puede actualizar el contador, así que las plantillas con `{{counter}}` conviene imprimirlas desde la bandeja o la API.
+
+**Crear una plantilla por API**
+
+```powershell
+$h = @{ Authorization = "Bearer TU_TOKEN" }
+Invoke-RestMethod -Method Put -Uri http://127.0.0.1:8631/api/v1/templates/mitique -Headers $h `
+  -ContentType 'application/json' -Body (Get-Content mitique.json -Raw)
+# Con un logo: guarda primero la plantilla sin el bloque image, sube el logo y vuelve a guardarla.
+Invoke-RestMethod -Method Put -Uri http://127.0.0.1:8631/api/v1/templates/mitique/assets/logo.png -Headers $h `
+  -ContentType 'image/png' -Body ([IO.File]::ReadAllBytes('logo.png'))
+```
+
+**Copias y lotes**: `copies` (1–50) repite cada etiqueta; `rows` (hasta 200) imprime una etiqueta por fila, cada fila sobrescribe los campos base; todo sale como un solo trabajo y si una fila falla no se imprime nada (`Fila 2: …`). En la bandeja, *Cargar CSV…* (cabecera con los nombres de campo, separador `,` o `;`). En la CLI:
+
+```powershell
+miniprinter templates                                              # plantillas y sus campos
+miniprinter template list | show label | validate mitique.json    # sin impresora
+miniprinter template add mitique.json                             # vía el servicio (valida y guarda)
+miniprinter template remove mitique
+miniprinter template label --rfcomm 7A:E0:0C:1D:87:AE --csv etiquetas.csv --copies 2
+```
+
+API (con el mismo token): `GET/PUT/DELETE /templates/{nombre}`, `POST /templates/validate`, `PUT/DELETE /templates/{nombre}/assets/{archivo}` y `POST /print/template/{nombre}` con `{"campo": "valor", "copies": 2, "rows": [{...}, {...}]}`.
 
 ## Solución de problemas
 
@@ -179,8 +261,11 @@ miniprinter find-port  7A:E0:0C:1D:87:AE                  # qué COM corresponde
 | Estado «Requiere atención: sin papel» | El mapa de bits de alarmas está **pendiente de confirmar** en la X5h. Si la impresora tiene papel, comunícalo. |
 | Windows no añade la cola | Comprueba que el servicio está iniciado (`services.msc`) y que `http://127.0.0.1:8631/` abre en el navegador. |
 | La bandeja dice «Servicio no disponible» | El servicio no está instalado o está detenido. Registro: *Visor de eventos → Aplicación → MiniPrinter*. |
+| Una plantilla mía no aparece | Pulsa **↻** en la pestaña *Plantillas*. Si sigue sin salir, el JSON es inválido: `miniprinter templates` muestra el motivo de las omitidas y `miniprinter template validate archivo.json` la valida. |
+| «Fila N: …» al imprimir un lote | Esa fila del CSV no cumple los campos de la plantilla (por ejemplo, falta uno obligatorio). No se imprime ninguna etiqueta ni se gasta ningún número. |
+| «No se puede actualizar el contador» (CLI) | `counters.json` es de solo lectura para usuarios sin privilegios: ejecuta la orden como administrador o imprime desde la bandeja o la API. |
 
-Los ajustes y el token de la API se guardan en `%ProgramData%\MiniPrinter`.
+Los ajustes, el token de la API, las plantillas de usuario y el contador de numeración se guardan en `%ProgramData%\MiniPrinter`.
 
 ## Desarrollo
 
@@ -195,15 +280,40 @@ Para ejecutar el servicio en consola sin instalarlo: `$env:MINIPRINTER_DATA="$PW
 |---|---|
 | `MiniPrinter.Protocol` | Tramas `51 78 … CRC8 FF`, comandos, filas RLE/raw, receta de trabajo `d1`, decodificador de respuestas, catálogo de modelos. |
 | `MiniPrinter.Transport` | RFCOMM (WinRT), puerto COM, conexión con control de flujo, sesión con reconexión y desconexión por inactividad. |
-| `MiniPrinter.Imaging` | Lector PWG Raster, PDF (PDFium), JPEG/PNG, escalado, recorte de blancos, tramado, renderizado de texto y plantillas. |
+| `MiniPrinter.Imaging` | Lector PWG Raster, PDF (PDFium), JPEG/PNG, escalado, recorte de blancos, tramado, renderizado de texto y el motor de plantillas (`Layout/`: modelo JSON, validador, bloques, catálogo y contadores; plantillas integradas en `Templates/*.json`). |
 | `MiniPrinter.Ipp` | Codec IPP (RFC 8010) e impresora IPP Everywhere mínima. |
-| `MiniPrinter.Service` | Servicio de Windows: cola, endpoint IPP con modo local/LAN (mDNS + firewall), API de control. |
+| `MiniPrinter.Service` | Servicio de Windows: cola, endpoint IPP con modo local/LAN (mDNS + firewall), API de control, API de automatización y gestión de plantillas. |
 | `MiniPrinter.Tray` | App WPF de bandeja. |
-| `MiniPrinter.Cli` | Diagnóstico. |
+| `MiniPrinter.Control` | Contratos y cliente de la API de control, y lector de CSV para lotes de etiquetas (compartidos por la bandeja y la CLI). |
+| `MiniPrinter.Cli` | Diagnóstico, impresión de plantillas y gestión de plantillas. |
 | `installer/` · `tools/IconGen` | Script de Inno Setup y generador del icono (`assets/miniprinter.ico`). |
 | `MiniPrinter.Updates` · `tools/SignRelease` | Comprobación y verificación de actualizaciones; firma de releases. |
 
 Los tests de protocolo comparan byte a byte con trabajos de referencia generados por TiMini-Print (`tools/generate_timini_fixtures.py`).
+
+Los tests de plantillas comparan píxel a píxel las plantillas integradas con capturas de referencia (`tests/MiniPrinter.Imaging.Tests/Fixtures/templates/`); si cambias a propósito el aspecto de una, regenéralas con `$env:UPDATE_GOLDEN=1; dotnet test tests/MiniPrinter.Imaging.Tests`. Los tests de `Imaging.Tests` se ejecutan en secuencia porque PDFium no es seguro entre hilos.
+
+Instalador en local: `powershell -ExecutionPolicy Bypass -File scripts\build-installer.ps1 -Version X.Y.Z` (necesita Inno Setup 6); genera `artifacts\installer\MiniPrinter-Setup-X.Y.Z.exe`.
+
+## Historial de cambios
+
+### 0.5.1
+- La pestaña *Plantillas* de la bandeja vuelve a pedir la lista al abrirse y tiene un botón **↻**: las plantillas creadas por API o CLI aparecen sin reiniciar. Se quita el botón *Vista previa*, que ya no hace falta.
+
+### 0.5.0 — plantillas definidas por el usuario
+- **Plantillas como datos**: layout declarativo en JSON (bloques `text`, `qr`, `barcode`, `image`, `line`, `spacer`, `columns`, `list`; campos, `{{marcadores}}`, `{{now}}`, `{{counter}}`, filtros, `when`, `frame`). Las cinco plantillas originales se migraron al motor con salida idéntica.
+- **Plantillas de usuario** en `%ProgramData%\MiniPrinter\templates\`, con gestión por API (`PUT/GET/DELETE /templates`, `validate`, imágenes) y CLI (`template list|show|validate|add|remove`). Una plantilla de usuario puede sustituir a una integrada.
+- **Plantillas nuevas**: `shopping`, `wifi`, `contact`, `cable`, `receipt`, `bookmark`, `countdown`.
+- **Más opciones**: `label` (tamaño, alineación, marco), `qr` (corrección de errores, módulo), `todo` (casilla, viñeta o número), `barcode` (Code 39, UPC-A, altura).
+- **Numeración persistente** (`{{counter}}`): avanza al imprimir, no en la vista previa.
+- **Copias y lotes**: `copies` (1–50) y `rows` (hasta 200) como un solo trabajo; una fila inválida cancela todo el lote sin gastar números. CSV en la bandeja y en la CLI (`--csv`, `--copies`).
+- **Bandeja**: vista previa en vivo, favoritos con nombre, copias y carga de CSV.
+
+### 0.4.0 y 0.4.1
+- Actualizaciones automáticas desde GitHub con firma y pipeline de release, instalador de Inno Setup, icono y *keep-alive* de la impresora.
+
+### Antes de 0.4
+- La impresora estándar de Windows (IPP), modo texto, telemetría de batería, papel continuo, impresión rápida, API de automatización, PDF y las cinco plantillas originales.
 
 ## Créditos
 

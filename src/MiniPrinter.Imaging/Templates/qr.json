@@ -1,0 +1,14 @@
+{
+  "name": "qr",
+  "title": "Código QR",
+  "description": "Código QR con texto opcional debajo.",
+  "fields": [
+    { "name": "data", "label": "Contenido (texto o URL)", "kind": "multiline", "required": true },
+    { "name": "caption", "label": "Texto debajo", "kind": "text" },
+    { "name": "ecc", "label": "Corrección de errores", "kind": "choice", "choices": ["L", "M", "Q", "H"], "default": "M" },
+    { "name": "module", "label": "Tamaño de módulo en puntos (vacío = automático)", "kind": "number" }
+  ],
+  "blocks": [
+    { "type": "qr", "data": "{{data}}", "caption": "{{caption}}", "ecc": "{{ecc}}", "module": "{{module}}" }
+  ]
+}

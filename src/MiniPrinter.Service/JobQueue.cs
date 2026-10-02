@@ -188,14 +188,18 @@ public sealed class JobQueue : IPrintBackend, IHostedService, IAsyncDisposable
     public Task IdentifyAsync(CancellationToken cancellationToken) => _printer.FeedAsync(48, cancellationToken);
 
     /// <summary>Queues a raster directly (test prints, rendered text, templates).</summary>
-    public JobInfo SubmitBitmap(string name, MonoBitmap page, bool isText = false, string user = "MiniPrinter", int? darkness = null)
+    public JobInfo SubmitBitmap(string name, MonoBitmap page, bool isText = false, string user = "MiniPrinter", int? darkness = null) =>
+        SubmitBitmaps(name, [page], isText, user, darkness);
+
+    /// <summary>Queues several rasters as one job (copies and label batches): one page each, in order.</summary>
+    public JobInfo SubmitBitmaps(string name, IReadOnlyList<MonoBitmap> pages, bool isText = false, string user = "MiniPrinter", int? darkness = null)
     {
         var info = CreateJob(name, user);
         lock (_gate)
         {
             var job = _jobs[info.Id];
             job.Darkness = darkness;
-            job.Bitmap = new RasterResult(page, isText);
+            job.Bitmaps = [.. pages.Select(p => new RasterResult(p, isText))];
             job.Info = job.Info with { StateReasons = ["none"] };
             info = job.Info;
         }
@@ -281,8 +285,8 @@ public sealed class JobQueue : IPrintBackend, IHostedService, IAsyncDisposable
         Update(job, j => j with { State = JobState.Processing, StateReasons = ["job-printing"], Processing = DateTimeOffset.UtcNow, StateMessage = "Printing" });
 
         BeginDiagnostics(job);
-        var pages = job.Bitmap is { } bitmap
-            ? [bitmap]
+        IEnumerable<RasterResult> pages = job.Bitmaps is { } bitmaps
+            ? bitmaps
             : ImageDecoder.Decode(job.Document!, job.Format, job.Options is { } o ? o.Includes : null)
                 .Select(p => Rasterizer.RasterizeWithMode(p, raster));
 
@@ -523,7 +527,7 @@ public sealed class JobQueue : IPrintBackend, IHostedService, IAsyncDisposable
         public string? Format { get; set; }
         public int? Darkness { get; set; }
         public DocumentOptions? Options { get; set; }
-        public RasterResult? Bitmap { get; set; }
+        public IReadOnlyList<RasterResult>? Bitmaps { get; set; }
         public CancellationTokenSource Cancellation { get; } = new();
     }
 

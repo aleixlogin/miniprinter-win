@@ -1,0 +1,21 @@
+{
+  "name": "receipt",
+  "title": "Tique",
+  "description": "Líneas con precio (Producto;precio), total, fecha y número consecutivo.",
+  "gap": 6,
+  "fields": [
+    { "name": "title", "label": "Encabezado", "kind": "text" },
+    { "name": "items", "label": "Líneas (una por línea, Producto;precio)", "kind": "multiline", "required": true },
+    { "name": "total", "label": "Total", "kind": "text" },
+    { "name": "note", "label": "Nota al pie", "kind": "text" }
+  ],
+  "blocks": [
+    { "type": "text", "value": "{{title}}", "size": 16, "bold": true, "align": "center" },
+    { "type": "text", "value": "{{now:dd/MM/yyyy HH:mm}}  ·  Nº {{counter:receipt}}", "size": 10, "align": "center" },
+    { "type": "line" },
+    { "type": "list", "items": "{{items}}", "marker": "none", "quantities": true, "leader": "dots", "size": 11, "gap": 4 },
+    { "type": "line" },
+    { "type": "columns", "when": "{{total}}", "left": "TOTAL", "right": "{{total}}", "bold": true, "size": 14 },
+    { "type": "text", "value": "{{note}}", "size": 10, "align": "center" }
+  ]
+}

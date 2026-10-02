@@ -1,0 +1,13 @@
+{
+  "name": "wifi",
+  "title": "Wi-Fi",
+  "description": "Código QR para conectarse a una red Wi-Fi escaneándolo con el móvil.",
+  "fields": [
+    { "name": "ssid", "label": "Nombre de la red (SSID)", "kind": "text", "required": true },
+    { "name": "password", "label": "Contraseña", "kind": "text" },
+    { "name": "security", "label": "Seguridad", "kind": "choice", "choices": ["WPA", "WEP", "nopass"], "default": "WPA" }
+  ],
+  "blocks": [
+    { "type": "qr", "data": "WIFI:T:{{security}};S:{{ssid|wifi}};P:{{password|wifi}};;", "caption": "{{ssid}}" }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "name": "todo",
+  "title": "Lista de tareas",
+  "description": "Título y una tarea por línea, cada una con su casilla, viñeta o número.",
+  "gap": 6,
+  "fields": [
+    { "name": "title", "label": "Título", "kind": "text" },
+    { "name": "items", "label": "Tareas (una por línea)", "kind": "multiline", "required": true },
+    { "name": "marker", "label": "Marcador", "kind": "choice", "choices": ["box", "bullet", "number"], "default": "box" },
+    { "name": "size", "label": "Tamaño de letra (pt)", "kind": "number", "default": "12" }
+  ],
+  "blocks": [
+    { "type": "text", "value": "{{title}}", "size": 16, "bold": true },
+    { "type": "list", "items": "{{items}}", "marker": "{{marker}}", "size": "{{size}}" }
+  ]
+}

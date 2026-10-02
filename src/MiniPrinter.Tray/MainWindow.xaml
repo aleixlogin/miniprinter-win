@@ -104,10 +104,18 @@
                 <DockPanel Margin="10">
                     <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,8">
                         <TextBlock Text="Plantilla:" VerticalAlignment="Center" Margin="0,0,8,0" />
-                        <ComboBox x:Name="TemplateCombo" Width="220" />
+                        <ComboBox x:Name="TemplateCombo" Width="200" />
+                        <Button Content="↻" Click="OnTemplateReload" ToolTip="Actualizar la lista de plantillas" />
+                        <TextBlock Text="Favoritos:" VerticalAlignment="Center" Margin="16,0,8,0" />
+                        <ComboBox x:Name="FavoriteCombo" Width="150" IsEditable="True" ToolTip="Elige un favorito, o escribe un nombre y pulsa Guardar" />
+                        <Button Content="Guardar" Click="OnFavoriteSave" />
+                        <Button Content="Borrar" Click="OnFavoriteDelete" />
                     </StackPanel>
                     <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,8,0,0">
-                        <Button Content="Vista previa" Click="OnTemplatePreview" />
+                        <TextBlock Text="Copias:" VerticalAlignment="Center" Margin="0,0,6,0" />
+                        <TextBox x:Name="TemplateCopies" Text="1" Width="40" VerticalContentAlignment="Center" />
+                        <Button Content="Cargar CSV…" Click="OnTemplateCsv" ToolTip="Una etiqueta por fila; la cabecera lleva los nombres de los campos" />
+                        <Button x:Name="TemplateCsvClear" Content="Quitar CSV" Click="OnTemplateCsvClear" Visibility="Collapsed" />
                         <Button Content="Imprimir" Click="OnTemplatePrint" FontWeight="SemiBold" />
                         <TextBlock x:Name="TemplateStatus" VerticalAlignment="Center" Foreground="#57606A" TextWrapping="Wrap" />
                     </StackPanel>

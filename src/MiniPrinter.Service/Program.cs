@@ -18,12 +18,14 @@ builder.Services.AddSingleton<IppHost>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<IppHost>());
 builder.Services.AddSingleton<StatusBuilder>();
 builder.Services.AddSingleton<BatteryMonitor>();
+builder.Services.AddSingleton(MiniPrinter.Imaging.TemplateCatalog.ForDataDirectory(paths.DataDirectory));
 builder.Services.AddSingleton<PrintRequests>();
 builder.Services.AddSingleton<AutomationToken>();
 builder.Services.AddSingleton(sp => new TelemetryLog(paths, sp.GetRequiredService<ILogger<TelemetryLog>>(), sp.GetRequiredService<PrinterManager>()));
 
 var app = builder.Build();
 var token = ControlApi.EnsureToken(paths, app.Logger);
+Directory.CreateDirectory(Path.Combine(paths.DataDirectory, "templates")); // user templates: read for everyone (inherited ACL), write for admins and the service
 app.Services.GetRequiredService<TelemetryLog>();      // start recording status replies
 var battery = app.Services.GetRequiredService<BatteryMonitor>();
 app.Services.GetRequiredService<JobQueue>().LowBatteryProbe = () => battery.IsLow;

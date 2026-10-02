@@ -1,0 +1,14 @@
+{
+  "name": "countdown",
+  "title": "Cuenta atrás",
+  "description": "Los días que faltan hasta una fecha (formato 2026-12-31).",
+  "fields": [
+    { "name": "title", "label": "Evento", "kind": "text", "required": true },
+    { "name": "date", "label": "Fecha (aaaa-mm-dd)", "kind": "text", "required": true }
+  ],
+  "blocks": [
+    { "type": "text", "value": "{{title}}", "size": 16, "bold": true, "align": "center" },
+    { "type": "text", "value": "{{date|daysleft}}", "size": 36, "bold": true, "align": "center" },
+    { "type": "text", "value": "hasta el {{date}}", "size": 11, "align": "center" }
+  ]
+}

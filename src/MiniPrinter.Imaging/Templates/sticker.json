@@ -1,0 +1,13 @@
+{
+  "name": "sticker",
+  "title": "Pegatina",
+  "description": "Imagen ajustada al ancho con texto opcional.",
+  "mode": "image",
+  "fields": [
+    { "name": "image", "label": "Imagen", "kind": "image", "required": true },
+    { "name": "caption", "label": "Texto debajo", "kind": "text" }
+  ],
+  "blocks": [
+    { "type": "image", "data": "{{image}}", "caption": "{{caption}}" }
+  ]
+}

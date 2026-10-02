@@ -1,0 +1,18 @@
+{
+  "name": "contact",
+  "title": "Contacto (vCard)",
+  "description": "Código QR con una tarjeta de contacto que el móvil puede guardar.",
+  "fields": [
+    { "name": "name", "label": "Nombre", "kind": "text", "required": true },
+    { "name": "org", "label": "Empresa", "kind": "text" },
+    { "name": "phone", "label": "Teléfono", "kind": "text" },
+    { "name": "email", "label": "Correo", "kind": "text" }
+  ],
+  "blocks": [
+    {
+      "type": "qr",
+      "data": "BEGIN:VCARD\nVERSION:3.0\nFN:{{name|vcard}}\nORG:{{org|vcard}}\nTEL:{{phone|vcard}}\nEMAIL:{{email|vcard}}\nEND:VCARD",
+      "caption": "{{name}}"
+    }
+  ]
+}

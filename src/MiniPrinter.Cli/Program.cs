@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using MiniPrinter.Cli;
+using MiniPrinter.Control;
 using MiniPrinter.Imaging;
 using MiniPrinter.Protocol;
 using MiniPrinter.Protocol.Catalog;
@@ -13,8 +14,10 @@ const string usage = """
       miniprinter test-print   <target> [--darkness 1..5]
       miniprinter stripes      <target> --rows <n> [--darkness 1..5]
       miniprinter print        <target> <file.png|jpg|pwg|pdf> [--darkness 1..5] [--dither auto|atkinson|floyd|threshold] [--text] [--pages 2-3,5]
-      miniprinter template     <name> <target> [--<field> <value> …]   (qr, barcode, todo, label, sticker)
+      miniprinter template     <name> <target> [--<field> <value> …] [--copies <n>] [--csv <file.csv>]
       miniprinter templates                                          list templates and their fields
+      miniprinter template list|show <name>|validate <file.json>     inspect templates (no printer needed)
+      miniprinter template add <file.json> [--name <n>] | remove <name>   manage user templates (via the service)
       miniprinter feed         <target> [--dots <n>]
       miniprinter find-port    <mac>
 
@@ -82,20 +85,50 @@ try
             return await PrintAsync(pages);
         }
         case "templates":
-        {
-            foreach (var t in TemplateRenderer.Definitions)
-            {
-                Console.WriteLine($"{t.Name,-8} {t.Title} — {t.Description}");
-                foreach (var f in t.Fields)
-                    Console.WriteLine($"         --{f.Name,-8} {f.Label}{(f.Required ? " (obligatorio)" : "")}{(f.Choices is null ? "" : $" [{string.Join('|', f.Choices)}]")}");
-            }
+            ListTemplates();
             return 0;
-        }
         case "template":
         {
             var name = cli.Positional(0) ?? throw new CliException("template needs a template name (see 'miniprinter templates').");
+            switch (name)
+            {
+                case "list":
+                    ListTemplates();
+                    return 0;
+                case "show":
+                {
+                    var which = cli.Positional(1) ?? throw new CliException("template show needs a template name.");
+                    Console.WriteLine(TemplateCatalog.Default.GetJson(which) ?? throw new CliException($"Unknown template '{which}'."));
+                    return 0;
+                }
+                case "validate":
+                {
+                    var layout = Validate(cli.Positional(1) ?? throw new CliException("template validate needs a .json file."), out _);
+                    Console.WriteLine($"OK: '{layout.Name}' ({layout.Blocks.Count} bloques, {layout.Fields.Count} campos)");
+                    return 0;
+                }
+                case "add":
+                {
+                    var file = cli.Positional(1) ?? throw new CliException("template add needs a .json file.");
+                    var layout = Validate(file, out var json);
+                    var target = cli.Value("--name") ?? layout.Name;
+                    using var client = ControlClient.FromTokenFile();
+                    var saved = await CallService(() => client.SaveTemplateAsync(target, json));
+                    Console.WriteLine($"Plantilla '{saved.Name}' guardada ({(saved.Source == "override" ? "sustituye a la integrada" : "de usuario")}).");
+                    return 0;
+                }
+                case "remove":
+                {
+                    var which = cli.Positional(1) ?? throw new CliException("template remove needs a template name.");
+                    using var client = ControlClient.FromTokenFile();
+                    await CallServiceVoid(() => client.DeleteTemplateAsync(which));
+                    Console.WriteLine($"Plantilla '{which}' borrada.");
+                    return 0;
+                }
+            }
+
             var definition = TemplateRenderer.Find(name) ?? throw new CliException($"Unknown template '{name}'. See 'miniprinter templates'.");
-            var reserved = new HashSet<string>(["rfcomm", "port", "mac", "simulate", "profile", "log", "darkness"], StringComparer.OrdinalIgnoreCase);
+            var reserved = new HashSet<string>(["rfcomm", "port", "mac", "simulate", "profile", "log", "darkness", "copies", "csv"], StringComparer.OrdinalIgnoreCase);
             var fields = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             foreach (var (key, value) in cli.Options)
             {
@@ -107,16 +140,37 @@ try
                     ? Convert.ToBase64String(File.ReadAllBytes(value))
                     : value.Replace("\\n", "\n");
             }
-            MonoBitmap bitmap;
+            var copies = int.TryParse(cli.Value("--copies") ?? "1", out var parsedCopies) ? parsedCopies : throw new CliException("--copies must be a whole number.");
+            IReadOnlyList<IReadOnlyDictionary<string, string>>? csvRows = null;
+            if (cli.Value("--csv") is { } csvFile)
+            {
+                try
+                {
+                    var csv = TemplateCsv.Parse(File.ReadAllText(csvFile), definition.Fields.Select(f => f.Name));
+                    foreach (var column in csv.IgnoredColumns)
+                        Console.Error.WriteLine($"aviso: la columna '{column}' del CSV no es un campo de la plantilla; se ignora.");
+                    csvRows = csv.Rows;
+                    Console.WriteLine($"{csv.Rows.Count} etiqueta(s) desde {Path.GetFileName(csvFile)}");
+                }
+                catch (InvalidDataException ex)
+                {
+                    throw new CliException(ex.Message);
+                }
+            }
+            IReadOnlyList<MonoBitmap> bitmaps;
             try
             {
-                bitmap = TemplateRenderer.Render(name, fields, profile.WidthPx);
+                bitmaps = TemplateCatalog.Default.RenderBatch(name, fields, csvRows, copies, new RenderOptions { Width = profile.WidthPx });
             }
             catch (TemplateException ex)
             {
                 throw new CliException(ex.Message);
             }
-            return await PrintAsync([new RasterResult(bitmap, !definition.IsImage)]);
+            catch (UnauthorizedAccessException)
+            {
+                throw new CliException("No se puede actualizar el contador de numeración (counters.json): ejecuta la orden como administrador o imprime desde la bandeja.");
+            }
+            return await PrintAsync([.. bitmaps.Select(b => new RasterResult(b, !definition.IsImage))]);
         }
         case "feed":
         {
@@ -220,3 +274,51 @@ static string Describe(DeviceState state)
     var battery = state.BatteryLevel is { } level ? $", paper sensor {state.PaperSensor}, battery {level} (raw)" : "";
     return alarms + battery;
 }
+
+static void ListTemplates()
+{
+    foreach (var t in TemplateCatalog.Default.Definitions)
+    {
+        var origin = t.Source switch { "user" => " [usuario]", "override" => " [usuario, sustituye a la integrada]", _ => "" };
+        Console.WriteLine($"{t.Name,-10} {t.Title} — {t.Description}{origin}");
+        foreach (var f in t.Fields)
+            Console.WriteLine($"           --{f.Name,-10} {f.Label}{(f.Required ? " (obligatorio)" : "")}{(f.Choices is null ? "" : $" [{string.Join('|', f.Choices)}]")}");
+    }
+    foreach (var error in TemplateCatalog.Default.Errors)
+        Console.Error.WriteLine($"aviso: plantilla omitida — {error}");
+}
+
+static TemplateLayout Validate(string file, out string json)
+{
+    json = File.Exists(file) ? File.ReadAllText(file) : throw new CliException($"No existe el archivo '{file}'.");
+    try
+    {
+        return TemplateCatalog.Default.Validate(json);
+    }
+    catch (TemplateException ex)
+    {
+        throw new CliException($"{Path.GetFileName(file)}: {ex.Message}");
+    }
+}
+
+static async Task<T> CallService<T>(Func<Task<T>> call)
+{
+    try
+    {
+        return await call();
+    }
+    catch (ControlApiException ex)
+    {
+        throw new CliException(ex.Message);
+    }
+    catch (Exception ex) when (ex is HttpRequestException or IOException)
+    {
+        throw new CliException($"No se puede hablar con el servicio MiniPrinter ({ex.Message}). ¿Está en marcha?");
+    }
+}
+
+static Task CallServiceVoid(Func<Task> call) => CallService(async () =>
+{
+    await call();
+    return 0;
+});

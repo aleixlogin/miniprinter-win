@@ -20,7 +20,8 @@ public partial class MainWindow : Window
         _service = service;
         InitializeComponent();
         DevicesList.ItemsSource = _devices;
-        _templates = new TemplatesPanel(service, TemplateCombo, TemplateForm, TemplatePreview, TemplateStatus);
+        _templates = new TemplatesPanel(service, new TemplatesUi(TemplateCombo, TemplateForm, TemplatePreview, TemplateStatus,
+            FavoriteCombo, TemplateCopies, TemplateCsvClear));
         Tabs.SelectionChanged += async (_, e) =>
         {
             if (e.OriginalSource == Tabs && Tabs.SelectedItem == TemplatesTab)
@@ -268,9 +269,17 @@ public partial class MainWindow : Window
             : $"No se pudo registrar {hotkey}: lo usa otro programa.";
     }
 
-    private async void OnTemplatePreview(object sender, RoutedEventArgs e) => await _templates.PreviewAsync();
+    private async void OnTemplateReload(object sender, RoutedEventArgs e) => await _templates.LoadAsync();
 
     private async void OnTemplatePrint(object sender, RoutedEventArgs e) => await _templates.PrintAsync();
+
+    private async void OnTemplateCsv(object sender, RoutedEventArgs e) => await _templates.LoadCsvAsync();
+
+    private async void OnTemplateCsvClear(object sender, RoutedEventArgs e) => await _templates.ClearCsvAsync();
+
+    private void OnFavoriteSave(object sender, RoutedEventArgs e) => _templates.SaveFavorite();
+
+    private void OnFavoriteDelete(object sender, RoutedEventArgs e) => _templates.DeleteFavorite();
 
     private async void OnCancelJob(object sender, RoutedEventArgs e)
     {

@@ -1,0 +1,18 @@
+{
+  "name": "bookmark",
+  "title": "Marcador de lectura",
+  "description": "Título, autor y una cita, entre dos rayas.",
+  "fields": [
+    { "name": "title", "label": "Título", "kind": "text", "required": true },
+    { "name": "author", "label": "Autor", "kind": "text" },
+    { "name": "quote", "label": "Cita", "kind": "multiline" }
+  ],
+  "blocks": [
+    { "type": "line", "thickness": 3 },
+    { "type": "text", "value": "{{title}}", "size": 20, "bold": true, "align": "center" },
+    { "type": "text", "value": "{{author}}", "size": 12, "align": "center" },
+    { "type": "line", "style": "dotted" },
+    { "type": "text", "value": "{{quote}}", "size": 11, "align": "center" },
+    { "type": "line", "thickness": 3 }
+  ]
+}
