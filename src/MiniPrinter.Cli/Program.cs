@@ -20,6 +20,7 @@ const string usage = """
       miniprinter template add <file.json> [--name <n>] | remove <name>   manage user templates (via the service)
       miniprinter feed         <target> [--dots <n>]
       miniprinter find-port    <mac>
+      miniprinter queue-recreate [--old <name>] [--result <file.json>] [--control-port <n>]   recreate the Windows print queue (needs administrator rights; the tray runs it with UAC when the service cannot)
 
     Target (one of):
       --rfcomm <mac>     WinRT RFCOMM socket (e.g. --rfcomm 7A:E0:0C:1D:87:AE)
@@ -172,6 +173,8 @@ try
             }
             return await PrintAsync([.. bitmaps.Select(b => new RasterResult(b, !definition.IsImage))]);
         }
+        case "queue-recreate":
+            return await QueueRecreateCommand.RunAsync(cli, cts.Token);
         case "feed":
         {
             await using var connection = await ConnectAsync();

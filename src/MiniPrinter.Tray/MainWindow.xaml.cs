@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Net.Http;
 using System.Windows;
 using System.Windows.Controls;
 using MiniPrinter.Control;
@@ -11,6 +12,7 @@ public partial class MainWindow : Window
     private readonly BluetoothScanner _scanner = new();
     private readonly ObservableCollection<FoundDevice> _devices = [];
     private readonly TemplatesPanel _templates;
+    private readonly PaperSettingsPanel _paper;
     private ServiceSettings? _settings;
     private bool _wizard;
     private DateTime _lastJobsRefresh = DateTime.MinValue;
@@ -19,6 +21,7 @@ public partial class MainWindow : Window
     {
         _service = service;
         InitializeComponent();
+        _paper = new PaperSettingsPanel(this, PaperHost);
         DevicesList.ItemsSource = _devices;
         _templates = new TemplatesPanel(service, new TemplatesUi(TemplateCombo, TemplateForm, TemplatePreview, TemplateStatus,
             FavoriteCombo, TemplateCopies, TemplateCsvClear, TemplateCreate, TemplateEdit, TemplateDelete, this));
@@ -428,6 +431,8 @@ public partial class MainWindow : Window
         LocalRadio.IsChecked = _settings.NetworkMode == NetworkMode.Local;
         LanRadio.IsChecked = _settings.NetworkMode == NetworkMode.Lan;
         PortBox.Text = _settings.IppPort.ToString();
+        _paper.Load(_settings);
+        _ = RefreshQueueStatusAsync();
         SettingsStatus.Text = "";
     }
 
@@ -458,9 +463,29 @@ public partial class MainWindow : Window
             NetworkMode = LanRadio.IsChecked == true ? NetworkMode.Lan : NetworkMode.Local,
             IppPort = port,
         };
+        updated = _paper.Apply(updated);
+
+        // A change of sizes or of the printer name needs the Windows queue to be recreated to be seen.
+        var previousName = _settings.PrinterName;
+        var nameChanged = !string.Equals(previousName, updated.PrinterName.Trim(), StringComparison.Ordinal);
+        var recreate = false;
+        var sizesChanged = !PaperCatalog.SameEffective(_settings, updated);
+        if (sizesChanged || nameChanged)
+        {
+            var dialog = new RecreateQueueDialog(this, offerSaveOnly: true);
+            dialog.ShowDialog();
+            if (dialog.Choice == RecreateChoice.Cancel)
+            {
+                SettingsStatus.Text = "Cambios sin guardar.";
+                return;
+            }
+            recreate = dialog.Choice == RecreateChoice.Recreate;
+        }
+
         try
         {
             _settings = await _service.Client.SaveSettingsAsync(updated);
+            _paper.Load(_settings);
             await LoadAutomationAsync();
             SettingsStatus.Text = updated.NetworkMode != NetworkMode.Local
                 ? "Guardado. El modo red se aplica cuando no hay trabajos en curso."
@@ -469,6 +494,148 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             SettingsStatus.Text = ex.Message;
+            return;
+        }
+        if (recreate)
+            await RecreateQueueAsync(nameChanged ? previousName : null);
+        else if (sizesChanged || nameChanged)
+        {
+            QueueStatus.Foreground = System.Windows.Media.Brushes.DarkGoldenrod;
+            QueueStatus.Text = "Los cambios están guardados, pero Windows seguirá con los tamaños o el nombre antiguos hasta que recrees la impresora.";
+        }
+    }
+
+    private async void OnRecreateQueue(object sender, RoutedEventArgs e)
+    {
+        var dialog = new RecreateQueueDialog(this, offerSaveOnly: false);
+        dialog.ShowDialog();
+        if (dialog.Choice == RecreateChoice.Recreate)
+            await RecreateQueueAsync(null);
+    }
+
+    /// <summary>Whether the printer exists in Windows; suggests recreating it when it does not.</summary>
+    private async Task RefreshQueueStatusAsync()
+    {
+        try
+        {
+            var queue = await _service.Client.GetWindowsQueueAsync();
+            QueueStatus.Foreground = System.Windows.Media.Brushes.DimGray;
+            QueueStatus.Text = queue.Exists || queue.State == "Running" ? "" : $"No se encuentra la impresora «{queue.Name}» en Windows: puedes crearla con este botón.";
+        }
+        catch (Exception)
+        {
+            QueueStatus.Text = "";
+        }
+    }
+
+    /// <summary>
+    /// Recreates the Windows print queue through the service and follows its progress. The tray (running as the user)
+    /// remembers whether the queue was this user's default printer and restores that afterwards.
+    /// </summary>
+    private async Task RecreateQueueAsync(string? previousName)
+    {
+        var queueName = _settings?.PrinterName ?? "X5h Thermal Printer";
+        var wasDefault = PaperSettingsPanel.IsDefaultPrinter(previousName ?? queueName);
+        RecreateQueueButton.IsEnabled = false;
+        QueueStatus.Foreground = System.Windows.Media.Brushes.DimGray;
+        QueueStatus.Text = "Recreando la impresora de Windows…";
+        try
+        {
+            await _service.Client.RecreateWindowsQueueAsync(previousName);
+            var deadline = DateTime.UtcNow.AddMinutes(3);
+            WindowsQueueDto state;
+            while (true)
+            {
+                await Task.Delay(700);
+                state = await _service.Client.GetWindowsQueueAsync();
+                if (state.State is "Succeeded" or "Failed")
+                    break;
+                if (DateTime.UtcNow > deadline)
+                {
+                    QueueStatus.Foreground = System.Windows.Media.Brushes.Firebrick;
+                    QueueStatus.Text = "La operación tarda demasiado. Comprueba el estado más tarde.";
+                    return;
+                }
+                QueueStatus.Text = state.Message ?? "Recreando la impresora de Windows…";
+            }
+            string? doneMessage = state.State == "Succeeded" ? state.Message : null;
+            if (state.State == "Failed" && state.NeedsElevation)
+            {
+                // The service has no rights to manage printers: repeat the work in an elevated helper (Windows asks for permission).
+                QueueStatus.Text = "El servicio no tiene permisos para gestionar impresoras. Windows va a pedir permiso de administrador…";
+                var outcome = await RunElevatedAsync(previousName);
+                state = new WindowsQueueDto(outcome.Succeeded, state.Name, outcome.Succeeded ? "Succeeded" : "Failed", outcome.Message, outcome.Step);
+                doneMessage = outcome.Succeeded ? outcome.Message : null;
+            }
+            if (state.State == "Succeeded")
+            {
+                var restored = wasDefault && PaperSettingsPanel.MakeDefaultPrinter(state.Name);
+                QueueStatus.Text = (doneMessage ?? "La impresora de Windows se ha actualizado.") + (restored ? " Sigue siendo la impresora predeterminada." : "");
+            }
+            else
+            {
+                QueueStatus.Foreground = System.Windows.Media.Brushes.Firebrick;
+                QueueStatus.Text = state.Message ?? "No se pudo recrear la impresora de Windows.";
+            }
+        }
+        catch (Exception ex) when (ex is ControlApiException or HttpRequestException or InvalidOperationException)
+        {
+            QueueStatus.Foreground = System.Windows.Media.Brushes.Firebrick;
+            QueueStatus.Text = ex.Message;
+        }
+        finally
+        {
+            RecreateQueueButton.IsEnabled = true;
+        }
+    }
+
+
+    /// <summary>
+    /// Runs <c>miniprinter queue-recreate</c> elevated: Windows shows the UAC prompt. The helper writes its outcome to a file;
+    /// declining the prompt is reported as a failure that leaves the printer as it was.
+    /// </summary>
+    private static async Task<QueueOutcome> RunElevatedAsync(string? previousName)
+    {
+        var cli = System.IO.Path.Combine(AppContext.BaseDirectory, "miniprinter.exe");
+        if (!System.IO.File.Exists(cli))
+            return new QueueOutcome(false, "No se encuentra miniprinter.exe junto a la bandeja: reinstala MiniPrinter para poder pedir permisos de administrador.", "elevation");
+        var result = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"miniprinter-queue-{Guid.NewGuid():N}.json");
+        var args = $"queue-recreate --result \"{result}\"" + (string.IsNullOrWhiteSpace(previousName) ? "" : $" --old \"{previousName}\"");
+        try
+        {
+            using var process = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(cli, args)
+            {
+                UseShellExecute = true,
+                Verb = "runas",
+                WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden,
+            });
+            if (process is null)
+                return new QueueOutcome(false, "No se pudo iniciar el ayudante con permisos de administrador.", "elevation");
+            await process.WaitForExitAsync();
+        }
+        catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 1223)
+        {
+            return new QueueOutcome(false, "Se canceló la petición de permisos de administrador. La impresora de Windows sigue como estaba.", "elevation");
+        }
+        catch (System.ComponentModel.Win32Exception ex)
+        {
+            return new QueueOutcome(false, $"No se pudo pedir permisos de administrador: {ex.Message}", "elevation");
+        }
+
+        try
+        {
+            if (System.IO.File.Exists(result)
+                && System.Text.Json.JsonSerializer.Deserialize<QueueOutcome>(System.IO.File.ReadAllText(result), ControlDefaults.Json) is { } outcome)
+                return outcome;
+            return new QueueOutcome(false, "El ayudante con permisos de administrador terminó sin informar del resultado.", "elevation");
+        }
+        catch (Exception ex) when (ex is System.IO.IOException or System.Text.Json.JsonException)
+        {
+            return new QueueOutcome(false, $"No se pudo leer el resultado del ayudante: {ex.Message}", "elevation");
+        }
+        finally
+        {
+            try { System.IO.File.Delete(result); } catch (System.IO.IOException) { }
         }
     }
 

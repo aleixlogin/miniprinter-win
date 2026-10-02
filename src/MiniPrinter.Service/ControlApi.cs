@@ -44,6 +44,10 @@ public static class ControlApi
             {
                 return Results.Json(new ApiError("The printer did not answer in time."), ControlDefaults.Json, statusCode: 504);
             }
+            catch (System.Text.Json.JsonException ex)
+            {
+                return Results.Json(new ApiError($"JSON no válido: {ex.Message}"), ControlDefaults.Json, statusCode: 400);
+            }
             catch (PrintRequestException ex)
             {
                 return Results.Json(new ApiError(ex.Message, ex.Block, ex.Property), ControlDefaults.Json, statusCode: 400);
@@ -59,9 +63,11 @@ public static class ControlApi
             var body = await http.Request.ReadFromJsonAsync<ServiceSettings>(ControlDefaults.Json);
             if (body is null)
                 return Results.Json(new ApiError("Missing settings."), ControlDefaults.Json, statusCode: 400);
+            if (PaperCatalog.Problem(body.PaperSizes) is { } paperProblem)
+                return Results.Json(new ApiError(paperProblem), ControlDefaults.Json, statusCode: 400);
             // The printer is only changed through POST /printer: a client holding an older copy of
             // the settings must not clear or replace the selection when it saves other options.
-            return Json(settings.Update(current => body with { Printer = current.Printer }));
+            return Json(settings.Update(current => body with { Printer = current.Printer, PrinterUuid = current.PrinterUuid }));
         });
 
         api.MapPost("/printer", async (HttpContext http, SettingsStore settings, StatusBuilder status) =>
@@ -165,6 +171,42 @@ public static class ControlApi
             var request = await TemplateEndpoints.ReadRequest(http);
             return Json(ToDto(print.PrintTemplate(name, request.Fields, Environment.UserName, request.Darkness, request.Copies, request.Rows)));
         });
+
+        // Recreation of the Windows print queue so it reads the current paper sizes (control API only).
+        api.MapGet("/windows-queue", async (WindowsQueue queue, CancellationToken ct) => Json(await queue.GetAsync(ct)));
+
+        api.MapPost("/windows-queue/recreate", async (HttpContext http, WindowsQueue queue) =>
+        {
+            RecreateQueueRequest? request = null;
+            if (http.Request.HasJsonContentType())
+            {
+                try
+                {
+                    request = await http.Request.ReadFromJsonAsync<RecreateQueueRequest>(ControlDefaults.Json);
+                }
+                catch (JsonException)
+                {
+                    // An empty body means "no previous name".
+                }
+            }
+            try
+            {
+                queue.Start(request?.PreviousName);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.Json(new ApiError(ex.Message), ControlDefaults.Json, statusCode: 409);
+            }
+            return Results.Json(queue.Current, ControlDefaults.Json, statusCode: 202);
+        });
+
+        // Used by the elevated helper: a new printer identity, announced by the listener, before it creates a queue itself.
+        api.MapPost("/windows-queue/prepare", async (WindowsQueue queue, CancellationToken ct) =>
+        {
+            await queue.PrepareAsync(ct);
+            return Results.NoContent();
+        });
+
 
         api.MapGet("/jobs", (JobQueue queue) => Json(queue.AllJobs().Select(ToDto).ToList()));
 
@@ -278,9 +320,13 @@ public sealed class StatusBuilder
 
     private readonly BatteryMonitor _battery;
 
-    public StatusBuilder(PrinterManager printer, JobQueue queue, SettingsStore settings, IppHost ipp, BatteryMonitor battery)
+    private readonly WindowsQueue _windowsQueue;
+
+    public StatusBuilder(PrinterManager printer, JobQueue queue, SettingsStore settings, IppHost ipp, BatteryMonitor battery, WindowsQueue windowsQueue)
     {
         _battery = battery;
+        _windowsQueue = windowsQueue;
+        windowsQueue.Changed += () => Changed?.Invoke();
         _printer = printer;
         _queue = queue;
         _settings = settings;
@@ -322,6 +368,7 @@ public sealed class StatusBuilder
             IppUrls = _ipp.Urls,
             QueuedJobs = _queue.GetPrinter().QueuedJobs,
             Version = _version,
+            WindowsQueue = _windowsQueue.Current,
         };
     }
 }

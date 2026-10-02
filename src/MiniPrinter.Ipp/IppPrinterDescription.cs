@@ -1,7 +1,8 @@
 namespace MiniPrinter.Ipp;
 
 /// <summary>A media size offered to clients (dimensions in hundredths of millimetres).</summary>
-public sealed record MediaSize(string Name, int Width, int Length);
+/// <param name="SideMargin">Left and right margin announced for this size, in hundredths of a millimetre.</param>
+public sealed record MediaSize(string Name, int Width, int Length, int SideMargin = 0);
 
 /// <summary>Static description of the printer advertised over IPP and mDNS.</summary>
 public sealed record IppPrinterDescription

@@ -33,6 +33,9 @@ public sealed class SettingsStore
         {
             previous = _current;
             updated = Validate(change(_current));
+            // Same sizes as before: keep the same list instance so record equality does not see a change.
+            if (PaperCatalog.SameList(updated.PaperSizes, previous.PaperSizes))
+                updated = updated with { PaperSizes = previous.PaperSizes };
             _current = updated;
             Save(updated);
         }
@@ -55,6 +58,9 @@ public sealed class SettingsStore
         TextFont = string.IsNullOrWhiteSpace(s.TextFont) ? "Segoe UI" : s.TextFont.Trim(),
         TextSizePt = Math.Clamp(s.TextSizePt, 6, 48),
         KeepAliveIntervalSeconds = Math.Clamp(s.KeepAliveIntervalSeconds, 10, 300),
+        PrinterUuid = Guid.TryParse(s.PrinterUuid, out var uuid) ? uuid.ToString() : null,
+        PaperSizes = PaperCatalog.Normalize(s.PaperSizes),
+        DefaultPaperId = PaperCatalog.DefaultId(s with { PaperSizes = PaperCatalog.Normalize(s.PaperSizes) }),
     };
 
     private ServiceSettings Load()

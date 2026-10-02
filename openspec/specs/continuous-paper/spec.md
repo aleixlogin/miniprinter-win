@@ -4,15 +4,19 @@
 TBD - created by archiving change printing-enhancements. Update Purpose after archive.
 ## Requirements
 ### Requirement: Tamaño de rollo largo
-El sistema SHALL ofrecer por IPP un tamaño de papel "rollo" de 48 mm de ancho y 1000 mm de largo, para que las aplicaciones maqueten tiras largas en una sola página; el recorte de filas en blanco SHALL eliminar el papel no usado.
+El sistema SHALL ofrecer por IPP, mientras esté activo en los ajustes, un tamaño de papel "rollo" de 48 mm de ancho y 1000 mm de largo, para que las aplicaciones maqueten tiras largas en una sola página; el recorte de filas en blanco SHALL eliminar el papel no usado. El rollo es un preajuste que el usuario puede desactivar.
 
 #### Scenario: Tique largo
 - **WHEN** una aplicación imprime 40 cm de contenido en el tamaño rollo
 - **THEN** se imprime una única tira de unos 40 cm, sin cortes de página intermedios
 
 #### Scenario: Tamaño visible en Windows
-- **WHEN** Windows consulta los tamaños de papel de la impresora
+- **WHEN** Windows consulta los tamaños de papel de la impresora y el rollo está activo
 - **THEN** el tamaño de rollo aparece junto a los de 48 mm existentes
+
+#### Scenario: Rollo desactivado
+- **WHEN** el usuario desactiva el tamaño rollo en los ajustes
+- **THEN** deja de ofrecerse a Windows
 
 ### Requirement: Unir páginas en una tira continua
 El sistema SHALL ofrecer el ajuste "Páginas continuas" (desactivado por defecto). Con el ajuste activo, las páginas de un mismo trabajo se imprimen seguidas: se recortan los blancos al principio y al final de cada página, se separan con un hueco configurable (4 mm por defecto) y la secuencia de fin de página (`BD · A1 ×N · BD · A3`) solo se envía tras la última página.

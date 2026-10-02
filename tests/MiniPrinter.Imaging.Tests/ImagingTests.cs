@@ -189,6 +189,48 @@ public class RasterizerTests
     }
 
     [Fact]
+    public void A_page_narrower_than_the_head_prints_at_real_size_centred()
+    {
+        // A 40 mm label (320 px at 203 dpi) with a black bar across its whole width.
+        var page = new GrayImage(320, 50) { Dpi = 203 };
+        for (var y = 10; y < 20; y++)
+        for (var x = 0; x < 320; x++)
+            page[x, y] = 0;
+        var mono = Rasterizer.Rasterize(page, new RasterOptions { TrimBlank = false });
+        Assert.Equal(384, mono.Width);
+        Assert.Equal(50, mono.Height);                       // scale 1.0: not enlarged
+        var ink = Enumerable.Range(0, 384).Where(x => mono[x, 15]).ToList();
+        Assert.Equal(320, ink.Count);                        // still 320 dots wide
+        Assert.Equal(32, ink[0]);                            // (384 − 320) / 2 on each side
+        Assert.Equal(351, ink[^1]);
+    }
+
+    [Fact]
+    public void A_narrow_page_of_unknown_resolution_is_still_fitted_to_the_head()
+    {
+        var page = new GrayImage(320, 50);                   // no Dpi: an image, not a document
+        for (var y = 10; y < 20; y++)
+            for (var x = 0; x < 320; x++)
+                page[x, y] = 0;
+        var mono = Rasterizer.Rasterize(page, new RasterOptions { TrimBlank = false });
+        Assert.Equal(384, mono.Width);
+        Assert.InRange(mono.Height, 59, 61);                 // 50 × 384 / 320: scaled up as before
+    }
+
+    [Fact]
+    public void A_page_exactly_as_wide_as_the_head_is_unchanged()
+    {
+        var page = new GrayImage(384, 50) { Dpi = 203 };
+        for (var y = 10; y < 20; y++)
+            for (var x = 0; x < 384; x++)
+                page[x, y] = 0;
+        var mono = Rasterizer.Rasterize(page, new RasterOptions { TrimBlank = false });
+        Assert.Equal(50, mono.Height);
+        Assert.Equal(384, Enumerable.Range(0, 384).Count(x => mono[x, 15]));
+    }
+
+
+    [Fact]
     public void Brightness_lightens_the_image()
     {
         var grey = new GrayImage(10, 1, Enumerable.Repeat((byte)100, 10).ToArray());

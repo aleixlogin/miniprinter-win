@@ -4,7 +4,7 @@
 TBD - created by archiving change windows-print-bridge-x5h. Update Purpose after archive.
 ## Requirements
 ### Requirement: Impresora estándar de Windows
-El sistema SHALL exponer la impresora térmica como una cola de impresión de Windows instalada con el "Microsoft IPP Class Driver", sin drivers de terceros, de forma que cualquier aplicación pueda imprimir en ella desde el diálogo estándar.
+El sistema SHALL exponer la impresora térmica como una cola de impresión de Windows instalada con el "Microsoft IPP Class Driver", sin drivers de terceros, de forma que cualquier aplicación pueda imprimir en ella desde el diálogo estándar. Los tamaños de papel que se ofrecen SHALL ser los que el usuario haya activado en los ajustes.
 
 #### Scenario: Imprimir desde una aplicación
 - **WHEN** el usuario imprime desde una aplicación (Bloc de notas, Edge, Fotos o la página de prueba de Windows) en la cola "X5h Thermal Printer"
@@ -12,7 +12,7 @@ El sistema SHALL exponer la impresora térmica como una cola de impresión de Wi
 
 #### Scenario: Tamaños de papel ofrecidos
 - **WHEN** Windows consulta los atributos de la impresora
-- **THEN** ofrece tamaños de 48 mm de ancho (48×210 por defecto) a 203 dpi y tamaños virtuales de 80 mm
+- **THEN** ofrece los tamaños activos en los ajustes a 203 dpi, con el tamaño por defecto elegido; sin ajustes guardados, los tamaños de 48 mm (48×210 por defecto) y los virtuales de 80 mm de siempre
 
 ### Requirement: Protocolo de la X5h
 El sistema SHALL codificar los trabajos con la receta del perfil `d1` de la familia `tiny`: tramas `51 78 | cmd | flags | len | payload | crc8 | FF`, cabecera `A4 · AF · BE · BD`, filas `BF` (RLE) cuando ocupan como máximo 48 bytes o `A2` en otro caso, `BD` cada 200 filas y cierre `BD 0C · A1 30 00 ×2 · BD 0C · A3 00`.

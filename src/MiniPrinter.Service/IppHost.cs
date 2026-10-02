@@ -32,7 +32,8 @@ public sealed class IppHost : BackgroundService
         _loggerFactory = loggerFactory;
         _settings.Changed += (previous, current) =>
         {
-            if (previous.NetworkMode != current.NetworkMode || previous.IppPort != current.IppPort || previous.PrinterName != current.PrinterName)
+            if (previous.NetworkMode != current.NetworkMode || previous.IppPort != current.IppPort || previous.PrinterName != current.PrinterName || previous.PrinterUuid != current.PrinterUuid
+                || !PaperCatalog.SameEffective(previous, current))
                 _restart.Release();
         };
     }
@@ -64,6 +65,27 @@ public sealed class IppHost : BackgroundService
         }
     }
 
+    /// <summary>
+    /// Waits until the running listener serves the current settings (network mode, port, name and paper sizes), so a Windows
+    /// queue created now reads the right sizes. Throws <see cref="TimeoutException"/> if it never catches up.
+    /// </summary>
+    public async Task WaitForCurrentAsync(TimeSpan timeout, CancellationToken ct)
+    {
+        var deadline = DateTime.UtcNow + timeout;
+        while (true)
+        {
+            var active = _active;
+            var current = _settings.Current;
+            if (active is not null && active.NetworkMode == current.NetworkMode && active.IppPort == current.IppPort
+                && active.PrinterName == current.PrinterName && active.PrinterUuid == current.PrinterUuid && PaperCatalog.SameEffective(active, current))
+                return;
+            if (DateTime.UtcNow > deadline)
+                throw new TimeoutException("El servicio IPP no terminó de reiniciarse con los ajustes nuevos.");
+            await Task.Delay(200, ct);
+        }
+    }
+
+
     public override async Task StopAsync(CancellationToken cancellationToken)
     {
         await base.StopAsync(cancellationToken);
@@ -75,6 +97,8 @@ public sealed class IppHost : BackgroundService
         var description = new IppPrinterDescription
         {
             Name = settings.PrinterName,
+            Uuid = Guid.TryParse(settings.PrinterUuid, out var uuid) ? uuid : new IppPrinterDescription().Uuid,
+            Media = [.. PaperCatalog.Effective(settings).Select(p => new MediaSize(p.IppName, p.WidthMm * 100, p.LengthMm * 100, (int)Math.Round(p.SideMarginMm * 100)))],
             Location = settings.NetworkMode == NetworkMode.Lan ? Environment.MachineName : "",
         };
         var printer = new IppPrinterService(description, _queue);

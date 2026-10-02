@@ -256,6 +256,25 @@ public sealed class ControlClient : IDisposable
         await EnsureSuccess(response, ct).ConfigureAwait(false);
     }
 
+
+    /// <summary>Whether the Windows print queue exists and the state of the task that recreates it.</summary>
+    public Task<WindowsQueueDto> GetWindowsQueueAsync(CancellationToken ct = default) => Get<WindowsQueueDto>("windows-queue", ct);
+
+    /// <summary>
+    /// Starts recreating the Windows print queue (it reads the current paper sizes when created). Returns at once; poll
+    /// <see cref="GetWindowsQueueAsync"/> for the result. <paramref name="previousName"/> is the old queue after a rename.
+    /// </summary>
+    public Task<WindowsQueueTaskDto> RecreateWindowsQueueAsync(string? previousName = null, CancellationToken ct = default) =>
+        Send<WindowsQueueTaskDto>(HttpMethod.Post, "windows-queue/recreate", new RecreateQueueRequest(previousName), ct);
+
+
+    /// <summary>A new printer identity, already announced by the listener (the elevated helper calls this before each queue it creates).</summary>
+    public async Task PrepareWindowsQueueAsync(CancellationToken ct = default)
+    {
+        using var response = await _http.PostAsync("windows-queue/prepare", null, ct).ConfigureAwait(false);
+        await EnsureSuccess(response, ct).ConfigureAwait(false);
+    }
+
     public Task<AutomationInfo> GetAutomationAsync(CancellationToken ct = default) => Get<AutomationInfo>("automation", ct);
 
     public Task<AutomationInfo> RegenerateAutomationTokenAsync(CancellationToken ct = default) =>

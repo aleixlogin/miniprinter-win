@@ -69,7 +69,7 @@ La clave privada de firma **no está en el repositorio**: vive solo en el secret
 | **Estado** | Conexión, alarmas (sin papel o tapa abierta), batería, firmware, URL de impresión, cola de trabajos con cancelación, página de prueba, avance de papel, vista previa del último trabajo, muestreo y exportación del registro de batería. |
 | **Buscar impresoras** | Lista dispositivos Bluetooth emparejados y cercanos, reconoce el modelo por su nombre (`X5h-…` → perfil `d1`), empareja y selecciona la impresora. |
 | **Plantillas** | QR, códigos de barras, listas, etiquetas, Wi-Fi, tiques y más, definidas en JSON (también las tuyas), con vista previa en vivo a tamaño real, favoritos con nombre, copias y lotes desde CSV. |
-| **Ajustes** | Oscuridad, mantener activa (keep-alive), modo de impresión (automático / imagen / texto), tramado, avance final, páginas continuas, unidad y aviso de batería, desconexión por inactividad, nombre en Windows, alcance de red, puerto IPP, API de automatización y atajo de la nota rápida. |
+| **Ajustes** | Oscuridad, mantener activa (keep-alive), modo de impresión (automático / imagen / texto), tramado, avance final, páginas continuas, unidad y aviso de batería, desconexión por inactividad, nombre en Windows, tamaños de papel que se ofrecen a Windows (con recreación de la impresora), alcance de red, puerto IPP, API de automatización y atajo de la nota rápida. |
 
 Puedes **soltar archivos** (PNG, JPEG, PDF, PWG, TXT) sobre la ventana del panel para imprimirlos.
 
@@ -100,6 +100,10 @@ En **Ajustes → Imprimir desde → Toda la red local**, el servicio escucha en 
 ### Papel
 
 Los tamaños de **48 mm** de ancho (50/100/210/297 mm de largo; 48×210 por defecto) imprimen a escala 1:1: es el área imprimible de un rollo de 58 mm a 203 dpi. Si una aplicación usa márgenes grandes pensados para A4 (el Bloc de notas, unos 20 mm por lado), redúcelos en su *Configurar página*, o elige uno de los tamaños virtuales de **80 mm**: el servicio recorta los laterales en blanco y ajusta el contenido al cabezal sin agrandarlo nunca. Las filas en blanco al principio y al final se recortan, así que un documento corto no gasta un folio entero de papel.
+
+**Elegir los tamaños que ve Windows** (*Ajustes → Papel que se muestra a Windows*): una lista con una casilla por tamaño y un tamaño **por defecto**. Los siete tamaños de siempre son los preajustes (se pueden activar o desactivar, no editar) y puedes añadir **tamaños propios**: ancho de 30 a **57 mm** y largo de 10 a 1000 mm. Siempre queda al menos un tamaño activo y el por defecto es uno de ellos. Un tamaño propio de más de 48 mm (lo que imprime el cabezal) anuncia márgenes laterales de `(ancho − 48) / 2` mm, para que las aplicaciones maqueten a 48 mm dentro de la página. Sin tocar nada se ofrecen los mismos siete tamaños que antes.
+
+Windows guarda los tamaños al crear la impresora, así que, al guardar con otra lista (o con otro nombre), la bandeja pregunta si **recrear la impresora de Windows**. El servicio da primero a la impresora una identidad nueva (Windows no acepta dos colas con el mismo `printer-uuid`), crea una cola nueva con un nombre temporal, comprueba que existe, borra la antigua (y su puerto si nadie más lo usa) y renombra la nueva: si algo falla, la anterior sigue funcionando. Después **lee los tamaños que Windows ofrece para la cola** (el driver de Windows puede tardar una creación en reflejar los cambios) y, si no coinciden con los anunciados, repite la recreación hasta 3 veces. Se pierden las preferencias de impresión de esa impresora y no debe haber trabajos pendientes en su cola de Windows; si era tu impresora predeterminada, la bandeja vuelve a marcarla. *Guardar sin recrear* guarda los ajustes pero Windows conserva los tamaños antiguos; el botón **Recrear impresora de Windows** lo hace cuando quieras (y repara la cola si se borró a mano). El servicio corre como administrador; si por lo que sea no tiene permisos, la bandeja repite el trabajo con `miniprinter queue-recreate` y **Windows pide el permiso de administrador (UAC) automáticamente**. La API de control tiene `GET /api/windows-queue` y `POST /api/windows-queue/recreate`.
 
 Botón **Vista previa del último trabajo** (pestaña Estado): muestra exactamente lo que se envió a la impresora.
 
@@ -309,6 +313,10 @@ Los tests de plantillas comparan píxel a píxel las plantillas integradas con c
 Instalador en local: `powershell -ExecutionPolicy Bypass -File scripts\build-installer.ps1 -Version X.Y.Z` (necesita Inno Setup 6); genera `artifacts\installer\MiniPrinter-Setup-X.Y.Z.exe`.
 
 ## Historial de cambios
+
+### 0.7.1 — tamaños de papel configurables
+- **Papel que se muestra a Windows** en *Ajustes*: elegir los tamaños activos y el por defecto, y añadir tamaños propios (ancho 30–57 mm, largo 10–1000 mm) con márgenes laterales automáticos para los de más de 48 mm. Sin cambios se ofrecen los siete tamaños de siempre.
+- **Recrear la impresora de Windows** (al cambiar tamaños o nombre, o con el botón): identidad nueva, cola temporal, comprobación, borrado de la antigua y renombrado, con confirmación previa, comprobación de trabajos pendientes, verificación de los tamaños que ve Windows (con repasos si están desfasados), petición de permisos de administrador (UAC) si el servicio no los tiene y restauración de la impresora predeterminada. `GET /api/windows-queue` y `POST /api/windows-queue/recreate` en la API de control.
 
 ### 0.6.0 — editor de plantillas
 - **Editor visual de plantillas** en la bandeja: botones **Crear**, **Editar** y **Eliminar** (o **Restaurar integrada**), ventana con lista de bloques, vista previa exacta en vivo con selección por clic, propiedades generadas desde el esquema, campos, datos de prueba, JSON en crudo, deshacer/rehacer y validación en línea.

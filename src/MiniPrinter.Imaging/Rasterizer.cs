@@ -119,7 +119,12 @@ public static class Rasterizer
         var realSizeWidth = page.Dpi is > 0 ? (int)Math.Round(headWidth * (double)dpi / printerDpi) : contentWidth;
         var window = Math.Max(contentWidth, realSizeWidth);
         if (window >= page.Width)
+        {
+            // A page narrower than the head at real size (a 40 mm label): centre it on white, never enlarge it.
+            if (page.Dpi is > 0 && page.Width < realSizeWidth)
+                return CenterOnWhite(page, realSizeWidth);
             return page;
+        }
 
         // Left-align on the content, keeping the window inside the page.
         start = Math.Clamp(start, 0, page.Width - window);
@@ -127,6 +132,17 @@ public static class Rasterizer
         for (var y = 0; y < page.Height; y++)
             page.Row(y).Slice(start, window).CopyTo(cropped.Row(y));
         return cropped;
+    }
+
+    /// <summary>The page centred horizontally on a white canvas of <paramref name="width"/> pixels (same resolution).</summary>
+    private static GrayImage CenterOnWhite(GrayImage page, int width)
+    {
+        var canvas = new GrayImage(width, page.Height) { Dpi = page.Dpi };
+        Array.Fill(canvas.Pixels, (byte)255);
+        var offset = (width - page.Width) / 2;
+        for (var y = 0; y < page.Height; y++)
+            page.Row(y).CopyTo(canvas.Row(y).Slice(offset, page.Width));
+        return canvas;
     }
 
     private static bool ColumnHasInk(GrayImage page, int x, byte inkLevel)

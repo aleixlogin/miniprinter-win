@@ -253,6 +253,16 @@
                             <TextBlock Style="{StaticResource Label}" Text="Puerto IPP" />
                             <TextBox x:Name="PortBox" Grid.Column="1" Width="80" HorizontalAlignment="Left" />
                         </Grid>
+                        <TextBlock Text="Papel que se muestra a Windows" FontWeight="SemiBold" Margin="0,14,0,4" />
+                        <StackPanel x:Name="PaperHost" />
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" SharedSizeGroup="L" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource Label}" Text="Impresora de Windows" />
+                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                <Button x:Name="RecreateQueueButton" Content="Recrear impresora de Windows" Click="OnRecreateQueue" Padding="10,3" />
+                                <TextBlock x:Name="QueueStatus" Margin="10,0,0,0" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="420" Foreground="#57606A" />
+                            </StackPanel>
+                        </Grid>
                         <!-- SETTINGS:NETWORK -->
 
                         <TextBlock Text="Actualizaciones" FontWeight="SemiBold" Margin="0,14,0,4" />

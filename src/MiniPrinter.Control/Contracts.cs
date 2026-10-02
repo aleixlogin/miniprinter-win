@@ -98,6 +98,21 @@ public sealed record ServiceSettings
 
     /// <summary>Heartbeat interval in keep-alive mode, in seconds (10–300).</summary>
     public int KeepAliveIntervalSeconds { get; init; } = 30;
+
+    /// <summary>
+    /// Paper sizes offered to Windows (presets and the user's own). Null means the seven factory sizes, all
+    /// enabled, as before this setting existed.
+    /// </summary>
+    public IReadOnlyList<PaperSizeSetting>? PaperSizes { get; init; }
+
+    /// <summary>Id of the default size; when missing or disabled the first enabled size is used.</summary>
+    public string? DefaultPaperId { get; init; }
+
+    /// <summary>
+    /// The `printer-uuid` announced over IPP. Null keeps the built-in one. Windows refuses a second queue for a printer
+    /// with the same UUID, so recreating the queue gives the service a new one first (see WindowsQueue).
+    /// </summary>
+    public string? PrinterUuid { get; init; }
 }
 
 public sealed record JobDto(
@@ -142,6 +157,9 @@ public sealed record StatusDto
     public string? Firmware { get; init; }
     public bool Printing { get; init; }
     public string? LastError { get; init; }
+
+    /// <summary>The task that recreates the Windows print queue.</summary>
+    public WindowsQueueTaskDto? WindowsQueue { get; init; }
     public string? LastErrorKind { get; init; }
     public DateTimeOffset? LastSeen { get; init; }
     public NetworkMode NetworkMode { get; init; }
@@ -208,3 +226,13 @@ public sealed record BlockRowsDto(int Index, string Type, int Top, int Height);
 public sealed record TemplatePreviewDto(byte[] Png, IReadOnlyList<BlockRowsDto> Blocks);
 
 public sealed record DraftDto(string Id);
+
+/// <summary>State of the task that recreates the Windows print queue (State: Idle, Running, Succeeded or Failed).</summary>
+/// <param name="NeedsElevation">The task failed for lack of administrator rights: it can be repeated elevated (UAC).</param>
+public sealed record WindowsQueueTaskDto(string State, string? Message, string? Step, bool NeedsElevation = false);
+
+/// <summary>GET /api/windows-queue: whether the queue exists in Windows plus the task state.</summary>
+public sealed record WindowsQueueDto(bool Exists, string Name, string State, string? Message, string? Step, bool NeedsElevation = false);
+
+/// <summary>Body of POST /api/windows-queue/recreate; <c>PreviousName</c> is the queue to replace after a rename.</summary>
+public sealed record RecreateQueueRequest(string? PreviousName = null);

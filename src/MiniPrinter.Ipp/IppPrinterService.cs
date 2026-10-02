@@ -120,8 +120,8 @@ public sealed class IppPrinterService
             "page-ranges", "print-color-mode", "print-quality", "printer-resolution", "sides"]));
         yield return A("job-ids-supported", IppValue.Boolean(true));
         yield return A("media-bottom-margin-supported", IppValue.Integer(0));
-        yield return A("media-left-margin-supported", IppValue.Integer(0));
-        yield return A("media-right-margin-supported", IppValue.Integer(0));
+        yield return A("media-left-margin-supported", SideMargins(media));
+        yield return A("media-right-margin-supported", SideMargins(media));
         yield return A("media-top-margin-supported", IppValue.Integer(0));
         yield return A("media-col-default", IppValue.Collection(MediaCol(d.DefaultMedia)));
         yield return A("media-col-ready", IppValue.Collection(MediaCol(d.DefaultMedia)));
@@ -182,6 +182,10 @@ public sealed class IppPrinterService
         yield return A("which-jobs-supported", IppValue.Keyword("completed"), IppValue.Keyword("not-completed"));
     }
 
+    /// <summary>The distinct side margins of the offered sizes (0 included), as `media-*-margin-supported`.</summary>
+    private static IppValue[] SideMargins(IEnumerable<MediaSize> media) =>
+        media.Select(m => m.SideMargin).Append(0).Distinct().Order().Select(IppValue.Integer).ToArray();
+
     private static IppCollection MediaSizeCol(MediaSize m) =>
     [
         new("x-dimension", IppValue.Integer(m.Width)),
@@ -193,8 +197,8 @@ public sealed class IppPrinterService
         new("media-size", IppValue.Collection(MediaSizeCol(m))),
         new("media-size-name", IppValue.Keyword(m.Name)),
         new("media-bottom-margin", IppValue.Integer(0)),
-        new("media-left-margin", IppValue.Integer(0)),
-        new("media-right-margin", IppValue.Integer(0)),
+        new("media-left-margin", IppValue.Integer(m.SideMargin)),
+        new("media-right-margin", IppValue.Integer(m.SideMargin)),
         new("media-top-margin", IppValue.Integer(0)),
         new("media-source", IppValue.Keyword("main-roll")),
         new("media-type", IppValue.Keyword("continuous")),
