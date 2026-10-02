@@ -78,6 +78,13 @@ public sealed class FakePrinterTransport : IByteTransport
         return Task.CompletedTask;
     }
 
+    /// <summary>Simulates the printer dropping the link (switched off, out of range).</summary>
+    public void SimulateDrop()
+    {
+        IsConnected = false;
+        _incoming.Writer.TryComplete();
+    }
+
     /// <summary>Queues bytes as if the printer had sent them.</summary>
     public void Inject(byte[] bytes) => _incoming.Writer.TryWrite(bytes);
 

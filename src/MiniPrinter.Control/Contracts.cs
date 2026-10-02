@@ -92,6 +92,12 @@ public sealed record ServiceSettings
     public string TextFont { get; init; } = "Segoe UI";
 
     public int TextSizePt { get; init; } = 10;
+
+    /// <summary>Keep the printer connected and send an A3 heartbeat (no idle disconnect).</summary>
+    public bool KeepAlive { get; init; }
+
+    /// <summary>Heartbeat interval in keep-alive mode, in seconds (10–300).</summary>
+    public int KeepAliveIntervalSeconds { get; init; } = 30;
 }
 
 public sealed record JobDto(
@@ -127,6 +133,12 @@ public sealed record StatusDto
 
     /// <summary>End of the current battery sampling period, if any.</summary>
     public DateTimeOffset? SamplingUntil { get; init; }
+
+    /// <summary>Keep-alive (persistent connection) is active.</summary>
+    public bool KeepAlive { get; init; }
+
+    /// <summary>Keep-alive lost the link and is retrying.</summary>
+    public bool Reconnecting { get; init; }
     public string? Firmware { get; init; }
     public bool Printing { get; init; }
     public string? LastError { get; init; }

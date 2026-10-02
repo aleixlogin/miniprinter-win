@@ -24,6 +24,12 @@ public sealed record PrinterStatus
 
     /// <summary>While set and in the future, the session stays connected and polls (battery sampling).</summary>
     public DateTimeOffset? KeepAliveUntil { get; init; }
+
+    /// <summary>Persistent mode (keep-alive option): never idle-disconnects, heartbeats and reconnects.</summary>
+    public bool Persistent { get; init; }
+
+    /// <summary>True while persistent mode is waiting to reconnect after losing the link.</summary>
+    public bool Reconnecting { get; init; }
 }
 
 public sealed record SessionOptions
@@ -33,6 +39,16 @@ public sealed record SessionOptions
     public TimeSpan QueryTimeout { get; init; } = TimeSpan.FromSeconds(3);
     public int ConnectAttempts { get; init; } = 3;
     public TimeSpan RetryBaseDelay { get; init; } = TimeSpan.FromMilliseconds(500);
+
+    /// <summary>Persistent mode: start in persistent (keep-alive) mode.</summary>
+    public bool Persistent { get; init; }
+
+    /// <summary>Persistent mode: interval between <c>A3</c> heartbeats.</summary>
+    public TimeSpan HeartbeatInterval { get; init; } = TimeSpan.FromSeconds(30);
+
+    /// <summary>Persistent mode: first and maximum wait between reconnection attempts.</summary>
+    public TimeSpan ReconnectBaseDelay { get; init; } = TimeSpan.FromSeconds(5);
+    public TimeSpan ReconnectMaxDelay { get; init; } = TimeSpan.FromSeconds(60);
 }
 
 /// <summary>
@@ -53,12 +69,19 @@ public sealed class PrinterSession : IAsyncDisposable
     private PrinterStatus _status;
     private TimeSpan _keepAlivePoll = TimeSpan.FromSeconds(60);
     private DateTimeOffset _lastConnectAttempt = DateTimeOffset.MinValue;
+    private bool _persistent;
+    private TimeSpan _heartbeat;
+    private TimeSpan _reconnectDelay;
+    private DateTimeOffset _nextReconnect = DateTimeOffset.MinValue;
 
     public PrinterSession(Func<IByteTransport> transportFactory, string target, SessionOptions? options = null)
     {
         _transportFactory = transportFactory;
         _options = options ?? new SessionOptions();
-        _status = new PrinterStatus { Target = target };
+        _persistent = _options.Persistent;
+        _heartbeat = _options.HeartbeatInterval;
+        _reconnectDelay = _options.ReconnectBaseDelay;
+        _status = new PrinterStatus { Target = target, Persistent = _persistent };
         _maintenance = Task.Run(() => MaintenanceLoopAsync(_lifetime.Token));
     }
 
@@ -116,6 +139,21 @@ public sealed class PrinterSession : IAsyncDisposable
         _keepAlivePoll = poll ?? TimeSpan.FromSeconds(60);
         _lastUse = DateTimeOffset.UtcNow;
         Update(s => s with { KeepAliveUntil = until });
+    }
+
+    /// <summary>
+    /// Turns persistent (keep-alive) mode on or off: the link is kept open, an <c>A3</c> heartbeat is
+    /// sent every <paramref name="heartbeat"/> and the session reconnects with a growing delay when
+    /// the link drops. Turning it off returns to on-demand mode (idle disconnect applies again).
+    /// </summary>
+    public void SetPersistent(bool enabled, TimeSpan? heartbeat = null)
+    {
+        _heartbeat = heartbeat ?? _heartbeat;
+        _persistent = enabled;
+        _reconnectDelay = _options.ReconnectBaseDelay;
+        _nextReconnect = DateTimeOffset.MinValue;
+        _lastUse = DateTimeOffset.UtcNow;
+        Update(s => s with { Persistent = enabled, Reconnecting = enabled && s.Reconnecting });
     }
 
     /// <summary>Marks the session as printing (shown in status).</summary>
@@ -228,22 +266,28 @@ public sealed class PrinterSession : IAsyncDisposable
                 keepAliveUntil = null;
                 _lastUse = now; // idle countdown restarts when sampling ends
             }
-            var keepAlive = keepAliveUntil is not null;
+            var sampling = keepAliveUntil is not null;
+            var persistent = _persistent;
+            var keepAlive = sampling || persistent;
             if ((_connection is null && !keepAlive) || !_lock.Wait(0))
-                continue;
+                continue; // a job holds the link: heartbeats never interleave with it
             try
             {
+                var interval = persistent && sampling ? Min(_heartbeat, _keepAlivePoll)
+                    : persistent ? _heartbeat : _keepAlivePoll;
                 if (keepAlive)
                 {
                     if (_connection is not { IsConnected: true })
                     {
-                        if (now - _lastConnectAttempt >= _keepAlivePoll)
+                        if (persistent)
+                            await ReconnectAsync(now, cancellationToken).ConfigureAwait(false);
+                        else if (now - _lastConnectAttempt >= _keepAlivePoll)
                         {
                             _lastConnectAttempt = now;
                             await EnsureConnectedAsync(cancellationToken).ConfigureAwait(false);
                         }
                     }
-                    else if (now - _lastPoll >= _keepAlivePoll)
+                    else if (now - _lastPoll >= interval)
                     {
                         await QueryStateAsync(_connection, cancellationToken).ConfigureAwait(false);
                     }
@@ -271,6 +315,27 @@ public sealed class PrinterSession : IAsyncDisposable
             }
         }
     }
+
+    /// <summary>Persistent mode: one reconnection attempt when due, doubling the wait after each failure.</summary>
+    private async Task ReconnectAsync(DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        if (now < _nextReconnect)
+            return;
+        try
+        {
+            await EnsureConnectedAsync(cancellationToken).ConfigureAwait(false);
+            _reconnectDelay = _options.ReconnectBaseDelay;
+            Update(s => s with { Reconnecting = false });
+        }
+        catch (TransportException ex)
+        {
+            _nextReconnect = DateTimeOffset.UtcNow + _reconnectDelay;
+            _reconnectDelay = Min(_reconnectDelay * 2, _options.ReconnectMaxDelay);
+            Update(s => s with { Link = LinkState.Connecting, Reconnecting = true, LastError = ex.Message, LastErrorKind = ex.Kind });
+        }
+    }
+
+    private static TimeSpan Min(TimeSpan a, TimeSpan b) => a < b ? a : b;
 
     private void OnMessage(PrinterMessage message)
     {

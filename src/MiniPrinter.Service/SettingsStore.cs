@@ -54,6 +54,7 @@ public sealed class SettingsStore
         LowBatteryPercent = Math.Clamp(s.LowBatteryPercent, 5, 50),
         TextFont = string.IsNullOrWhiteSpace(s.TextFont) ? "Segoe UI" : s.TextFont.Trim(),
         TextSizePt = Math.Clamp(s.TextSizePt, 6, 48),
+        KeepAliveIntervalSeconds = Math.Clamp(s.KeepAliveIntervalSeconds, 10, 300),
     };
 
     private ServiceSettings Load()

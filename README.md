@@ -23,21 +23,30 @@ Convierte la mini impresora térmica Bluetooth **X5h-E07A** (y otras de la famil
 
 ## Instalación
 
-En una consola **de administrador**, desde la raíz del repositorio:
+Descarga y ejecuta **`MiniPrinter-Setup-X.Y.Z.exe`** (pide permisos de administrador). El instalador:
 
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\install.ps1
-```
+- instala, si faltan, los runtimes de .NET 8 (ASP.NET Core y Windows Desktop);
+- copia la aplicación a `%ProgramFiles%\MiniPrinter`, registra e inicia el servicio `MiniPrinter` y crea la cola **«X5h Thermal Printer»** con el *Microsoft IPP Class Driver* (`http://127.0.0.1:8631/ipp/print`);
+- crea la carpeta **MiniPrinter** en el menú Inicio (**MiniPrinter** y **Desinstalar MiniPrinter**), el acceso «Enviar a → MiniPrinter», un icono opcional en el escritorio y el arranque de la bandeja con cada sesión.
 
-El script publica la aplicación, la copia a `%ProgramFiles%\MiniPrinter`, registra e inicia el servicio `MiniPrinter`, crea la cola **«X5h Thermal Printer»** con el *Microsoft IPP Class Driver* (`http://127.0.0.1:8631/ipp/print`) y arranca la app de bandeja, que también se inicia con cada sesión.
+Instalar una versión nueva encima conserva la configuración. Para desinstalar: menú Inicio → **Desinstalar MiniPrinter** (o *Configuración → Aplicaciones*); pregunta si conservar la configuración.
+
+Windows SmartScreen puede avisar al ejecutar el instalador porque todavía no está firmado: *Más información → Ejecutar de todas formas*.
 
 La primera vez, la bandeja abre el asistente: **Buscar → Emparejar → Usar esta impresora → página de prueba**.
 
-Desinstalar (también como administrador):
+**Compilar el instalador** (requiere [Inno Setup 6](https://jrsoftware.org/isinfo.php), p. ej. `winget install JRSoftware.InnoSetup`):
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts\uninstall.ps1            # todo
-powershell -ExecutionPolicy Bypass -File scripts\uninstall.ps1 -KeepConfig  # conserva ajustes
+powershell -ExecutionPolicy Bypass -File scripts\build-installer.ps1 -Version 0.4.0
+# → artifacts\installer\MiniPrinter-Setup-0.4.0.exe
+```
+
+**Alternativa para desarrollo** (consola de administrador, sin instalador):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\install.ps1
+powershell -ExecutionPolicy Bypass -File scripts\uninstall.ps1 -KeepConfig
 ```
 
 ## Uso del panel (icono de la bandeja)
@@ -47,11 +56,13 @@ powershell -ExecutionPolicy Bypass -File scripts\uninstall.ps1 -KeepConfig  # co
 | **Estado** | Conexión, alarmas (sin papel o tapa abierta), batería, firmware, URL de impresión, cola de trabajos con cancelación, página de prueba, avance de papel, vista previa del último trabajo, muestreo y exportación del registro de batería. |
 | **Buscar impresoras** | Lista dispositivos Bluetooth emparejados y cercanos, reconoce el modelo por su nombre (`X5h-…` → perfil `d1`), empareja y selecciona la impresora. |
 | **Plantillas** | QR, código de barras (Code 128 / EAN-13), lista de tareas, etiqueta y pegatina, con vista previa a tamaño real. Recuerda los últimos valores. |
-| **Ajustes** | Oscuridad, modo de impresión (automático / imagen / texto), tramado, avance final, páginas continuas, unidad y aviso de batería, desconexión por inactividad, nombre en Windows, alcance de red, puerto IPP, API de automatización y atajo de la nota rápida. |
+| **Ajustes** | Oscuridad, mantener activa (keep-alive), modo de impresión (automático / imagen / texto), tramado, avance final, páginas continuas, unidad y aviso de batería, desconexión por inactividad, nombre en Windows, alcance de red, puerto IPP, API de automatización y atajo de la nota rápida. |
 
 Puedes **soltar archivos** (PNG, JPEG, PDF, PWG, TXT) sobre la ventana del panel para imprimirlos.
 
 El servicio se conecta a la impresora al imprimir y se desconecta tras 60 s sin uso, para que la app del móvil pueda volver a usarla.
+
+**Mantener activa (keep-alive)** — en *Ajustes* o en el menú del icono: el servicio mantiene la impresora conectada, le envía una consulta de estado (`A3`) cada 30 s (configurable, 10–300 s) y se reconecta solo si el enlace se cae (reintentos cada 5 s hasta 60 s). La primera impresión es inmediata y los avisos de papel llegan aunque no imprimas. A cambio, **la app del móvil y TiMini-Print no pueden usar la impresora** mientras esté activa (desmárcala en el menú del icono para liberarla) y su batería dura menos.
 
 ### Impresión rápida
 
@@ -176,6 +187,7 @@ Para ejecutar el servicio en consola sin instalarlo: `$env:MINIPRINTER_DATA="$PW
 | `MiniPrinter.Service` | Servicio de Windows: cola, endpoint IPP con modo local/LAN (mDNS + firewall), API de control. |
 | `MiniPrinter.Tray` | App WPF de bandeja. |
 | `MiniPrinter.Cli` | Diagnóstico. |
+| `installer/` · `tools/IconGen` | Script de Inno Setup y generador del icono (`assets/miniprinter.ico`). |
 
 Los tests de protocolo comparan byte a byte con trabajos de referencia generados por TiMini-Print (`tools/generate_timini_fixtures.py`).
 

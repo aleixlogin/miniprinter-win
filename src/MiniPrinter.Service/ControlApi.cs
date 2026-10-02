@@ -316,6 +316,8 @@ public sealed class StatusBuilder
             BatteryUnit = _settings.Current.BatteryUnit,
             LowBattery = _battery.IsLow,
             SamplingUntil = s.KeepAliveUntil,
+            KeepAlive = s.Persistent,
+            Reconnecting = s.Reconnecting,
             Firmware = s.Firmware,
             Printing = s.Printing,
             LastError = s.LastError,

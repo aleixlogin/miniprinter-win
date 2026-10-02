@@ -10,6 +10,10 @@ public partial class App : Application
     private TrayIcon? _tray;
     private MainWindow? _window;
     private StatusDto? _lastStatus;
+    private const string OpenPanelEventName = @"Local\MiniPrinter.Tray.OpenPanel";
+    private const string ExitEventName = @"Local\MiniPrinter.Tray.Exit";
+    private EventWaitHandle? _exitSignal;
+    private EventWaitHandle? _openPanelSignal;
     private bool _wizardShown;
     private GlobalHotkey? _hotkey;
     private QuickNoteWindow? _quickNote;
@@ -26,16 +30,40 @@ public partial class App : Application
             return;
         }
 
-        _singleInstance = new Mutex(initiallyOwned: true, @"Local\MiniPrinter.Tray", out var created);
-        if (!created)
+        // Installer/uninstaller: ask the running tray to close itself (removes its icon cleanly).
+        if (e.Args.Contains("--exit"))
         {
+            if (EventWaitHandle.TryOpenExisting(ExitEventName, out var exit))
+                exit.Set();
             Shutdown();
             return;
         }
 
+        _singleInstance = new Mutex(initiallyOwned: true, @"Local\MiniPrinter.Tray", out var created);
+        if (!created)
+        {
+            // Start menu shortcut while the tray is already running: ask it to show its panel.
+            if (e.Args.Contains("--open") && EventWaitHandle.TryOpenExisting(OpenPanelEventName, out var signal))
+                signal.Set();
+            Shutdown();
+            return;
+        }
+        _openPanelSignal = new EventWaitHandle(false, EventResetMode.AutoReset, OpenPanelEventName);
+        _exitSignal = new EventWaitHandle(false, EventResetMode.AutoReset, ExitEventName);
+        new Thread(() =>
+        {
+            if (_exitSignal.WaitOne())
+                Dispatcher.BeginInvoke(ExitApp);
+        }) { IsBackground = true, Name = "ExitSignal" }.Start();
+        new Thread(() =>
+        {
+            while (_openPanelSignal.WaitOne())
+                Dispatcher.BeginInvoke(OpenPanel);
+        }) { IsBackground = true, Name = "OpenPanelSignal" }.Start();
+
         _service = new ServiceConnection();
         _tray = new TrayIcon(OpenPanel, ToggleConnection, () => RunAction(c => c.TestPrintAsync(), "Página de prueba enviada."),
-            () => RunAction(c => c.FeedAsync(), null), ExitApp, PrintClipboard, OpenQuickNote);
+            () => RunAction(c => c.FeedAsync(), null), ExitApp, PrintClipboard, OpenQuickNote, ToggleKeepAlive);
         _service.Changed += () => Dispatcher.BeginInvoke(OnServiceChanged);
         _service.Start();
 
@@ -63,6 +91,7 @@ public partial class App : Application
         var available = _service.ServiceAvailable;
         var state = TrayIcon.StateOf(status, available);
         _tray!.Update(state, Describe(status, available, _service.ServiceError), status?.Link == "Connected");
+        _tray.SetKeepAlive(status?.KeepAlive == true);
         _window?.ShowStatus(status, available, _service.ServiceError);
 
         if (available && status is not null)
@@ -108,9 +137,11 @@ public partial class App : Application
             return $"{status.Printer.Name}: {string.Join(", ", status.Alarms.Select(Translate))}";
         if (status.Printing)
             return $"{status.Printer.Name}: imprimiendo";
+        if (status.Reconnecting)
+            return $"{status.Printer.Name}: reconectando…";
         return status.Link switch
         {
-            "Connected" => $"{status.Printer.Name}: lista",
+            "Connected" => status.KeepAlive ? $"{status.Printer.Name}: lista (keep-alive)" : $"{status.Printer.Name}: lista",
             "Connecting" => $"{status.Printer.Name}: conectando…",
             "Error" => $"{status.Printer.Name}: {status.LastError}",
             _ => $"{status.Printer.Name}: desconectada (se conecta al imprimir)",
@@ -196,6 +227,25 @@ public partial class App : Application
         catch (Exception ex)
         {
             MessageBox.Show($"No se pudo imprimir: {ex.Message}", "MiniPrinter", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    /// <summary>Flips the keep-alive setting from the tray menu (e.g. to free the printer for the phone).</summary>
+    private async void ToggleKeepAlive()
+    {
+        try
+        {
+            var client = _service!.Client;
+            var settings = await client.GetSettingsAsync();
+            var updated = await client.SaveSettingsAsync(settings with { KeepAlive = !settings.KeepAlive });
+            _tray!.SetKeepAlive(updated.KeepAlive);
+            _tray.Notify("MiniPrinter", updated.KeepAlive
+                ? "Keep-alive activado: la impresora se mantendrá conectada."
+                : "Keep-alive desactivado: la impresora se liberará tras el tiempo de inactividad.", warning: false);
+        }
+        catch (Exception ex)
+        {
+            _tray!.Notify("MiniPrinter", ex.Message, warning: true);
         }
     }
 

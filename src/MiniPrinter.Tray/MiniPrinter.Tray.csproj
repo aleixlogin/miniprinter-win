@@ -2,6 +2,7 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>$(WinTfm)</TargetFramework>
+    <ApplicationIcon>..\..\assets\miniprinter.ico</ApplicationIcon>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>MiniPrinter.Tray</AssemblyName>
@@ -14,5 +15,8 @@
   <ItemGroup>
     <ProjectReference Include="..\MiniPrinter.Control\MiniPrinter.Control.csproj" />
     <ProjectReference Include="..\MiniPrinter.Protocol\MiniPrinter.Protocol.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="..\..\assets\miniprinter.ico" Link="miniprinter.ico" />
   </ItemGroup>
 </Project>

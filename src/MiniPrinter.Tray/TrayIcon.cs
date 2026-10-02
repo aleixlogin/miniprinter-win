@@ -27,8 +27,13 @@ public sealed class TrayIcon : IDisposable
     private readonly Dictionary<TrayState, Icon> _icons = [];
     private TrayState _state = (TrayState)(-1);
 
+    private readonly ToolStripMenuItem _keepAliveItem;
+
+    /// <summary>Reflects the keep-alive setting in the menu check mark.</summary>
+    public void SetKeepAlive(bool enabled) => _keepAliveItem.Checked = enabled;
+
     public TrayIcon(Action openPanel, Action toggleConnection, Action testPrint, Action feed, Action exit,
-        Action printClipboard, Action quickNote)
+        Action printClipboard, Action quickNote, Action toggleKeepAlive)
     {
         _statusItem = new ToolStripMenuItem("MiniPrinter") { Enabled = false };
         _connectItem = new ToolStripMenuItem("Conectar", null, (_, _) => toggleConnection());
@@ -37,6 +42,8 @@ public sealed class TrayIcon : IDisposable
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(new ToolStripMenuItem("Abrir panel", null, (_, _) => openPanel()) { Font = new Font(menu.Font, System.Drawing.FontStyle.Bold) });
         menu.Items.Add(_connectItem);
+        _keepAliveItem = new ToolStripMenuItem("Mantener activa (keep-alive)", null, (_, _) => toggleKeepAlive());
+        menu.Items.Add(_keepAliveItem);
         menu.Items.Add(new ToolStripMenuItem("Imprimir página de prueba", null, (_, _) => testPrint()));
         menu.Items.Add(new ToolStripMenuItem("Avanzar papel", null, (_, _) => feed()));
         menu.Items.Add(new ToolStripSeparator());
@@ -105,21 +112,27 @@ public sealed class TrayIcon : IDisposable
             TrayState.Disconnected => Color.FromArgb(110, 119, 129),
             _ => Color.FromArgb(154, 103, 0),
         };
-        using var bitmap = new Bitmap(32, 32);
+        // Base: the application icon at the notification area's size for the current scale
+        // (16 px at 100 %, 24 px at 150 %…), with the status dot in the bottom-right corner.
+        var size = SystemInformation.SmallIconSize.Width;
+        using var bitmap = new Bitmap(size, size);
         using (var g = Graphics.FromImage(bitmap))
         {
             g.SmoothingMode = SmoothingMode.AntiAlias;
             g.Clear(Color.Transparent);
-            using var body = new SolidBrush(Color.FromArgb(36, 41, 47));
-            using var paper = new SolidBrush(Color.White);
-            using var outline = new Pen(Color.FromArgb(36, 41, 47), 2);
-            g.FillRectangle(paper, 9, 2, 14, 12);          // paper coming out
-            g.DrawRectangle(outline, 9, 2, 14, 12);
-            g.FillRectangle(body, 3, 12, 26, 14);           // printer body
-            g.FillRectangle(paper, 8, 16, 16, 2);           // slot
-            using var dot = new SolidBrush(color);
-            g.FillEllipse(dot, 19, 19, 12, 12);             // status dot
-            g.DrawEllipse(new Pen(Color.White, 1.5f), 19, 19, 12, 12);
+            var resource = System.Windows.Application.GetResourceStream(new Uri("pack://application:,,,/miniprinter.ico"));
+            if (resource is not null)
+            {
+                using var stream = resource.Stream;
+                using var appIcon = new Icon(stream, size, size);
+                g.DrawIcon(appIcon, new Rectangle(0, 0, size, size));
+            }
+            var dot = Math.Max(6, size * 7 / 16);
+            var x = size - dot;
+            using var brush = new SolidBrush(color);
+            g.FillEllipse(brush, x, x, dot - 1, dot - 1);
+            using var ring = new Pen(Color.White, Math.Max(1f, size / 16f));
+            g.DrawEllipse(ring, x, x, dot - 1, dot - 1);
         }
         var icon = Icon.FromHandle(bitmap.GetHicon());
         _icons[state] = icon;

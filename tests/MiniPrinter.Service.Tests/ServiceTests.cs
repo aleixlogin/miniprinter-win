@@ -154,6 +154,8 @@ public class SettingsTests
         Assert.Equal(BatteryUnit.Unknown, settings.BatteryUnit);
         Assert.False(settings.AutomationApiEnabled);
         Assert.Equal(10, settings.TextSizePt);
+        Assert.False(settings.KeepAlive);
+        Assert.Equal(30, settings.KeepAliveIntervalSeconds);
     }
 
     [Fact]
@@ -164,6 +166,8 @@ public class SettingsTests
         Assert.Equal(5, v.LowBatteryPercent);
         Assert.Equal(48, v.TextSizePt);
         Assert.Equal("Segoe UI", v.TextFont);
+        Assert.Equal(10, SettingsStore.Validate(new ServiceSettings { KeepAliveIntervalSeconds = 2 }).KeepAliveIntervalSeconds);
+        Assert.Equal(300, SettingsStore.Validate(new ServiceSettings { KeepAliveIntervalSeconds = 9999 }).KeepAliveIntervalSeconds);
     }
 }
 
@@ -678,6 +682,40 @@ public sealed class ControlApiTests : IAsyncLifetime
         foreach (var path in new[] { "/api/settings", "/api/status", "/api/printer", "/api/automation" })
             Assert.Equal(HttpStatusCode.NotFound, (await raw.GetAsync($"http://127.0.0.1:{_ippPort}{path}")).StatusCode);
         await TestEnv.WaitUntil(() => client.GetJobsAsync().Result.Count(j => j.State == "Completed") == 4);
+    }
+
+    [Fact]
+    public async Task Changing_the_printer_keeps_a_battery_sampling_in_progress()
+    {
+        using var client = Client();
+        await client.SelectPrinterAsync(TestEnv.Simulated);
+        var started = await client.StartSamplingAsync(TimeSpan.FromMinutes(45));
+        Assert.NotNull(started.SamplingUntil);
+
+        // Re-selecting the printer (e.g. another transport) recreates the session.
+        await client.SelectPrinterAsync(TestEnv.Simulated with { Name = "X5h-E07A (otra)" });
+        await TestEnv.WaitUntil(() => client.GetStatusAsync().Result.Printer?.Name == "X5h-E07A (otra)");
+        var status = await client.GetStatusAsync();
+        Assert.NotNull(status.SamplingUntil);
+        Assert.Equal(started.SamplingUntil!.Value.ToUnixTimeSeconds(), status.SamplingUntil!.Value.ToUnixTimeSeconds());
+    }
+
+    [Fact]
+    public async Task Keep_alive_setting_connects_and_is_reported()
+    {
+        using var client = Client();
+        await client.SelectPrinterAsync(TestEnv.Simulated);
+        Assert.False((await client.GetStatusAsync()).KeepAlive);
+
+        var settings = await client.GetSettingsAsync();
+        await client.SaveSettingsAsync(settings with { KeepAlive = true, KeepAliveIntervalSeconds = 10 });
+        await TestEnv.WaitUntil(() => client.GetStatusAsync().Result is { KeepAlive: true, Link: "Connected" });
+
+        // Turning it off keeps the session (no reconnect) but returns to on-demand mode.
+        await client.SaveSettingsAsync((await client.GetSettingsAsync()) with { KeepAlive = false });
+        var status = await client.GetStatusAsync();
+        Assert.False(status.KeepAlive);
+        Assert.Equal("X5h-E07A", status.Printer?.Name);
     }
 
     [Fact]

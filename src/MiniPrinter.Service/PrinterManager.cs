@@ -25,6 +25,9 @@ public sealed class PrinterManager : IAsyncDisposable
         {
             if (previous.Printer != current.Printer || previous.IdleTimeoutSeconds != current.IdleTimeoutSeconds)
                 _ = ReplaceSessionAsync(current);
+            else if (previous.KeepAlive != current.KeepAlive || previous.KeepAliveIntervalSeconds != current.KeepAliveIntervalSeconds)
+                // Applied to the live session so an ongoing job is not interrupted.
+                RequireSessionOrNull()?.SetPersistent(current.KeepAlive, TimeSpan.FromSeconds(current.KeepAliveIntervalSeconds));
         };
         CreateSession(settings.Current);
     }
@@ -101,9 +104,13 @@ public sealed class PrinterManager : IAsyncDisposable
         PrinterSession? old;
         lock (_gate)
             old = _session;
+        // A battery sampling period in progress survives a printer/transport change.
+        var sampling = old?.Status.KeepAliveUntil is { } until && until > DateTimeOffset.UtcNow ? until : (DateTimeOffset?)null;
         if (old is not null)
             await old.DisposeAsync();
         CreateSession(settings);
+        if (sampling is not null)
+            RequireSessionOrNull()?.KeepAlive(sampling, TimeSpan.FromSeconds(60));
         StatusChanged?.Invoke(Status);
     }
 
@@ -134,6 +141,8 @@ public sealed class PrinterManager : IAsyncDisposable
             var session = new PrinterSession(factory, target.ToString(), new MiniPrinter.Transport.SessionOptions
             {
                 IdleTimeout = TimeSpan.FromSeconds(settings.IdleTimeoutSeconds),
+                Persistent = settings.KeepAlive,
+                HeartbeatInterval = TimeSpan.FromSeconds(settings.KeepAliveIntervalSeconds),
             });
             session.StatusChanged += s => StatusChanged?.Invoke(s);
             session.MessageReceived += m => MessageReceived?.Invoke(m);

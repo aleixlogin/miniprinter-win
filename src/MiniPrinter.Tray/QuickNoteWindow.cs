@@ -29,6 +29,7 @@ public sealed class QuickNoteWindow : Window
     {
         _service = service;
         Title = "Nota rápida — MiniPrinter";
+        Icon = BitmapFrame.Create(new Uri("pack://application:,,,/miniprinter.ico"));
         Width = 760;
         Height = 460;
         WindowStartupLocation = WindowStartupLocation.CenterScreen;

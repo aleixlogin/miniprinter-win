@@ -98,6 +98,8 @@ public sealed class PwgRasterReader
     private void DecodeLine(byte[] line, int bytesPerPixel, byte white)
     {
         var position = 0;
+        // One pixel buffer per line (allocating it inside the loop could exhaust the stack).
+        Span<byte> pixel = stackalloc byte[bytesPerPixel];
         while (position < line.Length)
         {
             var control = ReadByte();
@@ -110,7 +112,6 @@ public sealed class PwgRasterReader
             if (control < 128)
             {
                 var count = control + 1;
-                Span<byte> pixel = stackalloc byte[bytesPerPixel];
                 ReadExactly(pixel);
                 for (var i = 0; i < count && position < line.Length; i++)
                 {

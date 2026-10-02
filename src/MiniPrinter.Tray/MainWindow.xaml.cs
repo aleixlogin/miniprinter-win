@@ -60,9 +60,9 @@ public partial class MainWindow : Window
             Banner.Visibility = Visibility.Collapsed;
 
         PrinterText.Text = status.Printer is null ? "Ninguna (ve a «Buscar impresoras»)" : $"{status.Printer.Name}  ·  {status.Printer.Address}  ·  {status.Printer.Transport}";
-        LinkText.Text = status.Link switch
+        LinkText.Text = status.Reconnecting ? $"Reconectando… ({status.LastError})" : status.Link switch
         {
-            "Connected" => "Conectada",
+            "Connected" => status.KeepAlive ? "Conectada · activa (keep-alive)" : "Conectada",
             "Connecting" => "Conectando…",
             "Error" => $"Error: {status.LastError}",
             _ => "Desconectada (se conecta automáticamente al imprimir)",
@@ -399,6 +399,8 @@ public partial class MainWindow : Window
         GapBox.Text = _settings.PageGapMm.ToString();
         FeedSlider.Value = _settings.ExtraFeedSteps;
         IdleBox.Text = _settings.IdleTimeoutSeconds.ToString();
+        KeepAliveCheck.IsChecked = _settings.KeepAlive;
+        KeepAliveIntervalBox.Text = _settings.KeepAliveIntervalSeconds.ToString();
         NameBox.Text = _settings.PrinterName;
         LocalRadio.IsChecked = _settings.NetworkMode == NetworkMode.Local;
         LanRadio.IsChecked = _settings.NetworkMode == NetworkMode.Lan;
@@ -410,7 +412,7 @@ public partial class MainWindow : Window
     {
         if (_settings is null)
             return;
-        if (!int.TryParse(IdleBox.Text, out var idle) || !int.TryParse(PortBox.Text, out var port) || !int.TryParse(LowBatteryBox.Text, out var lowBattery) || !int.TryParse(GapBox.Text, out var gap))
+        if (!int.TryParse(IdleBox.Text, out var idle) || !int.TryParse(PortBox.Text, out var port) || !int.TryParse(LowBatteryBox.Text, out var lowBattery) || !int.TryParse(GapBox.Text, out var gap) || !int.TryParse(KeepAliveIntervalBox.Text, out var heartbeat))
         {
             SettingsStatus.Text = "Revisa los campos numéricos.";
             return;
@@ -424,6 +426,8 @@ public partial class MainWindow : Window
             LowBatteryPercent = lowBattery,
             ContinuousPages = ContinuousCheck.IsChecked == true,
             AutomationApiEnabled = AutomationCheck.IsChecked == true,
+            KeepAlive = KeepAliveCheck.IsChecked == true,
+            KeepAliveIntervalSeconds = heartbeat,
             PageGapMm = gap,
             ExtraFeedSteps = (int)FeedSlider.Value,
             IdleTimeoutSeconds = idle,

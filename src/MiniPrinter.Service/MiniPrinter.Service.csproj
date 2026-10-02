@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
     <TargetFramework>$(WinTfm)</TargetFramework>
+    <ApplicationIcon>..\..\assets\miniprinter.ico</ApplicationIcon>
     <AssemblyName>MiniPrinter.Service</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
