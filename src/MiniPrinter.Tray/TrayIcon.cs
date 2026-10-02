@@ -33,7 +33,7 @@ public sealed class TrayIcon : IDisposable
     public void SetKeepAlive(bool enabled) => _keepAliveItem.Checked = enabled;
 
     public TrayIcon(Action openPanel, Action toggleConnection, Action testPrint, Action feed, Action exit,
-        Action printClipboard, Action quickNote, Action toggleKeepAlive)
+        Action printClipboard, Action quickNote, Action toggleKeepAlive, Action checkUpdates)
     {
         _statusItem = new ToolStripMenuItem("MiniPrinter") { Enabled = false };
         _connectItem = new ToolStripMenuItem("Conectar", null, (_, _) => toggleConnection());
@@ -51,9 +51,12 @@ public sealed class TrayIcon : IDisposable
         _quickNoteItem = new ToolStripMenuItem("Nota rápida…", null, (_, _) => quickNote());
         menu.Items.Add(_quickNoteItem);
         menu.Items.Add(new ToolStripSeparator());
+        menu.Items.Add(new ToolStripMenuItem("Buscar actualizaciones", null, (_, _) => checkUpdates()));
         menu.Items.Add(new ToolStripMenuItem("Salir", null, (_, _) => exit()));
 
         _icon = new NotifyIcon { ContextMenuStrip = menu, Visible = true, Text = "MiniPrinter" };
+        _icon.BalloonTipClicked += (_, _) => { var action = _balloonAction; _balloonAction = null; action?.Invoke(); };
+        _icon.BalloonTipClosed += (_, _) => _balloonAction = null;
         _icon.MouseClick += (_, e) => { if (e.Button == MouseButtons.Left) openPanel(); };
         Update(TrayState.NoService, "Conectando con el servicio…", connected: false);
     }
@@ -70,6 +73,15 @@ public sealed class TrayIcon : IDisposable
         _icon.Text = text.Length > 127 ? text[..127] : text;
         _statusItem.Text = tooltip;
         _connectItem.Text = connected ? "Desconectar" : "Conectar";
+    }
+
+    private Action? _balloonAction;
+
+    /// <summary>Shows a notification; <paramref name="onClick"/> runs if the user clicks it.</summary>
+    public void Notify(string title, string message, bool warning, Action? onClick)
+    {
+        _balloonAction = onClick;
+        Notify(title, message, warning);
     }
 
     public void Notify(string title, string message, bool warning)

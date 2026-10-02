@@ -49,6 +49,19 @@ powershell -ExecutionPolicy Bypass -File scripts\install.ps1
 powershell -ExecutionPolicy Bypass -File scripts\uninstall.ps1 -KeepConfig
 ```
 
+## Actualizaciones
+
+La bandeja comprueba las [releases de GitHub](https://github.com/aleixlogin/miniprinter-win/releases) un minuto después de arrancar y cada 24 horas (se puede desactivar en *Ajustes → Actualizaciones*, y forzar con **Buscar actualizaciones** en el menú del icono). Si hay una versión nueva, avisa y muestra sus novedades con **Actualizar**, **Más tarde** u **Omitir esta versión**.
+
+Al pulsar **Actualizar**, la bandeja descarga el instalador y comprueba que es auténtico antes de ejecutarlo: su SHA-256 debe coincidir con el de `SHA256SUMS`, y ese archivo debe llevar una firma ECDSA P-256 válida para la clave pública incrustada en la aplicación. Si algo no cuadra, se borra y no se ejecuta nada. El instalador pide permisos de administrador (UAC), cierra la bandeja y el servicio, actualiza conservando la configuración y vuelve a abrir la bandeja.
+
+### Publicar una versión
+
+1. Sube una etiqueta `vX.Y.Z` (`git tag v0.4.1 && git push origin v0.4.1`).
+2. El workflow *Release* de GitHub Actions compila con esa versión, pasa los tests, genera `MiniPrinter-Setup-X.Y.Z.exe`, crea `SHA256SUMS`, lo firma con el secreto `RELEASE_SIGNING_KEY`, comprueba que la firma valida con la clave pública de la app y publica la release con las notas sacadas de los commits.
+
+La clave privada de firma **no está en el repositorio**: vive solo en el secreto `RELEASE_SIGNING_KEY` y en una copia de seguridad. Para generar un par nuevo: `dotnet run --project tools/SignRelease -- keygen` (y actualizar `Updater.ReleasePublicKey`; las versiones ya instaladas solo aceptarán releases firmadas con la clave que llevan).
+
 ## Uso del panel (icono de la bandeja)
 
 | Pestaña | Qué hace |
@@ -188,6 +201,7 @@ Para ejecutar el servicio en consola sin instalarlo: `$env:MINIPRINTER_DATA="$PW
 | `MiniPrinter.Tray` | App WPF de bandeja. |
 | `MiniPrinter.Cli` | Diagnóstico. |
 | `installer/` · `tools/IconGen` | Script de Inno Setup y generador del icono (`assets/miniprinter.ico`). |
+| `MiniPrinter.Updates` · `tools/SignRelease` | Comprobación y verificación de actualizaciones; firma de releases. |
 
 Los tests de protocolo comparan byte a byte con trabajos de referencia generados por TiMini-Print (`tools/generate_timini_fixtures.py`).
 

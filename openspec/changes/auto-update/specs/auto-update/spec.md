@@ -23,7 +23,7 @@ La bandeja SHALL mostrar una ventana con la versión nueva, sus notas (cuerpo de
 - **THEN** se vuelve a avisar en la siguiente comprobación
 
 ### Requirement: Descarga verificada
-Al aceptar, la bandeja SHALL descargar el instalador de la release (`MiniPrinter-Setup-X.Y.Z.exe`), `SHA256SUMS` y `SHA256SUMS.sig` a una carpeta temporal, SHALL verificar la firma Ed25519 de `SHA256SUMS` con la clave pública incrustada en la aplicación y SHALL comprobar que el SHA-256 del instalador coincide con el listado. Si alguna verificación falla, SHALL borrar lo descargado, no ejecutar nada e informar del error.
+Al aceptar, la bandeja SHALL descargar el instalador de la release (`MiniPrinter-Setup-X.Y.Z.exe`), `SHA256SUMS` y `SHA256SUMS.sig` a una carpeta temporal, SHALL verificar la firma ECDSA P-256 de `SHA256SUMS` con la clave pública incrustada en la aplicación y SHALL comprobar que el SHA-256 del instalador coincide con el listado. Si alguna verificación falla, SHALL borrar lo descargado, no ejecutar nada e informar del error.
 
 #### Scenario: Firma correcta
 - **WHEN** la firma y el hash son válidos

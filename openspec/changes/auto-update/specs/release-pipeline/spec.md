@@ -15,7 +15,7 @@ Cada push y pull request SHALL compilar la solución y ejecutar todos los tests 
 - **THEN** el workflow de CI falla y lo muestra en GitHub
 
 ### Requirement: Publicación por etiqueta
-Al subir una etiqueta `vX.Y.Z`, un workflow SHALL compilar con la versión `X.Y.Z`, ejecutar los tests, generar `MiniPrinter-Setup-X.Y.Z.exe`, calcular `SHA256SUMS`, firmarlo con la clave Ed25519 guardada en el secreto `RELEASE_SIGNING_KEY` (`SHA256SUMS.sig`) y crear la release de GitHub con esos tres archivos y las notas de la versión.
+Al subir una etiqueta `vX.Y.Z`, un workflow SHALL compilar con la versión `X.Y.Z`, ejecutar los tests, generar `MiniPrinter-Setup-X.Y.Z.exe`, calcular `SHA256SUMS`, firmarlo con la clave ECDSA P-256 guardada en el secreto `RELEASE_SIGNING_KEY` (`SHA256SUMS.sig`) y crear la release de GitHub con esos tres archivos y las notas de la versión.
 
 #### Scenario: Nueva versión
 - **WHEN** se sube la etiqueta `v0.5.0`
@@ -26,7 +26,7 @@ Al subir una etiqueta `vX.Y.Z`, un workflow SHALL compilar con la versión `X.Y.
 - **THEN** no se crea ninguna release
 
 ### Requirement: Claves de firma
-El proyecto SHALL incluir una herramienta para generar el par de claves Ed25519 y firmar `SHA256SUMS`; la clave pública SHALL incrustarse en la bandeja y la privada SHALL guardarse solo en los secretos de GitHub (nunca en el repositorio).
+El proyecto SHALL incluir una herramienta para generar el par de claves ECDSA P-256 y firmar `SHA256SUMS`; la clave pública SHALL incrustarse en la bandeja y la privada SHALL guardarse solo en los secretos de GitHub (nunca en el repositorio).
 
 #### Scenario: Clave privada fuera del repositorio
 - **WHEN** se revisa el contenido del repositorio

@@ -22,9 +22,9 @@
 ### D1. Comprobación en la bandeja, sin servicio con privilegios
 `UpdateChecker` (en la bandeja) consulta la API de releases de GitHub (sin token: 60 peticiones/hora por IP, de sobra para una comprobación diaria) con `User-Agent: MiniPrinter/<versión>`. Primera comprobación 1 min tras arrancar, luego cada 24 h. Estado guardado en `%LocalAppData%\MiniPrinter\updates.json` (última comprobación, versión omitida, comprobación automática).
 
-### D2. Verificación: SHA-256 + firma Ed25519 propia
-- La release incluye `SHA256SUMS` (formato `sha256sum`) y `SHA256SUMS.sig` (firma Ed25519 en Base64 del contenido exacto de `SHA256SUMS`).
-- La bandeja incrusta la clave pública (32 bytes, Base64) y verifica con una implementación Ed25519 (NSec/libsodium o `BouncyCastle.Cryptography`, a evaluar por tamaño; .NET 8 no trae Ed25519 nativo).
+### D2. Verificación: SHA-256 + firma ECDSA P-256 propia
+- La release incluye `SHA256SUMS` (formato `sha256sum`) y `SHA256SUMS.sig` (firma ECDSA P-256 con SHA-256, en Base64, del contenido exacto de `SHA256SUMS`).
+- La bandeja incrusta la clave pública (SubjectPublicKeyInfo en Base64) y verifica con `System.Security.Cryptography.ECDsa`, incluido en .NET 8: sin dependencias nuevas. (Ed25519, propuesto inicialmente, no viene en .NET 8 y habría requerido NSec o BouncyCastle.)
 - Solo si la firma es válida y el hash del instalador coincide se ejecuta.
 - *Alternativa descartada*: confiar solo en HTTPS + hash de la misma release: quien pudiera modificar la release (token robado) podría cambiar ambos. Con la firma necesita además la clave privada.
 
@@ -43,7 +43,7 @@
 ### D6. Pipeline de GitHub Actions
 - `ci.yml`: en push/PR, `windows-latest`, `dotnet test`.
 - `release.yml`: en etiqueta `v*`: versión = etiqueta sin `v` → tests → `scripts/build-installer.ps1 -Version X.Y.Z` (instalando Inno Setup con `choco install innosetup` si el runner no lo trae) → `SHA256SUMS` → `tools/sign-release` con el secreto `RELEASE_SIGNING_KEY` → `gh release create vX.Y.Z` con los tres archivos y notas generadas a partir de los commits.
-- `tools/sign-release`: `keygen` (imprime clave privada y pública) y `sign <archivo>`.
+- `tools/sign-release`: `keygen` (clave privada PKCS#8 y pública SPKI en Base64), `sign <archivo>` y `verify`.
 
 ### D7. Publicación inicial del repositorio
 Conectar `origin` y subir la rama de trabajo como `main` (el repositorio remoto está vacío). Requiere las credenciales de GitHub del usuario (Git Credential Manager) en el primer push.
@@ -65,4 +65,4 @@ Conectar `origin` y subir la rama de trabajo como `main` (el repositorio remoto 
 
 ## Open Questions
 
-- Librería Ed25519 final (NSec frente a BouncyCastle): elegir por tamaño y licencia.
+- (Resuelta) Algoritmo de firma: ECDSA P-256 de .NET en lugar de Ed25519, para no añadir dependencias.

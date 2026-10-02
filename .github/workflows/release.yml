@@ -1,0 +1,71 @@
+name: Release
+
+# Push a tag vX.Y.Z to publish MiniPrinter-Setup-X.Y.Z.exe with a signed SHA256SUMS.
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Version from tag
+        shell: pwsh
+        run: |
+          $version = '${{ github.ref_name }}'.TrimStart('v')
+          if ($version -notmatch '^\d+\.\d+\.\d+$') { throw "Tag must be vX.Y.Z (got ${{ github.ref_name }})" }
+          "VERSION=$version" >> $env:GITHUB_ENV
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) { choco install innosetup -y --no-progress }
+
+      - name: Test, publish and build installer
+        shell: pwsh
+        run: ./scripts/build-installer.ps1 -Version $env:VERSION
+
+      - name: Checksums and signature
+        shell: pwsh
+        env:
+          RELEASE_SIGNING_KEY: ${{ secrets.RELEASE_SIGNING_KEY }}
+        run: |
+          if (-not $env:RELEASE_SIGNING_KEY) { throw 'Secret RELEASE_SIGNING_KEY is not set.' }
+          $dir = 'artifacts/installer'
+          $setup = "$dir/MiniPrinter-Setup-$env:VERSION.exe"
+          dotnet run --project tools/SignRelease -c Release -- sums $setup --out "$dir/SHA256SUMS"
+          dotnet run --project tools/SignRelease -c Release --no-build -- sign "$dir/SHA256SUMS"
+          # Sanity check: the signature must verify with the public key embedded in the tray app.
+          $public = [regex]::Match((Get-Content src/MiniPrinter.Tray/Updater.cs -Raw), 'ReleasePublicKey =\s*"([^"]+)"').Groups[1].Value
+          dotnet run --project tools/SignRelease -c Release --no-build -- verify "$dir/SHA256SUMS" $public
+          if ($LASTEXITCODE -ne 0) { throw 'The signing key does not match the public key embedded in the app.' }
+
+      - name: Release notes
+        shell: pwsh
+        run: |
+          $previous = git describe --tags --abbrev=0 "${{ github.ref_name }}^" 2>$null
+          $range = if ($previous) { "$previous..${{ github.ref_name }}" } else { '${{ github.ref_name }}' }
+          $commits = git log $range --pretty=format:'- %s' --no-merges
+          @("## MiniPrinter $env:VERSION", '', $commits) | Set-Content -Encoding utf8 notes.md
+
+      - name: Create GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $dir = 'artifacts/installer'
+          gh release create '${{ github.ref_name }}' "$dir/MiniPrinter-Setup-$env:VERSION.exe" "$dir/SHA256SUMS" "$dir/SHA256SUMS.sig" `
+            --title "MiniPrinter $env:VERSION" --notes-file notes.md

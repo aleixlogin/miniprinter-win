@@ -8,6 +8,7 @@
     <Project Path="src/MiniPrinter.Service/MiniPrinter.Service.csproj" />
     <Project Path="src/MiniPrinter.Transport/MiniPrinter.Transport.csproj" />
     <Project Path="src/MiniPrinter.Tray/MiniPrinter.Tray.csproj" />
+    <Project Path="src/MiniPrinter.Updates/MiniPrinter.Updates.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/MiniPrinter.Imaging.Tests/MiniPrinter.Imaging.Tests.csproj" />
@@ -15,5 +16,6 @@
     <Project Path="tests/MiniPrinter.Protocol.Tests/MiniPrinter.Protocol.Tests.csproj" />
     <Project Path="tests/MiniPrinter.Service.Tests/MiniPrinter.Service.Tests.csproj" />
     <Project Path="tests/MiniPrinter.Transport.Tests/MiniPrinter.Transport.Tests.csproj" />
+    <Project Path="tests/MiniPrinter.Updates.Tests/MiniPrinter.Updates.Tests.csproj" />
   </Folder>
 </Solution>

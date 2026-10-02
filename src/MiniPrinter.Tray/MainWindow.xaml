@@ -244,6 +244,17 @@
                         </Grid>
                         <!-- SETTINGS:NETWORK -->
 
+                        <TextBlock Text="Actualizaciones" FontWeight="SemiBold" Margin="0,14,0,4" />
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" SharedSizeGroup="L" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource Label}" Text="Comprobar" />
+                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                <CheckBox x:Name="AutoUpdateCheck" Content="Comprobar actualizaciones automáticamente (cada 24 h)" VerticalAlignment="Center"
+                                          Checked="OnAutoUpdateChanged" Unchecked="OnAutoUpdateChanged" />
+                                <Button Content="Buscar ahora" Click="OnCheckUpdates" Margin="12,0,0,0" />
+                            </StackPanel>
+                        </Grid>
+
                         <TextBlock Text="Impresión rápida" FontWeight="SemiBold" Margin="0,14,0,4" />
                         <Grid Style="{StaticResource Row}">
                             <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" SharedSizeGroup="L" /><ColumnDefinition /></Grid.ColumnDefinitions>

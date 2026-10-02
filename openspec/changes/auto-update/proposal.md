@@ -7,7 +7,7 @@ Con el instalador (change `installer-and-icon`) MiniPrinter se puede distribuir,
 - **Comprobación de actualizaciones en la bandeja** (no en el servicio): al arrancar y cada 24 h consulta la última release de GitHub; si hay una versión mayor, notifica y muestra las novedades.
 - **Actualización con confirmación**: "Actualizar" descarga el instalador a una carpeta temporal, verifica su SHA-256 contra `SHA256SUMS` y la firma de ese archivo con la clave pública incrustada en la app, y ejecuta el instalador; es el propio instalador quien pide permisos (UAC), cierra la bandeja y el servicio, actualiza y los vuelve a abrir. "Más tarde" y "Omitir esta versión" disponibles.
 - **Opciones en la bandeja**: comprobar automáticamente (activado por defecto), "Buscar actualizaciones ahora" en el menú del icono, versión actual en el panel.
-- **Canal de publicación**: GitHub Actions publica, al crear una etiqueta `vX.Y.Z`, una release con el instalador, `SHA256SUMS` y `SHA256SUMS.sig` (firma Ed25519 con clave privada guardada en los secretos del repositorio), tras compilar y pasar los tests.
+- **Canal de publicación**: GitHub Actions publica, al crear una etiqueta `vX.Y.Z`, una release con el instalador, `SHA256SUMS` y `SHA256SUMS.sig` (firma ECDSA P-256 con clave privada guardada en los secretos del repositorio), tras compilar y pasar los tests.
 - **Primera publicación**: conectar el repositorio local con el remoto y subir las ramas.
 
 ## Capabilities

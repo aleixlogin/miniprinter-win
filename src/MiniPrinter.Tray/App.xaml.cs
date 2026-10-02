@@ -16,6 +16,9 @@ public partial class App : Application
     private EventWaitHandle? _openPanelSignal;
     private bool _wizardShown;
     private GlobalHotkey? _hotkey;
+    private Updater? _updater;
+
+    public Updater? Updater => _updater;
     private QuickNoteWindow? _quickNote;
     private TrayPreferences _preferences = TrayPreferences.Load();
 
@@ -63,7 +66,8 @@ public partial class App : Application
 
         _service = new ServiceConnection();
         _tray = new TrayIcon(OpenPanel, ToggleConnection, () => RunAction(c => c.TestPrintAsync(), "Página de prueba enviada."),
-            () => RunAction(c => c.FeedAsync(), null), ExitApp, PrintClipboard, OpenQuickNote, ToggleKeepAlive);
+            () => RunAction(c => c.FeedAsync(), null), ExitApp, PrintClipboard, OpenQuickNote, ToggleKeepAlive,
+            () => _ = _updater?.CheckAsync(manual: true));
         _service.Changed += () => Dispatcher.BeginInvoke(OnServiceChanged);
         _service.Start();
 
@@ -71,6 +75,7 @@ public partial class App : Application
         _hotkey.Pressed += OpenQuickNote;
         ApplyHotkey(_preferences.QuickNoteHotkey, notifyOnFailure: true);
         QuickPrint.EnsureSendToShortcut(Environment.ProcessPath ?? "");
+        _updater = new Updater(_service, (title, message, warning, onClick) => _tray!.Notify(title, message, warning, onClick));
 
         if (e.Args.Contains("--open"))
             OpenPanel();
@@ -79,6 +84,7 @@ public partial class App : Application
     protected override void OnExit(ExitEventArgs e)
     {
         _hotkey?.Dispose();
+        _updater?.Dispose();
         _tray?.Dispose();
         _service?.Dispose();
         _singleInstance?.Dispose();

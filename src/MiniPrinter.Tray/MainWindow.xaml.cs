@@ -35,6 +35,7 @@ public partial class MainWindow : Window
         _scanner.Completed += () => Dispatcher.BeginInvoke(() => ScanStatus.Text = $"{_devices.Count} dispositivos. La búsqueda sigue activa.");
         Loaded += async (_, _) => await LoadSettingsAsync();
         HotkeyBox.Text = ((App)Application.Current).Preferences.QuickNoteHotkey;
+        AutoUpdateCheck.IsChecked = ((App)Application.Current).Updater?.State.AutoCheck ?? true;
         Closed += (_, _) => _scanner.Dispose();
     }
 
@@ -50,7 +51,8 @@ public partial class MainWindow : Window
 
     public void ShowStatus(StatusDto? status, bool available, string? error)
     {
-        ServiceText.Text = available ? $"En ejecución (v{status?.Version})" : error ?? "No disponible";
+        ServiceText.Text = (available ? $"En ejecución (v{status?.Version})" : error ?? "No disponible")
+                           + $"  ·  aplicación v{Updater.CurrentVersion}";
         if (!available || status is null)
         {
             ShowBanner(error ?? "El servicio MiniPrinter no responde. Comprueba que está instalado e iniciado (services.msc).");
@@ -239,6 +241,18 @@ public partial class MainWindow : Window
         {
             MessageBox.Show(this, ex.Message, "MiniPrinter", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
+    }
+
+    private void OnAutoUpdateChanged(object sender, RoutedEventArgs e)
+    {
+        if (IsLoaded)
+            ((App)Application.Current).Updater?.SetAutoCheck(AutoUpdateCheck.IsChecked == true);
+    }
+
+    private async void OnCheckUpdates(object sender, RoutedEventArgs e)
+    {
+        if (((App)Application.Current).Updater is { } updater)
+            await updater.CheckAsync(manual: true);
     }
 
     private void OnApplyHotkey(object sender, RoutedEventArgs e)
