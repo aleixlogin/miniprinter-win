@@ -46,7 +46,7 @@ public static class ControlApi
             }
             catch (PrintRequestException ex)
             {
-                return Results.Json(new ApiError(ex.Message), ControlDefaults.Json, statusCode: 400);
+                return Results.Json(new ApiError(ex.Message, ex.Block, ex.Property), ControlDefaults.Json, statusCode: 400);
             }
         });
 
@@ -158,15 +158,7 @@ public static class ControlApi
             return Json(AutomationInfoOf(settings, automation, ipp));
         });
 
-        TemplateEndpoints.Map(api, app.Services.GetRequiredService<Imaging.TemplateCatalog>());
-
-        api.MapPost("/templates/{name}/preview", async (string name, HttpContext http, PrintRequests print) =>
-        {
-            var bitmap = print.RenderTemplate(name, (await TemplateEndpoints.ReadRequest(http)).PreviewFields());
-            using var png = new MemoryStream();
-            Imaging.MonoPng.Save(bitmap, png);
-            return Results.File(png.ToArray(), "image/png");
-        });
+        TemplateEndpoints.Map(api, app.Services.GetRequiredService<Imaging.TemplateCatalog>(), app.Services.GetRequiredService<DraftStore>(), app.Services.GetRequiredService<PrintRequests>());
 
         api.MapPost("/print/template/{name}", async (string name, HttpContext http, PrintRequests print) =>
         {

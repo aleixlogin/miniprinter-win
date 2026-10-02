@@ -22,8 +22,12 @@ internal enum PropKind
 }
 
 /// <summary>Schema of one block property: used to validate literals and to read values at render time.</summary>
-internal sealed record PropDef(PropKind Kind, double Min = 0, double Max = 0, double Default = 0, string[]? Values = null)
+internal sealed record PropDef(PropKind Kind, double Min = 0, double Max = 0, double Default = 0, string[]? Values = null,
+    string? Label = null, bool Multiline = false)
 {
+    /// <summary>The same property with a label (shown by the editor) and whether its text is multiline.</summary>
+    public PropDef L(string label, bool multiline = false) => this with { Label = label, Multiline = multiline };
+
     public static readonly PropDef Text = new(PropKind.Text);
     public static readonly PropDef Bool = new(PropKind.Bool);
     public static PropDef Int(int min, int max, int def) => new(PropKind.Int, min, max, def);
@@ -34,7 +38,7 @@ internal sealed record PropDef(PropKind Kind, double Min = 0, double Max = 0, do
 internal delegate MonoBitmap? BlockRenderer(BlockSpec block, BlockContext context);
 
 /// <summary>A block type: its allowed properties and how it renders (design.md D2).</summary>
-internal sealed record BlockType(string Name, IReadOnlyDictionary<string, PropDef> Props, BlockRenderer Render,
+internal sealed record BlockType(string Name, string Title, IReadOnlyDictionary<string, PropDef> Props, BlockRenderer Render,
     Action<BlockSpec, IReadOnlyList<TemplateField>, Func<string, bool>?>? Extra = null)
 {
     public void Validate(BlockSpec block, IReadOnlyList<TemplateField> fields, Func<string, bool>? assetExists)
@@ -46,15 +50,15 @@ internal sealed record BlockType(string Name, IReadOnlyDictionary<string, PropDe
             if (key is "when")
             {
                 if (BlockContext.ReadRaw(node) is { } w)
-                    TemplateLayout.CheckPlaceholders(w, fields, block.Where);
+                    TemplateLayout.CheckPlaceholders(w, fields, block.Where, block.Index, "when");
                 continue;
             }
             if (!Props.TryGetValue(key, out var def))
-                throw new TemplateException($"{block.Where}: propiedad desconocida '{key}'. Disponibles: {string.Join(", ", Props.Keys)}.");
+                throw new TemplateException($"{block.Where}: propiedad desconocida '{key}'. Disponibles: {string.Join(", ", Props.Keys)}.", block.Index, key);
             var raw = BlockContext.ReadRaw(node);
             if (raw is null)
                 continue;
-            TemplateLayout.CheckPlaceholders(raw, fields, block.Where);
+            TemplateLayout.CheckPlaceholders(raw, fields, block.Where, block.Index, key);
             if (!raw.Contains("{{"))
                 BlockContext.Parse(def, raw, block, key);
         }
@@ -68,6 +72,9 @@ internal sealed class BlockContext
     public required int Width { get; init; }
     public required Interpolator Interpolator { get; init; }
     public string? AssetsDir { get; init; }
+
+    /// <summary>Where an image is looked for when it is not in <see cref="AssetsDir"/>.</summary>
+    public string? FallbackAssetsDir { get; init; }
 
     public static string? ReadRaw(JsonNode? node) => node switch
     {
@@ -125,13 +132,13 @@ internal sealed class BlockContext
             case PropKind.Int:
             case PropKind.Number:
                 if (!double.TryParse(raw.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out var number))
-                    throw new TemplateException($"{block.Where}: '{name}' debe ser un número (valor: '{raw}').");
+                    throw new TemplateException($"{block.Where}: '{name}' debe ser un número (valor: '{raw}').", block.Index, name);
                 if (number < def.Min || number > def.Max)
-                    throw new TemplateException($"{block.Where}: '{name}' debe estar entre {def.Min:0.##} y {def.Max:0.##}.");
+                    throw new TemplateException($"{block.Where}: '{name}' debe estar entre {def.Min:0.##} y {def.Max:0.##}.", block.Index, name);
                 return def.Kind == PropKind.Int ? (object)(int)Math.Round(number) : number;
             default:
                 var value = def.Values!.FirstOrDefault(v => v.Equals(raw, StringComparison.OrdinalIgnoreCase))
-                    ?? throw new TemplateException($"{block.Where}: '{name}' debe ser uno de: {string.Join(", ", def.Values!)} (valor: '{raw}').");
+                    ?? throw new TemplateException($"{block.Where}: '{name}' debe ser uno de: {string.Join(", ", def.Values!)} (valor: '{raw}').", block.Index, name);
                 return value;
         }
     }
@@ -147,6 +154,8 @@ internal static class LayoutBlocks
 
     public static IEnumerable<string> Names => Types.Keys;
 
+    public static IEnumerable<BlockType> All => Types.Values;
+
     public static BlockType? Find(string name) => Types.GetValueOrDefault(name);
 
     private static Dictionary<string, PropDef> P(params (string Name, PropDef Def)[] props) => props.ToDictionary(p => p.Name, p => p.Def);
@@ -155,20 +164,27 @@ internal static class LayoutBlocks
     {
         var types = new[]
         {
-            new BlockType("text", P(("value", PropDef.Text), ("size", PropDef.Num(6, 48, 10)), ("bold", PropDef.Bool),
-                ("align", PropDef.Choice("left", "center", "right"))), RenderText),
-            new BlockType("spacer", P(("mm", PropDef.Num(0.5, 100, 2))), RenderSpacer),
-            new BlockType("line", P(("style", PropDef.Choice("solid", "dotted", "dashed")), ("thickness", PropDef.Int(1, 8, 2))), RenderLine),
-            new BlockType("qr", P(("data", PropDef.Text), ("caption", PropDef.Text), ("ecc", PropDef.Choice("M", "L", "Q", "H")),
-                ("module", PropDef.Int(1, 40, 0))), RenderQr),
-            new BlockType("barcode", P(("data", PropDef.Text), ("format", PropDef.Choice("code128", "code39", "ean13", "upca")),
-                ("caption", PropDef.Text), ("height", PropDef.Num(4, 50, 12))), RenderBarcode),
-            new BlockType("list", P(("items", PropDef.Text), ("marker", PropDef.Choice("box", "bullet", "number", "none")),
-                ("size", PropDef.Num(6, 48, 12)), ("gap", PropDef.Int(0, 50, 6)), ("quantities", PropDef.Bool),
-                ("leader", PropDef.Choice("none", "dots"))), RenderList),
-            new BlockType("columns", P(("left", PropDef.Text), ("right", PropDef.Text), ("leader", PropDef.Choice("none", "dots")),
-                ("size", PropDef.Num(6, 48, 12)), ("bold", PropDef.Bool)), RenderColumns),
-            new BlockType("image", P(("data", PropDef.Text), ("source", PropDef.Text), ("caption", PropDef.Text)), RenderImage,
+            new BlockType("text", "Texto", P(
+                ("value", PropDef.Text.L("Texto", multiline: true)), ("size", PropDef.Num(6, 48, 10).L("Tamaño (pt)")),
+                ("bold", PropDef.Bool.L("Negrita")), ("align", PropDef.Choice("left", "center", "right").L("Alineación"))), RenderText),
+            new BlockType("spacer", "Espacio", P(("mm", PropDef.Num(0.5, 100, 2).L("Alto (mm)"))), RenderSpacer),
+            new BlockType("line", "Línea", P(("style", PropDef.Choice("solid", "dotted", "dashed").L("Estilo")),
+                ("thickness", PropDef.Int(1, 8, 2).L("Grosor (puntos)"))), RenderLine),
+            new BlockType("qr", "Código QR", P(("data", PropDef.Text.L("Contenido", multiline: true)), ("caption", PropDef.Text.L("Texto debajo")),
+                ("ecc", PropDef.Choice("M", "L", "Q", "H").L("Corrección de errores")),
+                ("module", PropDef.Int(1, 40, 0).L("Tamaño de módulo (vacío = automático)"))), RenderQr),
+            new BlockType("barcode", "Código de barras", P(("data", PropDef.Text.L("Contenido")),
+                ("format", PropDef.Choice("code128", "code39", "ean13", "upca").L("Formato")), ("caption", PropDef.Text.L("Texto debajo")),
+                ("height", PropDef.Num(4, 50, 12).L("Altura (mm)"))), RenderBarcode),
+            new BlockType("list", "Lista", P(("items", PropDef.Text.L("Elementos (uno por línea)", multiline: true)),
+                ("marker", PropDef.Choice("box", "bullet", "number", "none").L("Marcador")), ("size", PropDef.Num(6, 48, 12).L("Tamaño (pt)")),
+                ("gap", PropDef.Int(0, 50, 6).L("Hueco entre elementos")), ("quantities", PropDef.Bool.L("Cantidad después de ;")),
+                ("leader", PropDef.Choice("none", "dots").L("Relleno hasta la cantidad"))), RenderList),
+            new BlockType("columns", "Dos columnas", P(("left", PropDef.Text.L("Izquierda")), ("right", PropDef.Text.L("Derecha")),
+                ("leader", PropDef.Choice("none", "dots").L("Relleno")), ("size", PropDef.Num(6, 48, 12).L("Tamaño (pt)")),
+                ("bold", PropDef.Bool.L("Negrita"))), RenderColumns),
+            new BlockType("image", "Imagen", P(("data", PropDef.Text.L("Imagen en Base64 (o un campo)")),
+                ("source", PropDef.Text.L("Archivo de la plantilla")), ("caption", PropDef.Text.L("Texto debajo"))), RenderImage,
                 ValidateImage),
         };
         return types.ToDictionary(t => t.Name);
@@ -221,7 +237,7 @@ internal static class LayoutBlocks
     {
         var data = c.Raw(b, "data");
         if (string.IsNullOrWhiteSpace(data))
-            throw new TemplateException($"{b.Where}: falta el contenido del código QR.");
+            throw new TemplateException($"{b.Where}: falta el contenido del código QR.", b.Index, "data");
         var level = c.Choice(b, "ecc") switch
         {
             "L" => ErrorCorrectionLevel.L,
@@ -249,7 +265,7 @@ internal static class LayoutBlocks
         }
         else if (module < TemplateRenderer.MinQrModule)
         {
-            throw new TemplateException($"El tamaño de módulo mínimo es de {TemplateRenderer.MinQrModule} puntos.");
+            throw new TemplateException($"El tamaño de módulo mínimo es de {TemplateRenderer.MinQrModule} puntos.", b.Index, "module");
         }
         if (module < TemplateRenderer.MinQrModule || (modules + 8) * module > width)
             throw new TemplateException("El contenido es demasiado largo para el ancho del papel.");
@@ -276,7 +292,7 @@ internal static class LayoutBlocks
     {
         var data = c.Raw(b, "data")?.Trim();
         if (string.IsNullOrEmpty(data))
-            throw new TemplateException($"{b.Where}: falta el contenido del código de barras.");
+            throw new TemplateException($"{b.Where}: falta el contenido del código de barras.", b.Index, "data");
         var format = c.Choice(b, "format");
         var width = c.Width;
         ZXing.Common.BitMatrix matrix;
@@ -502,7 +518,7 @@ internal static class LayoutBlocks
         }
         else if (source is not null)
         {
-            var path = AssetPath(c.AssetsDir, source) ?? throw new TemplateException($"{b.Where}: la imagen '{source}' no existe.");
+            var path = AssetPath(c.AssetsDir, source) ?? AssetPath(c.FallbackAssetsDir, source) ?? throw new TemplateException($"{b.Where}: la imagen '{source}' no existe.", b.Index, "source");
             var key = (path, File.GetLastWriteTimeUtc(path), c.Width);
             picture = AssetCache.GetOrAdd(key, _ => Dither(File.ReadAllBytes(path), c.Width));
         }
@@ -541,9 +557,9 @@ internal static class LayoutBlocks
         if (source is null || source.Contains("{{"))
             return;
         if (!TemplateAssets.IsValidFileName(source))
-            throw new TemplateException($"{b.Where}: nombre de imagen no válido '{source}' (PNG o JPEG, sin rutas).");
+            throw new TemplateException($"{b.Where}: nombre de imagen no válido '{source}' (PNG o JPEG, sin rutas).", b.Index, "source");
         if (assetExists is not null && !assetExists(source))
-            throw new TemplateException($"{b.Where}: la imagen '{source}' no existe en los recursos de la plantilla.");
+            throw new TemplateException($"{b.Where}: la imagen '{source}' no existe en los recursos de la plantilla.", b.Index, "source");
     }
 
     // ---- helpers -------------------------------------------------------------------------------
@@ -572,6 +588,10 @@ internal static class LayoutBlocks
 public static class TemplateAssets
 {
     public const int MaxBytes = 1024 * 1024;
+
+    /// <summary>PNG or JPEG by its first bytes.</summary>
+    public static bool LooksLikeImage(byte[] c) =>
+        c.Length > 8 && ((c[0] == 0x89 && c[1] == 0x50 && c[2] == 0x4E && c[3] == 0x47) || (c[0] == 0xFF && c[1] == 0xD8));
 
     public static bool IsValidFileName(string name) =>
         System.Text.RegularExpressions.Regex.IsMatch(name, @"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}\.(png|jpe?g)$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);

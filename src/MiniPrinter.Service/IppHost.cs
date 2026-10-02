@@ -94,7 +94,7 @@ public sealed class IppHost : BackgroundService
         var logger = _loggerFactory.CreateLogger("MiniPrinter.Ipp");
         app.MapPost(description.ResourcePath, context => IppEndpoint.HandleAsync(context, printer, logger));
         AutomationApi.Map(app, _settings, _services.GetRequiredService<AutomationToken>(),
-            _services.GetRequiredService<PrintRequests>(), _queue, _services.GetRequiredService<Imaging.TemplateCatalog>());
+            _services.GetRequiredService<PrintRequests>(), _queue, _services.GetRequiredService<Imaging.TemplateCatalog>(), _services.GetRequiredService<DraftStore>());
         app.MapPost("/", context => IppEndpoint.HandleAsync(context, printer, logger));
         app.MapGet("/", context => IppEndpoint.StatusPageAsync(context, printer, _queue));
         app.MapGet(description.ResourcePath, context => IppEndpoint.StatusPageAsync(context, printer, _queue));

@@ -19,6 +19,7 @@ builder.Services.AddHostedService(sp => sp.GetRequiredService<IppHost>());
 builder.Services.AddSingleton<StatusBuilder>();
 builder.Services.AddSingleton<BatteryMonitor>();
 builder.Services.AddSingleton(MiniPrinter.Imaging.TemplateCatalog.ForDataDirectory(paths.DataDirectory));
+builder.Services.AddSingleton<DraftStore>();
 builder.Services.AddSingleton<PrintRequests>();
 builder.Services.AddSingleton<AutomationToken>();
 builder.Services.AddSingleton(sp => new TelemetryLog(paths, sp.GetRequiredService<ILogger<TelemetryLog>>(), sp.GetRequiredService<PrinterManager>()));

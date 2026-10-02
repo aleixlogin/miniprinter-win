@@ -74,7 +74,7 @@ public static class AutomationApi
 
     private static readonly JsonSerializerOptions Json = ControlDefaults.Json;
 
-    public static void Map(WebApplication app, SettingsStore settings, AutomationToken token, PrintRequests print, JobQueue queue, TemplateCatalog templates)
+    public static void Map(WebApplication app, SettingsStore settings, AutomationToken token, PrintRequests print, JobQueue queue, TemplateCatalog templates, DraftStore drafts)
     {
         var api = app.MapGroup("/api/v1");
         api.AddEndpointFilter(async (context, next) =>
@@ -96,7 +96,7 @@ public static class AutomationApi
             }
             catch (Exception ex) when (ex is PrintRequestException or JsonException or BadHttpRequestException or InvalidDataException)
             {
-                return Results.Json(new ApiError(ex.Message), Json, statusCode: 400);
+                return Results.Json(new ApiError(ex.Message, (ex as PrintRequestException)?.Block, (ex as PrintRequestException)?.Property), Json, statusCode: 400);
             }
             catch (PrinterNotConfiguredException ex)
             {
@@ -151,7 +151,7 @@ public static class AutomationApi
             return Accepted(print.PrintQr(body.Data, body.Caption, User(http), body.Darkness));
         });
 
-        TemplateEndpoints.Map(api, templates);
+        TemplateEndpoints.Map(api, templates, drafts, print);
 
         api.MapPost("/print/template/{name}", async (string name, HttpContext http) =>
         {

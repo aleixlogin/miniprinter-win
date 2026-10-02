@@ -147,9 +147,9 @@ public sealed class ControlClient : IDisposable
     }
 
     /// <summary>Creates or replaces a user template (validated by the service).</summary>
-    public async Task<TemplateDto> SaveTemplateAsync(string name, string json, CancellationToken ct = default)
+    public async Task<TemplateDto> SaveTemplateAsync(string name, string json, string? draft = null, CancellationToken ct = default)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Put, $"templates/{Uri.EscapeDataString(name)}")
+        using var request = new HttpRequestMessage(HttpMethod.Put, $"templates/{Uri.EscapeDataString(name)}{(draft is null ? "" : "?draft=" + Uri.EscapeDataString(draft))}")
         {
             Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json"),
         };
@@ -157,6 +157,73 @@ public sealed class ControlClient : IDisposable
         await EnsureSuccess(response, ct).ConfigureAwait(false);
         return (await response.Content.ReadFromJsonAsync<TemplateDto>(ControlDefaults.Json, ct).ConfigureAwait(false))!;
     }
+
+    /// <summary>The block catalog (types, properties, ranges, options) used to build the editor's controls.</summary>
+    public Task<TemplateSchemaDto> GetTemplateSchemaAsync(CancellationToken ct = default) => Get<TemplateSchemaDto>("templates/schema", ct);
+
+    /// <summary>Preview of a saved template with the rows each block occupies.</summary>
+    public async Task<TemplatePreviewDto> PreviewTemplateDetailedAsync(string name, IReadOnlyDictionary<string, string> fields, CancellationToken ct = default)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"templates/{Uri.EscapeDataString(name)}/preview")
+        {
+            Content = JsonContent.Create(TemplateBody(fields, 1, null), options: ControlDefaults.Json),
+        };
+        return await ReadPreview(request, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Preview of a template that is not saved. Required fields without a value are not an error; images are
+    /// looked up in the draft (see <see cref="CreateDraftAsync"/>) first.
+    /// </summary>
+    public async Task<TemplatePreviewDto> PreviewDraftAsync(string templateJson, IReadOnlyDictionary<string, string> fields,
+        string? draft = null, CancellationToken ct = default)
+    {
+        using var template = JsonDocument.Parse(templateJson);
+        var body = new Dictionary<string, object?> { ["template"] = template.RootElement.Clone(), ["fields"] = fields };
+        if (draft is not null)
+            body["draft"] = draft;
+        using var request = new HttpRequestMessage(HttpMethod.Post, "templates/preview")
+        {
+            Content = JsonContent.Create(body, options: ControlDefaults.Json),
+        };
+        return await ReadPreview(request, ct).ConfigureAwait(false);
+    }
+
+    private async Task<TemplatePreviewDto> ReadPreview(HttpRequestMessage request, CancellationToken ct)
+    {
+        using var response = await _http.SendAsync(request, ct).ConfigureAwait(false);
+        await EnsureSuccess(response, ct).ConfigureAwait(false);
+        var blocks = response.Headers.TryGetValues("X-Template-Blocks", out var values)
+            ? JsonSerializer.Deserialize<List<BlockRowsDto>>(values.First(), ControlDefaults.Json) ?? []
+            : [];
+        return new TemplatePreviewDto(await response.Content.ReadAsByteArrayAsync(ct).ConfigureAwait(false), blocks);
+    }
+
+    /// <summary>Opens an editor draft: a place for the images of a template that is not saved yet.</summary>
+    public async Task<string> CreateDraftAsync(CancellationToken ct = default) =>
+        (await Send<DraftDto>(HttpMethod.Post, "templates/drafts", null, ct).ConfigureAwait(false)).Id;
+
+    public async Task SaveDraftAssetAsync(string draft, string file, byte[] content, CancellationToken ct = default)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Put,
+            $"templates/drafts/{Uri.EscapeDataString(draft)}/assets/{Uri.EscapeDataString(file)}") { Content = new ByteArrayContent(content) };
+        using var response = await _http.SendAsync(request, ct).ConfigureAwait(false);
+        await EnsureSuccess(response, ct).ConfigureAwait(false);
+    }
+
+    public async Task DeleteDraftAssetAsync(string draft, string file, CancellationToken ct = default)
+    {
+        using var response = await _http.DeleteAsync($"templates/drafts/{Uri.EscapeDataString(draft)}/assets/{Uri.EscapeDataString(file)}", ct).ConfigureAwait(false);
+        await EnsureSuccess(response, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>Discards a draft (the editor was cancelled).</summary>
+    public async Task DiscardDraftAsync(string draft, CancellationToken ct = default)
+    {
+        using var response = await _http.DeleteAsync($"templates/drafts/{Uri.EscapeDataString(draft)}", ct).ConfigureAwait(false);
+        await EnsureSuccess(response, ct).ConfigureAwait(false);
+    }
+
 
     public async Task DeleteTemplateAsync(string name, CancellationToken ct = default)
     {
@@ -245,20 +312,27 @@ public sealed class ControlClient : IDisposable
         if (response.IsSuccessStatusCode)
             return;
         string message;
+        int? block = null;
+        string? property = null;
         try
         {
-            message = (await response.Content.ReadFromJsonAsync<ApiError>(ControlDefaults.Json, ct).ConfigureAwait(false))?.Error
-                      ?? response.ReasonPhrase ?? "error";
+            var error = await response.Content.ReadFromJsonAsync<ApiError>(ControlDefaults.Json, ct).ConfigureAwait(false);
+            message = error?.Error ?? response.ReasonPhrase ?? "error";
+            block = error?.Block;
+            property = error?.Property;
         }
         catch (JsonException)
         {
             message = response.ReasonPhrase ?? "error";
         }
-        throw new ControlApiException((int)response.StatusCode, message);
+        throw new ControlApiException((int)response.StatusCode, message, block, property);
     }
 }
 
-public sealed class ControlApiException(int statusCode, string message) : Exception(message)
+/// <param name="Block">Template block (1-based) the error belongs to, when the service could tell.</param>
+public sealed class ControlApiException(int statusCode, string message, int? block = null, string? property = null) : Exception(message)
 {
     public int StatusCode { get; } = statusCode;
+    public int? Block { get; } = block;
+    public string? Property { get; } = property;
 }

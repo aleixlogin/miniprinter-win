@@ -97,16 +97,38 @@ public sealed class TemplateCatalog
         $"Plantilla desconocida: '{name}'. Disponibles: {string.Join(", ", Definitions.Select(d => d.Name))}.");
 
     /// <summary>Renders a template; <paramref name="options"/>.Counters/AssetsDir default to this catalog's.</summary>
-    public MonoBitmap Render(string name, IReadOnlyDictionary<string, string> fields, RenderOptions? options = null)
+    public MonoBitmap Render(string name, IReadOnlyDictionary<string, string> fields, RenderOptions? options = null) =>
+        RenderDetailed(name, fields, options).Bitmap;
+
+    /// <summary>Like <see cref="Render"/>, also returning the rows each block occupies.</summary>
+    public RenderResult RenderDetailed(string name, IReadOnlyDictionary<string, string> fields, RenderOptions? options = null) =>
+        RenderLayout(Require(name), fields, options);
+
+    /// <summary>
+    /// Renders any validated layout (a saved one or an editor draft). Counters default to this catalog's
+    /// and the images to the layout's own folder.
+    /// </summary>
+    public RenderResult RenderLayout(TemplateLayout layout, IReadOnlyDictionary<string, string> fields, RenderOptions? options = null)
     {
-        var layout = Require(name);
         options ??= new RenderOptions();
         options = options with
         {
             Counters = options.Counters ?? Counters,
             AssetsDir = options.AssetsDir ?? AssetsDirectory(layout.Name),
         };
-        return TemplateEngine.Render(layout, fields, options);
+        return TemplateEngine.RenderDetailed(layout, fields, options);
+    }
+
+    /// <summary>
+    /// Parses and validates an editor draft that is not saved. Images are looked up in
+    /// <paramref name="draftAssets"/> first and then in the saved template's own folder.
+    /// </summary>
+    public TemplateLayout ValidateDraft(string json, string? draftAssets = null)
+    {
+        var name = ExtractName(json);
+        return TemplateLayout.Parse(json, file =>
+            (draftAssets is not null && TemplateAssets.IsValidFileName(file) && File.Exists(Path.Combine(draftAssets, file)))
+            || AssetExists(name, file));
     }
 
     public const int MaxCopies = 50;
@@ -167,21 +189,30 @@ public sealed class TemplateCatalog
 
     // ---- management ----------------------------------------------------------------------------
 
-    /// <summary>Validates a template without saving it (images are looked up in the template's assets).</summary>
-    public TemplateLayout Validate(string json, string? expectedName = null)
+    /// <summary>
+    /// Validates a template without saving it. Images are looked up in <paramref name="draftAssets"/>
+    /// (an editor draft) first and then in the template's own assets.
+    /// </summary>
+    public TemplateLayout Validate(string json, string? expectedName = null, string? draftAssets = null)
     {
-        var layout = TemplateLayout.Parse(json, file => AssetExists(expectedName ?? ExtractName(json), file));
+        var name = expectedName ?? ExtractName(json);
+        var layout = TemplateLayout.Parse(json, file => DraftHas(draftAssets, file) || AssetExists(name, file));
         if (expectedName is not null && !layout.Name.Equals(expectedName, StringComparison.OrdinalIgnoreCase))
             throw new TemplateException($"El nombre de la plantilla ('{layout.Name}') no coincide con '{expectedName}'.");
         return layout;
     }
 
-    /// <summary>Validates and saves a user template (atomically).</summary>
-    public TemplateLayout Save(string name, string json)
+    /// <summary>
+    /// Validates and saves a user template (atomically). With <paramref name="draftAssets"/>, the images
+    /// the template uses are copied from the draft first; if validation fails nothing is copied.
+    /// </summary>
+    public TemplateLayout Save(string name, string json, string? draftAssets = null)
     {
         if (!TemplateLayout.IsValidName(name))
             throw new TemplateException($"Nombre de plantilla no válido: '{name}' (letras, dígitos, guion y guion bajo; máximo 40).");
-        var layout = Validate(json, name);
+        var layout = Validate(json, name, draftAssets);
+        if (draftAssets is not null)
+            CopyDraftImages(layout, draftAssets);
         Directory.CreateDirectory(UserDirectory);
         var path = FilePath(layout.Name);
         var temp = path + ".tmp";
@@ -189,6 +220,26 @@ public sealed class TemplateCatalog
         File.Move(temp, path, overwrite: true);
         Refresh();
         return layout;
+    }
+
+    private static bool DraftHas(string? draftAssets, string file) =>
+        draftAssets is not null && TemplateAssets.IsValidFileName(file) && File.Exists(Path.Combine(draftAssets, file));
+
+    /// <summary>The images the draft supplies for the literal <c>source</c> of the template's image blocks.</summary>
+    private void CopyDraftImages(TemplateLayout layout, string draftAssets)
+    {
+        var used = layout.Blocks.Where(b => b.Type == "image")
+            .Select(b => b.Json["source"] is System.Text.Json.Nodes.JsonValue v && v.TryGetValue<string>(out var s) ? s : null)
+            .Where(s => s is not null && !s.Contains("{{") && DraftHas(draftAssets, s))
+            .Distinct(StringComparer.OrdinalIgnoreCase);
+        var target = AssetsDirectory(layout.Name);
+        foreach (var file in used)
+        {
+            Directory.CreateDirectory(target);
+            var temp = Path.Combine(target, file + ".tmp");
+            File.Copy(Path.Combine(draftAssets, file!), temp, overwrite: true);
+            File.Move(temp, Path.Combine(target, file!), overwrite: true);
+        }
     }
 
     /// <summary>Deletes a user template and its images. Built-ins without a user version cannot be deleted.</summary>
@@ -236,8 +287,7 @@ public sealed class TemplateCatalog
     private bool AssetExists(string template, string file) =>
         TemplateLayout.IsValidName(template) && TemplateAssets.IsValidFileName(file) && File.Exists(Path.Combine(AssetsDirectory(template), file));
 
-    private static bool IsPngOrJpeg(byte[] c) =>
-        c.Length > 8 && ((c[0] == 0x89 && c[1] == 0x50 && c[2] == 0x4E && c[3] == 0x47) || (c[0] == 0xFF && c[1] == 0xD8));
+    private static bool IsPngOrJpeg(byte[] c) => TemplateAssets.LooksLikeImage(c);
 
     private string FilePath(string name) => Path.Combine(UserDirectory, name + ".json");
 

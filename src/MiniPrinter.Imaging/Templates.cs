@@ -19,7 +19,13 @@ public sealed record TemplateField(string Name, string Label, TemplateFieldKind 
 public sealed record TemplateDefinition(string Name, string Title, string Description, IReadOnlyList<TemplateField> Fields, bool IsImage = false, string Source = "builtin");
 
 /// <summary>A template request could not be rendered (missing field, invalid code, too long…).</summary>
-public sealed class TemplateException(string message) : Exception(message);
+/// <param name="block">1-based number of the block the error belongs to, when it can be attributed to one.</param>
+/// <param name="property">The block property involved, when known.</param>
+public sealed class TemplateException(string message, int? block = null, string? property = null) : Exception(message)
+{
+    public int? Block { get; } = block;
+    public string? Property { get; } = property;
+}
 
 /// <summary>
 /// Entry point to the template catalog of this machine (built-in JSON templates plus the user's).

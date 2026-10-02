@@ -102,15 +102,18 @@
             <!-- Plantillas -->
             <TabItem Header="Plantillas" x:Name="TemplatesTab">
                 <DockPanel Margin="10">
-                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,8">
+                    <WrapPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,8">
                         <TextBlock Text="Plantilla:" VerticalAlignment="Center" Margin="0,0,8,0" />
                         <ComboBox x:Name="TemplateCombo" Width="200" />
                         <Button Content="↻" Click="OnTemplateReload" ToolTip="Actualizar la lista de plantillas" />
+                        <Button x:Name="TemplateCreate" Content="Crear" ToolTip="Crear una plantilla nueva (en blanco o a partir de otra)" />
+                        <Button x:Name="TemplateEdit" Content="Editar" ToolTip="Abrir la plantilla en el editor" />
+                        <Button x:Name="TemplateDelete" Content="Eliminar" />
                         <TextBlock Text="Favoritos:" VerticalAlignment="Center" Margin="16,0,8,0" />
                         <ComboBox x:Name="FavoriteCombo" Width="150" IsEditable="True" ToolTip="Elige un favorito, o escribe un nombre y pulsa Guardar" />
                         <Button Content="Guardar" Click="OnFavoriteSave" />
                         <Button Content="Borrar" Click="OnFavoriteDelete" />
-                    </StackPanel>
+                    </WrapPanel>
                     <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,8,0,0">
                         <TextBlock Text="Copias:" VerticalAlignment="Center" Margin="0,0,6,0" />
                         <TextBox x:Name="TemplateCopies" Text="1" Width="40" VerticalContentAlignment="Center" />

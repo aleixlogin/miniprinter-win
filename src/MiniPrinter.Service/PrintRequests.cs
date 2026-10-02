@@ -16,7 +16,11 @@ public sealed record TextPrintRequest
     public string? Name { get; init; }
 }
 
-public sealed class PrintRequestException(string message) : Exception(message);
+public sealed class PrintRequestException(string message, int? block = null, string? property = null) : Exception(message)
+{
+    public int? Block { get; } = block;
+    public string? Property { get; } = property;
+}
 
 /// <summary>
 /// Common entry points that turn text, files, QR codes and templates into queued jobs
@@ -62,15 +66,42 @@ public sealed class PrintRequests
         return _queue.SubmitBitmap(request.Name ?? FirstLine(request.Text), bitmap, isText: true, user, request.Darkness);
     }
 
-    public Protocol.MonoBitmap RenderTemplate(string name, IReadOnlyDictionary<string, string> fields)
+    public Protocol.MonoBitmap RenderTemplate(string name, IReadOnlyDictionary<string, string> fields) =>
+        RenderTemplateDetailed(name, fields).Bitmap;
+
+    /// <summary>Preview of a saved template, with the rows each block occupies.</summary>
+    public RenderResult RenderTemplateDetailed(string name, IReadOnlyDictionary<string, string> fields)
     {
         try
         {
-            return _templates.Render(name, fields, new RenderOptions { Width = _printer.Profile.WidthPx });
+            return _templates.RenderDetailed(name, fields, new RenderOptions { Width = _printer.Profile.WidthPx });
         }
         catch (TemplateException ex)
         {
-            throw new PrintRequestException(ex.Message);
+            throw new PrintRequestException(ex.Message, ex.Block, ex.Property);
+        }
+    }
+
+    /// <summary>
+    /// Preview of a template that is not saved (editor). Lenient: a required field without a value is not
+    /// an error. Images are looked up in the draft first, then in the saved template's folder.
+    /// </summary>
+    public RenderResult PreviewDraft(string json, IReadOnlyDictionary<string, string> fields, string? draftDirectory)
+    {
+        try
+        {
+            var layout = _templates.ValidateDraft(json, draftDirectory);
+            return _templates.RenderLayout(layout, fields, new RenderOptions
+            {
+                Width = _printer.Profile.WidthPx,
+                Lenient = true,
+                AssetsDir = draftDirectory,
+                FallbackAssetsDir = _templates.AssetsDirectory(layout.Name),
+            });
+        }
+        catch (TemplateException ex)
+        {
+            throw new PrintRequestException(ex.Message, ex.Block, ex.Property);
         }
     }
 
@@ -91,7 +122,7 @@ public sealed class PrintRequests
         }
         catch (TemplateException ex)
         {
-            throw new PrintRequestException(ex.Message);
+            throw new PrintRequestException(ex.Message, ex.Block, ex.Property);
         }
     }
 

@@ -120,6 +120,10 @@ Base: `http://<equipo>:8631/api/v1` · Cabecera: `Authorization: Bearer <token>`
 | `PUT /templates/{nombre}` | JSON de la plantilla (ver [Plantillas](#plantillas)): la valida y la crea o reemplaza. `200` con su definición |
 | `DELETE /templates/{nombre}` | Borra una plantilla de usuario y sus imágenes (`204`). Las integradas no se pueden borrar |
 | `POST /templates/validate` | Valida un JSON de plantilla sin guardarlo |
+| `GET /templates/schema` | Esquema de los bloques (tipos, propiedades, rangos, opciones, filtros), generado por el motor |
+| `POST /templates/preview` | Vista previa de una plantilla **sin guardar**: `{"template": {...}, "fields": {...}, "draft": "id"}`. Devuelve el PNG, con las filas de cada bloque en la cabecera `X-Template-Blocks`; los campos obligatorios vacíos no son un error |
+| `POST /templates/{nombre}/preview` | Igual, para una plantilla guardada |
+| `POST /templates/drafts` · `PUT`/`DELETE /templates/drafts/{id}/assets/{archivo}` · `DELETE /templates/drafts/{id}` | Borradores: subir imágenes de una plantilla aún sin guardar; se guardan con `PUT /templates/{nombre}?draft={id}` y caducan a las 24 h |
 | `PUT` · `DELETE /templates/{nombre}/assets/{archivo}` | Sube o borra una imagen (PNG/JPEG, hasta 1 MB) de la plantilla, para un bloque `image` con `source` |
 
 Límites: 16 MB por petición y 20 000 caracteres de texto; plantillas de hasta 64 KB, 50 copias y 200 filas por petición. Los errores devuelven `400 {"error": "…"}` (`401` sin token válido, `404` si la API está desactivada).
@@ -181,7 +185,7 @@ miniprinter find-port  7A:E0:0C:1D:87:AE                  # qué COM corresponde
 
 ## Plantillas
 
-Las plantillas son **datos**, no código: un JSON con campos y una lista de bloques que se apilan de arriba abajo a 384 px. Vienen integradas `qr`, `barcode`, `todo`, `label`, `sticker`, `shopping`, `wifi`, `contact`, `cable`, `receipt`, `bookmark` y `countdown`, y puedes añadir las tuyas en `%ProgramData%\MiniPrinter\templates\*.json` (o con `miniprinter template add` o la API; la bandeja las usa y las previsualiza, pero no tiene editor). Una plantilla tuya con el nombre de una integrada la sustituye; al borrarla vuelve la integrada.
+Las plantillas son **datos**, no código: un JSON con campos y una lista de bloques que se apilan de arriba abajo a 384 px. Vienen integradas `qr`, `barcode`, `todo`, `label`, `sticker`, `shopping`, `wifi`, `contact`, `cable`, `receipt`, `bookmark` y `countdown`, y puedes añadir las tuyas en `%ProgramData%\MiniPrinter\templates\*.json` (con el **editor de la bandeja**, con `miniprinter template add` o con la API). Una plantilla tuya con el nombre de una integrada la sustituye; al borrarla vuelve la integrada.
 
 Ejemplo, un tique con fecha, número consecutivo y precios alineados:
 
@@ -224,6 +228,15 @@ Ejemplo, un tique con fecha, número consecutivo y precios alineados:
 | `receipt` | Tique con líneas, total, fecha y número consecutivo | `title`, `items` (`Café;1,50`), `total`, `note` |
 | `bookmark` | Marcador de lectura | `title`, `author`, `quote` |
 | `countdown` | Días que faltan hasta una fecha | `title`, `date` (`2026-12-31`) |
+
+**Editor de plantillas** (pestaña *Plantillas* → **Crear**, **Editar**, **Eliminar**): abre una ventana con la lista de bloques a la izquierda, la vista previa a tamaño real en el centro y las propiedades del bloque a la derecha.
+
+- **Bloques**: añadir (cualquier tipo), duplicar, borrar y reordenar arrastrando o con ↑ ↓. Un clic en la vista previa selecciona el bloque que hay debajo y lo resalta. Deshacer y rehacer con `Ctrl+Z` / `Ctrl+Y` (100 pasos; lo tecleado seguido cuenta como uno).
+- **Propiedades**: los controles salen del esquema que publica el servicio (casillas, desplegables, números con su rango). El botón `{ }` de cada texto inserta `{{campo}}`, `{{now}}`, `{{counter}}` o un campo con filtro en la posición del cursor. En un bloque de imagen, *Elegir imagen…* la sube a un borrador del servicio, así que el logo se ve antes de guardar.
+- **Pestaña Plantilla**: título, descripción, modo, hueco y marco, y los campos (nombre, etiqueta, tipo, obligatorio, valor por defecto y opciones). Borrar un campo que se usa en algún bloque pide confirmación y dice en cuáles. **Datos de prueba** rellena los campos solo para la vista previa (no se guardan) y **JSON** muestra el JSON, editable y sincronizado: si lo escrito no es válido se conserva el último estado válido.
+- **Validación en línea**: el mensaje del servicio aparece junto al control afectado, el bloque se marca con ⚠ en la lista y el error general sale bajo la vista previa.
+- **Guardar** valida y guarda; si el servicio la rechaza, la ventana sigue abierta con el error. **Guardar como…** crea una plantilla con otro nombre (el nombre de una existente no se cambia). Al cerrar con cambios pregunta si guardar. Editar una plantilla integrada y guardarla con su nombre crea una versión tuya que la sustituye; el JSON original puede tener comentarios, que se pierden al guardar desde el editor (se avisa).
+- **Eliminar** borra una plantilla tuya (con confirmación); si sustituye a una integrada, el botón pasa a **Restaurar integrada**; las integradas sin versión tuya no se pueden eliminar.
 
 **En la bandeja** (pestaña *Plantillas*): la vista previa a tamaño real se actualiza sola 400 ms después de dejar de escribir y los errores de validación salen junto a ella; el botón **↻** (y abrir la pestaña) vuelve a pedir la lista, así que las plantillas creadas por API o CLI aparecen sin reiniciar la bandeja. Puedes guardar los valores del formulario como **favorito** con nombre (por plantilla), elegir el número de **copias** e imprimir un **lote desde CSV**. Si una plantilla tuya sustituye a una integrada, la bandeja lo avisa.
 
@@ -296,6 +309,11 @@ Los tests de plantillas comparan píxel a píxel las plantillas integradas con c
 Instalador en local: `powershell -ExecutionPolicy Bypass -File scripts\build-installer.ps1 -Version X.Y.Z` (necesita Inno Setup 6); genera `artifacts\installer\MiniPrinter-Setup-X.Y.Z.exe`.
 
 ## Historial de cambios
+
+### 0.6.0 — editor de plantillas
+- **Editor visual de plantillas** en la bandeja: botones **Crear**, **Editar** y **Eliminar** (o **Restaurar integrada**), ventana con lista de bloques, vista previa exacta en vivo con selección por clic, propiedades generadas desde el esquema, campos, datos de prueba, JSON en crudo, deshacer/rehacer y validación en línea.
+- **API**: `GET /templates/schema`, `POST /templates/preview` (plantilla sin guardar, tolerante con campos vacíos), cabecera `X-Template-Blocks` con las filas de cada bloque, borradores con imágenes (`/templates/drafts`, `PUT /templates/{nombre}?draft=`) y errores de validación con `block` y `property`.
+- Nombres reservados para plantillas: `list`, `show`, `add`, `remove`, `validate`, `schema`, `preview`, `drafts`.
 
 ### 0.5.1
 - La pestaña *Plantillas* de la bandeja vuelve a pedir la lista al abrirse y tiene un botón **↻**: las plantillas creadas por API o CLI aparecen sin reiniciar. Se quita el botón *Vista previa*, que ya no hace falta.

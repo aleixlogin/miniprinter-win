@@ -21,7 +21,7 @@ public partial class MainWindow : Window
         InitializeComponent();
         DevicesList.ItemsSource = _devices;
         _templates = new TemplatesPanel(service, new TemplatesUi(TemplateCombo, TemplateForm, TemplatePreview, TemplateStatus,
-            FavoriteCombo, TemplateCopies, TemplateCsvClear));
+            FavoriteCombo, TemplateCopies, TemplateCsvClear, TemplateCreate, TemplateEdit, TemplateDelete, this));
         Tabs.SelectionChanged += async (_, e) =>
         {
             if (e.OriginalSource == Tabs && Tabs.SelectedItem == TemplatesTab)

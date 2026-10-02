@@ -150,7 +150,9 @@ public sealed record StatusDto
     public string Version { get; init; } = "";
 }
 
-public sealed record ApiError(string Error);
+/// <param name="Block">1-based block of a template the error belongs to, when known.</param>
+/// <param name="Property">Block property the error belongs to, when known.</param>
+public sealed record ApiError(string Error, int? Block = null, string? Property = null);
 
 /// <summary>Automation API state shown in the tray (GET/POST /api/automation…).</summary>
 public sealed record AutomationInfo(bool Enabled, string Token, IReadOnlyList<string> Urls);
@@ -182,3 +184,27 @@ public static class ControlDefaults
         WriteIndented = false,
     };
 }
+
+/// <summary>One property of a template block, as published by GET /api/templates/schema.</summary>
+public sealed record SchemaPropDto(string Name, string Label, string Kind, double? Min, double? Max, double? Default,
+    IReadOnlyList<string>? Values, bool Multiline);
+
+public sealed record SchemaBlockDto(string Type, string Title, IReadOnlyList<SchemaPropDto> Props);
+
+public sealed record SchemaTemplatePropsDto(int MaxBlocks, int MaxJsonKb, int MinGap, int MaxGap, int DefaultGap, IReadOnlyList<string> Modes);
+
+/// <summary>What the template editor needs to build its controls (GET /api/templates/schema).</summary>
+public sealed record TemplateSchemaDto(
+    IReadOnlyList<SchemaBlockDto> Blocks,
+    IReadOnlyList<SchemaPropDto> Common,
+    IReadOnlyList<string> FieldKinds,
+    IReadOnlyList<string> Filters,
+    SchemaTemplatePropsDto Template);
+
+/// <summary>Rows (of the preview PNG) that one block of a template occupies.</summary>
+public sealed record BlockRowsDto(int Index, string Type, int Top, int Height);
+
+/// <summary>A template preview: the PNG and the rows of each block (from the X-Template-Blocks header).</summary>
+public sealed record TemplatePreviewDto(byte[] Png, IReadOnlyList<BlockRowsDto> Blocks);
+
+public sealed record DraftDto(string Id);

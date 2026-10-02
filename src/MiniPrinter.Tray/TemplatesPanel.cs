@@ -1,4 +1,5 @@
 using System.IO;
+using System.Net.Http;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
@@ -17,7 +18,11 @@ public sealed record TemplatesUi(
     TextBlock Status,
     ComboBox FavoriteCombo,
     TextBox Copies,
-    Button CsvClear);
+    Button CsvClear,
+    Button Create,
+    Button Edit,
+    Button Delete,
+    Window Owner);
 
 /// <summary>
 /// "Plantillas" tab: builds a form from the service's template definitions, shows the exact preview
@@ -51,7 +56,15 @@ public sealed class TemplatesPanel
     {
         _service = service;
         _ui = ui;
-        _ui.TemplateCombo.SelectionChanged += (_, _) => BuildForm();
+        _ui.TemplateCombo.SelectionChanged += (_, _) =>
+        {
+            BuildForm();
+            UpdateButtons();
+        };
+        _ui.Create.Click += async (_, _) => await CreateAsync();
+        _ui.Edit.Click += async (_, _) => await EditAsync();
+        _ui.Delete.Click += async (_, _) => await DeleteAsync();
+        UpdateButtons();
         _ui.FavoriteCombo.SelectionChanged += (_, _) => LoadFavorite();
         _debounce.Tick += async (_, _) =>
         {
@@ -65,21 +78,127 @@ public sealed class TemplatesPanel
     /// Fetches the template list (on opening the tab and from the refresh button, so templates created
     /// through the API or the CLI show up). The form is only rebuilt if the list actually changed.
     /// </summary>
-    public async Task LoadAsync()
+    public Task LoadAsync() => RefreshListAsync(null, -1, force: false);
+
+    /// <summary>
+    /// Reloads the list from the service. <paramref name="select"/> names the template to select afterwards;
+    /// otherwise the current one stays selected, falling back to <paramref name="fallbackIndex"/> (or the first).
+    /// </summary>
+    private async Task RefreshListAsync(string? select, int fallbackIndex, bool force)
     {
         try
         {
             var fresh = await _service.Client.GetTemplatesAsync();
-            if (_templates.Count > 0 && JsonSerializer.Serialize(fresh) == JsonSerializer.Serialize(_templates))
+            var changed = _templates.Count == 0 || JsonSerializer.Serialize(fresh) != JsonSerializer.Serialize(_templates);
+            var wanted = select ?? Current()?.Name;
+            if (!changed)
+            {
+                if (select is not null)
+                    SelectByName(select);
+                if (force)
+                    Schedule();   // same list, but a template's content may have changed
                 return;
-            var selected = Current()?.Name;
+            }
             _templates = fresh;
             _ui.TemplateCombo.ItemsSource = _templates;
             _ui.TemplateCombo.DisplayMemberPath = nameof(TemplateDto.Title);
-            var index = selected is null ? 0 : _templates.ToList().FindIndex(t => t.Name == selected);
+            var index = wanted is null ? -1 : _templates.ToList().FindIndex(t => t.Name == wanted);
+            if (index < 0)
+                index = fallbackIndex >= 0 ? Math.Min(fallbackIndex, _templates.Count - 1) : 0;
             _ui.TemplateCombo.SelectedIndex = Math.Max(0, index);
+            UpdateButtons();
         }
         catch (Exception ex)
+        {
+            SetStatus(ex.Message, error: true);
+        }
+    }
+
+    private void SelectByName(string name)
+    {
+        var index = _templates.ToList().FindIndex(t => t.Name == name);
+        if (index >= 0 && _ui.TemplateCombo.SelectedIndex != index)
+            _ui.TemplateCombo.SelectedIndex = index;
+    }
+
+    // ---- create, edit and delete templates ------------------------------------------------------
+
+    private void UpdateButtons()
+    {
+        var current = Current();
+        _ui.Create.IsEnabled = _templates.Count > 0;
+        _ui.Edit.IsEnabled = current is not null;
+        // Built-in templates without a user version cannot be deleted; a user version restores the built-in.
+        _ui.Delete.IsEnabled = current is { Source: not "builtin" };
+        _ui.Delete.Content = current?.Source == "override" ? "Restaurar integrada" : "Eliminar";
+        _ui.Delete.ToolTip = current?.Source == "builtin" ? "Las plantillas integradas no se pueden eliminar" : null;
+    }
+
+    private async Task CreateAsync()
+    {
+        var names = _templates.Select(t => t.Name).ToList();
+        var dialog = new NameDialog(_ui.Owner, "Crear plantilla", "Nombre de la plantilla (letras, dígitos, guion y guion bajo):",
+            n => !TemplateEditorModel.IsValidName(n) ? "Solo letras, dígitos, guion y guion bajo (máximo 40) y no una palabra reservada."
+                : names.Contains(n, StringComparer.OrdinalIgnoreCase) ? $"Ya existe una plantilla llamada '{n}'."
+                : null,
+            duplicateLabel: Current()?.Title);
+        if (dialog.ShowDialog() != true)
+            return;
+        try
+        {
+            var json = dialog.Duplicate && Current() is { } source
+                ? TemplateEditorModel.Duplicate(await _service.Client.GetTemplateJsonAsync(source.Name), dialog.ChosenName)
+                : TemplateEditorModel.Blank(dialog.ChosenName);
+            await OpenEditorAsync(json, existing: false, source: "user");
+        }
+        catch (Exception ex) when (ex is ControlApiException or InvalidDataException or HttpRequestException or InvalidOperationException)
+        {
+            SetStatus(ex.Message, error: true);
+        }
+    }
+
+    private async Task EditAsync()
+    {
+        if (Current() is not { } template)
+            return;
+        try
+        {
+            await OpenEditorAsync(await _service.Client.GetTemplateJsonAsync(template.Name), existing: true, source: template.Source);
+        }
+        catch (Exception ex) when (ex is ControlApiException or InvalidDataException or HttpRequestException or InvalidOperationException)
+        {
+            SetStatus(ex.Message, error: true);
+        }
+    }
+
+    private async Task OpenEditorAsync(string json, bool existing, string source)
+    {
+        var schema = await _service.Client.GetTemplateSchemaAsync();
+        var index = _ui.TemplateCombo.SelectedIndex;
+        var window = new TemplateEditorWindow(_ui.Owner, _service, schema, json, existing, source, _templates.Select(t => t.Name).ToList());
+        window.ShowDialog();
+        await RefreshListAsync(window.SavedName, index, force: true);
+    }
+
+    private async Task DeleteAsync()
+    {
+        if (Current() is not { } template || template.Source == "builtin")
+            return;
+        var restore = template.Source == "override";
+        var question = restore
+            ? $"Se borrará tu versión de «{template.Title}» y volverá a usarse la plantilla integrada. ¿Continuar?"
+            : $"¿Eliminar la plantilla «{template.Title}»? No se puede deshacer.";
+        if (MessageBox.Show(_ui.Owner, question, restore ? "Restaurar plantilla integrada" : "Eliminar plantilla",
+                MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+            return;
+        try
+        {
+            var index = _ui.TemplateCombo.SelectedIndex;
+            await _service.Client.DeleteTemplateAsync(template.Name);
+            SetStatus(restore ? "Plantilla integrada restaurada." : "Plantilla eliminada.", error: false);
+            await RefreshListAsync(restore ? template.Name : null, Math.Max(0, index - 1), force: true);
+        }
+        catch (Exception ex) when (ex is ControlApiException or HttpRequestException or InvalidOperationException)
         {
             SetStatus(ex.Message, error: true);
         }

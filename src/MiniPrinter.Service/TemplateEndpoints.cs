@@ -89,9 +89,12 @@ public static class TemplateEndpoints
         _ => value.GetRawText(),
     };
 
-    public static void Map(RouteGroupBuilder api, TemplateCatalog catalog)
+    public static void Map(RouteGroupBuilder api, TemplateCatalog catalog, DraftStore drafts, PrintRequests print)
     {
         api.MapGet("/templates", () => Results.Json(catalog.Definitions, ControlDefaults.Json));
+
+        // What the editor needs to build its controls (generated from the engine's block registry).
+        api.MapGet("/templates/schema", () => Results.Json(BlockSchema.Build(), ControlDefaults.Json));
 
         api.MapGet("/templates/{name}", (string name) =>
             catalog.GetJson(name) is { } json
@@ -101,7 +104,10 @@ public static class TemplateEndpoints
         api.MapPut("/templates/{name}", async (string name, HttpContext http) =>
         {
             var json = await ReadText(http, TemplateLayout.MaxJsonBytes);
-            var layout = Guard(() => catalog.Save(name, json));
+            var draftId = http.Request.Query["draft"].ToString();
+            var draftDir = drafts.Resolve(draftId);
+            var layout = Guard(() => catalog.Save(name, json, draftDir));
+            drafts.Discard(draftId);   // only reached when the save succeeded
             return Results.Json(layout.ToDefinition(catalog.Find(layout.Name)?.Source ?? TemplateCatalog.User), ControlDefaults.Json);
         });
 
@@ -118,6 +124,39 @@ public static class TemplateEndpoints
             return Results.Json(new TemplateValidation(true, layout.Name, layout.Blocks.Count), ControlDefaults.Json);
         });
 
+        // Preview of a saved template: the PNG, with the rows of each block in X-Template-Blocks.
+        api.MapPost("/templates/{name}/preview", async (string name, HttpContext http) =>
+        {
+            var request = await ReadRequest(http);
+            return PreviewResult(http, print.RenderTemplateDetailed(name, request.PreviewFields()));
+        });
+
+        // Preview of a template that is not saved: { "template": {...}, "fields": {...}, "draft": "<id>" }.
+        api.MapPost("/templates/preview", async (HttpContext http) =>
+        {
+            var body = await ReadText(http, TemplateLayout.MaxJsonBytes + 64 * 1024);
+            string template;
+            Dictionary<string, string> fields = new(StringComparer.OrdinalIgnoreCase);
+            string? draft = null;
+            try
+            {
+                using var doc = JsonDocument.Parse(body);
+                if (doc.RootElement.ValueKind != JsonValueKind.Object || !doc.RootElement.TryGetProperty("template", out var t)
+                    || t.ValueKind != JsonValueKind.Object)
+                    throw new PrintRequestException("Expected {\"template\": {...}, \"fields\": {...}, \"draft\": \"id\"}.");
+                template = t.GetRawText();
+                if (doc.RootElement.TryGetProperty("fields", out var f) && f.ValueKind == JsonValueKind.Object)
+                    fields = ToStrings(f);
+                if (doc.RootElement.TryGetProperty("draft", out var d) && d.ValueKind == JsonValueKind.String)
+                    draft = d.GetString();
+            }
+            catch (JsonException ex)
+            {
+                throw new PrintRequestException($"Invalid JSON: {ex.Message}");
+            }
+            return PreviewResult(http, print.PreviewDraft(template, fields, drafts.Resolve(draft)));
+        });
+
         api.MapPut("/templates/{name}/assets/{file}", async (string name, string file, HttpContext http) =>
         {
             using var body = new MemoryStream();
@@ -131,6 +170,46 @@ public static class TemplateEndpoints
             Guard(() => catalog.DeleteAsset(name, file));
             return Results.NoContent();
         });
+
+        // Drafts: images of a template that is not saved yet.
+        api.MapPost("/templates/drafts", () => Results.Json(new DraftInfo(drafts.Create()), ControlDefaults.Json));
+
+        api.MapPut("/templates/drafts/{id}/assets/{file}", async (string id, string file, HttpContext http) =>
+        {
+            drafts.Resolve(id);
+            using var body = new MemoryStream();
+            var buffer = new byte[16 * 1024];
+            int read;
+            while ((read = await http.Request.Body.ReadAsync(buffer)) > 0)
+            {
+                body.Write(buffer, 0, read);
+                if (body.Length > TemplateAssets.MaxBytes)
+                    throw new PrintRequestException($"La imagen supera el máximo de {TemplateAssets.MaxBytes / (1024 * 1024)} MB.");
+            }
+            drafts.SaveAsset(id, file, body.ToArray());
+            return Results.NoContent();
+        });
+
+        api.MapDelete("/templates/drafts/{id}/assets/{file}", (string id, string file) =>
+        {
+            drafts.DeleteAsset(id, file);
+            return Results.NoContent();
+        });
+
+        api.MapDelete("/templates/drafts/{id}", (string id) =>
+        {
+            drafts.Discard(id);
+            return Results.NoContent();
+        });
+    }
+
+    /// <summary>The preview PNG plus the rows of each block in the <c>X-Template-Blocks</c> header.</summary>
+    private static IResult PreviewResult(HttpContext http, RenderResult result)
+    {
+        using var png = new MemoryStream();
+        MonoPng.Save(result.Bitmap, png);
+        http.Response.Headers["X-Template-Blocks"] = JsonSerializer.Serialize(result.Blocks, ControlDefaults.Json);
+        return Results.File(png.ToArray(), "image/png");
     }
 
     private static async Task<string> ReadText(HttpContext http, int maxBytes)
@@ -155,7 +234,7 @@ public static class TemplateEndpoints
         }
         catch (TemplateException ex)
         {
-            throw new PrintRequestException(ex.Message);
+            throw new PrintRequestException(ex.Message, ex.Block, ex.Property);
         }
     }
 
@@ -167,3 +246,5 @@ public static class TemplateEndpoints
 }
 
 public sealed record TemplateValidation(bool Valid, string Name, int Blocks);
+
+public sealed record DraftInfo(string Id);

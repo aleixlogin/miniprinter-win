@@ -36,8 +36,8 @@ public sealed partial class TemplateLayout
     [GeneratedRegex("^[A-Za-z0-9][A-Za-z0-9_-]{0,39}$")]
     private static partial Regex NamePattern();
 
-    /// <summary>CLI subcommands of "miniprinter template": a template cannot take these names.</summary>
-    public static readonly string[] ReservedNames = ["list", "show", "add", "remove", "validate"];
+    /// <summary>CLI subcommands and API routes (templates/schema, preview, drafts): a template cannot take these names.</summary>
+    public static readonly string[] ReservedNames = ["list", "show", "add", "remove", "validate", "schema", "preview", "drafts"];
 
     public static bool IsValidName(string? name) =>
         name is not null && NamePattern().IsMatch(name) && !ReservedNames.Contains(name, StringComparer.OrdinalIgnoreCase);
@@ -150,7 +150,7 @@ public sealed partial class TemplateLayout
             var type = Text(o, "type") ?? throw new TemplateException($"Al bloque {blocks.Count + 1} le falta 'type'.");
             var spec = new BlockSpec(blocks.Count + 1, type, o);
             var definition = LayoutBlocks.Find(type) ?? throw new TemplateException(
-                $"{spec.Where}: tipo de bloque desconocido. Disponibles: {string.Join(", ", LayoutBlocks.Names)}.");
+                $"{spec.Where}: tipo de bloque desconocido. Disponibles: {string.Join(", ", LayoutBlocks.Names)}.", spec.Index, "type");
             definition.Validate(spec, fields, assetExists);
             blocks.Add(spec);
         }
@@ -158,15 +158,15 @@ public sealed partial class TemplateLayout
     }
 
     /// <summary>Every placeholder in <paramref name="text"/> must be a declared field, now or counter.</summary>
-    internal static void CheckPlaceholders(string text, IReadOnlyList<TemplateField> fields, string where)
+    internal static void CheckPlaceholders(string text, IReadOnlyList<TemplateField> fields, string where, int? block = null, string? property = null)
     {
         foreach (var (name, _, filter) in Interpolator.Find(text))
         {
             if (!name.Equals("now", StringComparison.OrdinalIgnoreCase) && !name.Equals("counter", StringComparison.OrdinalIgnoreCase)
                 && !fields.Any(f => f.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
-                throw new TemplateException($"{where}: el marcador '{{{{{name}}}}}' no corresponde a ningún campo declarado.");
+                throw new TemplateException($"{where}: el marcador '{{{{{name}}}}}' no corresponde a ningún campo declarado.", block, property);
             if (filter is not null && !Interpolator.Filters.Contains(filter))
-                throw new TemplateException($"{where}: filtro desconocido '{filter}' (disponibles: {string.Join(", ", Interpolator.Filters)}).");
+                throw new TemplateException($"{where}: filtro desconocido '{filter}' (disponibles: {string.Join(", ", Interpolator.Filters)}).", block, property);
         }
     }
 }

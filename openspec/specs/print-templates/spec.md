@@ -44,7 +44,7 @@ Los códigos QR SHALL usar módulos de al menos 4 puntos y una zona de silencio 
 - **THEN** la petición se rechaza indicando el dígito de control esperado
 
 ### Requirement: Plantillas desde la bandeja
-La bandeja SHALL incluir una pestaña "Plantillas" con un formulario por plantilla, vista previa a tamaño real que se actualiza mientras se escribe, botón Imprimir con número de copias, carga de un CSV para imprimir lotes y favoritos con nombre, y SHALL recordar los últimos valores usados.
+La bandeja SHALL incluir una pestaña "Plantillas" con un formulario por plantilla, vista previa a tamaño real que se actualiza mientras se escribe, botón Imprimir con número de copias, carga de un CSV para imprimir lotes y favoritos con nombre, y SHALL recordar los últimos valores usados. La pestaña SHALL incluir también los botones Crear, Editar y Eliminar para gestionar las plantillas de usuario con el editor.
 
 #### Scenario: Vista previa
 - **WHEN** el usuario rellena la plantilla `label`
@@ -53,6 +53,10 @@ La bandeja SHALL incluir una pestaña "Plantillas" con un formulario por plantil
 #### Scenario: Copias
 - **WHEN** el usuario indica 3 copias y pulsa Imprimir
 - **THEN** se imprimen tres copias en un solo trabajo
+
+#### Scenario: Gestión de plantillas
+- **WHEN** el usuario abre la pestaña *Plantillas*
+- **THEN** ve los botones Crear, Editar y Eliminar junto al selector de plantillas
 
 ### Requirement: Plantillas desde la API y la CLI
 Las plantillas SHALL poder imprimirse con `POST /api/v1/print/template/{nombre}` (campos en el cuerpo, más `copies` y `rows` opcionales) y con `miniprinter template <nombre> --campo valor [--copies N] [--csv archivo]`.
@@ -64,4 +68,11 @@ Las plantillas SHALL poder imprimirse con `POST /api/v1/print/template/{nombre}`
 #### Scenario: Con copias desde la API
 - **WHEN** se envía `{"data":"hola","copies":2}` a `/api/v1/print/template/qr`
 - **THEN** se imprimen dos copias del código QR
+
+### Requirement: Vistas previas con las filas de cada bloque
+Las vistas previas de plantillas SHALL informar de las filas que ocupa cada bloque mediante la cabecera `X-Template-Blocks`, sin cambiar el contenido PNG de la respuesta.
+
+#### Scenario: Cliente existente
+- **WHEN** un cliente que ignora la cabecera pide la vista previa de `qr`
+- **THEN** recibe el mismo PNG que antes
 
