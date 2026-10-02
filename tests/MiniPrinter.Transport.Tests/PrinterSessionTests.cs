@@ -84,6 +84,35 @@ public class PrinterSessionTests
     }
 
     [Fact]
+    public async Task Keep_alive_prevents_idle_disconnect_and_polls()
+    {
+        var fake = new FakePrinterTransport();
+        await using var session = new PrinterSession(() => fake, "sim", Fast(idle: TimeSpan.FromMilliseconds(200)));
+        await session.RefreshAsync(CancellationToken.None);
+        var polls = 0;
+        session.MessageReceived += m => { if (m is MiniPrinter.Protocol.DeviceState) Interlocked.Increment(ref polls); };
+
+        session.KeepAlive(DateTimeOffset.UtcNow.AddSeconds(2), TimeSpan.FromMilliseconds(150));
+        await Task.Delay(1200);
+        Assert.Equal(LinkState.Connected, session.Status.Link);
+        Assert.True(polls >= 3, $"only {polls} polls");
+
+        // After the keep-alive period, the idle timeout applies again.
+        await WaitUntil(() => session.Status.Link == LinkState.Disconnected);
+        Assert.Null(session.Status.KeepAliveUntil);
+    }
+
+    [Fact]
+    public async Task Keep_alive_connects_a_disconnected_session()
+    {
+        var fake = new FakePrinterTransport();
+        await using var session = new PrinterSession(() => fake, "sim", Fast());
+        session.KeepAlive(DateTimeOffset.UtcNow.AddSeconds(3), TimeSpan.FromMilliseconds(100));
+        await WaitUntil(() => session.Status.Link == LinkState.Connected);
+        Assert.Equal(1, fake.ConnectCount);
+    }
+
+    [Fact]
     public async Task Use_is_exclusive()
     {
         var fake = new FakePrinterTransport();

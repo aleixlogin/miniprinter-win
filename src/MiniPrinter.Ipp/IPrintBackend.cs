@@ -48,6 +48,35 @@ public sealed record PrinterSnapshot(
     bool AcceptingJobs,
     int QueuedJobs);
 
+/// <summary>Per-document options from the IPP request.</summary>
+public sealed record DocumentOptions
+{
+    /// <summary>1-based inclusive page ranges (IPP <c>page-ranges</c>); null or empty means all pages.</summary>
+    public IReadOnlyList<IppRange>? PageRanges { get; init; }
+
+    public bool Includes(int page) =>
+        PageRanges is not { Count: > 0 } ranges || ranges.Any(r => page >= r.Lower && page <= r.Upper);
+
+    /// <summary>Parses "2-3,5" (CLI syntax).</summary>
+    public static DocumentOptions ParsePages(string? pages)
+    {
+        if (string.IsNullOrWhiteSpace(pages))
+            return new DocumentOptions();
+        var ranges = new List<IppRange>();
+        foreach (var part in pages.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var bounds = part.Split('-', 2, StringSplitOptions.TrimEntries);
+            if (!int.TryParse(bounds[0], out var from) || from < 1)
+                throw new FormatException($"Invalid page range '{part}'.");
+            var to = from;
+            if (bounds.Length == 2 && (!int.TryParse(bounds[1], out to) || to < from))
+                throw new FormatException($"Invalid page range '{part}'.");
+            ranges.Add(new IppRange(from, to));
+        }
+        return new DocumentOptions { PageRanges = ranges };
+    }
+}
+
 /// <summary>What the IPP front-end needs from the print service.</summary>
 public interface IPrintBackend
 {
@@ -61,7 +90,7 @@ public interface IPrintBackend
     /// (already buffered, positioned at 0). Throws <see cref="NotSupportedException"/> for formats
     /// it cannot print.
     /// </summary>
-    JobInfo SubmitDocument(int jobId, Stream document, string? format, bool lastDocument);
+    JobInfo SubmitDocument(int jobId, Stream document, string? format, bool lastDocument, DocumentOptions? options = null);
 
     JobInfo? GetJob(int jobId);
 

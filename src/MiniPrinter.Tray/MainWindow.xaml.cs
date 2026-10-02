@@ -10,6 +10,7 @@ public partial class MainWindow : Window
     private readonly ServiceConnection _service;
     private readonly BluetoothScanner _scanner = new();
     private readonly ObservableCollection<FoundDevice> _devices = [];
+    private readonly TemplatesPanel _templates;
     private ServiceSettings? _settings;
     private bool _wizard;
     private DateTime _lastJobsRefresh = DateTime.MinValue;
@@ -19,6 +20,12 @@ public partial class MainWindow : Window
         _service = service;
         InitializeComponent();
         DevicesList.ItemsSource = _devices;
+        _templates = new TemplatesPanel(service, TemplateCombo, TemplateForm, TemplatePreview, TemplateStatus);
+        Tabs.SelectionChanged += async (_, e) =>
+        {
+            if (e.OriginalSource == Tabs && Tabs.SelectedItem == TemplatesTab)
+                await _templates.LoadAsync();
+        };
         _scanner.DeviceFound += d => Dispatcher.BeginInvoke(() => OnDeviceFound(d));
         _scanner.DeviceRemoved += id => Dispatcher.BeginInvoke(() =>
         {
@@ -27,6 +34,7 @@ public partial class MainWindow : Window
         });
         _scanner.Completed += () => Dispatcher.BeginInvoke(() => ScanStatus.Text = $"{_devices.Count} dispositivos. La búsqueda sigue activa.");
         Loaded += async (_, _) => await LoadSettingsAsync();
+        HotkeyBox.Text = ((App)Application.Current).Preferences.QuickNoteHotkey;
         Closed += (_, _) => _scanner.Dispose();
     }
 
@@ -62,7 +70,9 @@ public partial class MainWindow : Window
         StateText.Text = status.Link != "Connected" && status.LastSeen is null ? "—"
             : status.Alarms.Count > 0 ? $"Requiere atención: {string.Join(", ", status.Alarms.Select(App.Translate))}"
             : status.Printing ? "Imprimiendo" : "Lista";
-        BatteryText.Text = status.BatteryLevel is { } level ? $"{level} (valor en bruto de la impresora)" : "—";
+        BatteryText.Text = BatteryInterpreter.Describe(status.BatteryLevel, status.BatteryUnit) + (status.LowBattery ? "  ·  BATERÍA BAJA" : "");
+        SamplingText.Text = status.SamplingUntil is { } until ? $"Muestreando hasta las {until.ToLocalTime():HH:mm}" : "";
+        SamplingButton.Content = status.SamplingUntil is null ? "Muestrear batería 8 h" : "Detener muestreo";
         FirmwareText.Text = status.Firmware ?? "—";
         UrlsText.Text = string.Join(Environment.NewLine, status.IppUrls);
         ConnectButton.Content = status.Link == "Connected" ? "Desconectar" : "Conectar";
@@ -113,6 +123,71 @@ public partial class MainWindow : Window
 
     private async void OnFeed(object sender, RoutedEventArgs e) => await Run(c => c.FeedAsync());
 
+    private async void OnSampling(object sender, RoutedEventArgs e)
+    {
+        if (_service.Status?.SamplingUntil is null)
+            await Run(c => c.StartSamplingAsync(TimeSpan.FromHours(8)));
+        else
+            await Run(async c => { await c.StopSamplingAsync(); return true; });
+    }
+
+    private async void OnExportTelemetry(object sender, RoutedEventArgs e)
+    {
+        var dialog = new Microsoft.Win32.SaveFileDialog
+        {
+            FileName = $"miniprinter-bateria-{DateTime.Now:yyyyMMdd-HHmm}.csv",
+            Filter = "CSV (*.csv)|*.csv",
+        };
+        if (dialog.ShowDialog(this) != true)
+            return;
+        await Run(async c =>
+        {
+            await System.IO.File.WriteAllTextAsync(dialog.FileName, await c.ExportTelemetryAsync());
+            return true;
+        });
+    }
+
+    private async Task LoadAutomationAsync()
+    {
+        try
+        {
+            ShowAutomation(await _service.Client.GetAutomationAsync());
+        }
+        catch (Exception ex)
+        {
+            AutomationUrlsText.Text = ex.Message;
+        }
+    }
+
+    private void ShowAutomation(AutomationInfo info)
+    {
+        AutomationTokenBox.Text = info.Token;
+        AutomationUrlsText.Text = info.Enabled
+            ? string.Join(Environment.NewLine, info.Urls) + Environment.NewLine + "Cabecera: Authorization: Bearer <token>"
+            : "Desactivada.";
+    }
+
+    private void OnCopyToken(object sender, RoutedEventArgs e)
+    {
+        if (!string.IsNullOrEmpty(AutomationTokenBox.Text))
+            Clipboard.SetText(AutomationTokenBox.Text);
+    }
+
+    private async void OnRegenerateToken(object sender, RoutedEventArgs e)
+    {
+        if (MessageBox.Show(this, "El token actual dejará de funcionar en tus scripts y automatizaciones. ¿Continuar?",
+                "MiniPrinter", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+            return;
+        try
+        {
+            ShowAutomation(await _service.Client.RegenerateAutomationTokenAsync());
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "MiniPrinter", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
     /// <summary>Opens the pages of the last job exactly as they were sent to the printer.</summary>
     private async void OnPreview(object sender, RoutedEventArgs e)
     {
@@ -143,6 +218,45 @@ public partial class MainWindow : Window
             MessageBox.Show(this, ex.Message, "MiniPrinter", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
+
+    private void OnDragOver(object sender, DragEventArgs e)
+    {
+        e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    /// <summary>Files dropped anywhere on the panel are printed (one job per file).</summary>
+    private async void OnDropFiles(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetData(DataFormats.FileDrop) is not string[] files || files.Length == 0)
+            return;
+        try
+        {
+            var message = await QuickPrint.PrintFilesAsync(_service.Client, files);
+            ShowBanner(message);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "MiniPrinter", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    private void OnApplyHotkey(object sender, RoutedEventArgs e)
+    {
+        var hotkey = HotkeyBox.Text.Trim();
+        if (!GlobalHotkey.TryParse(hotkey, out _, out _))
+        {
+            HotkeyStatus.Text = "Formato no válido. Usa algo como Ctrl+Alt+P.";
+            return;
+        }
+        HotkeyStatus.Text = ((App)Application.Current).ApplyHotkey(hotkey, notifyOnFailure: false)
+            ? $"Atajo {hotkey} activo."
+            : $"No se pudo registrar {hotkey}: lo usa otro programa.";
+    }
+
+    private async void OnTemplatePreview(object sender, RoutedEventArgs e) => await _templates.PreviewAsync();
+
+    private async void OnTemplatePrint(object sender, RoutedEventArgs e) => await _templates.PrintAsync();
 
     private async void OnCancelJob(object sender, RoutedEventArgs e)
     {
@@ -276,6 +390,13 @@ public partial class MainWindow : Window
         }
         DarknessSlider.Value = _settings.Darkness;
         DitherCombo.SelectedItem = DitherCombo.Items.Cast<ComboBoxItem>().First(i => (string)i.Tag == _settings.Dither.ToString());
+        PrintModeCombo.SelectedItem = PrintModeCombo.Items.Cast<ComboBoxItem>().First(i => (string)i.Tag == _settings.PrintMode.ToString());
+        BatteryUnitCombo.SelectedItem = BatteryUnitCombo.Items.Cast<ComboBoxItem>().First(i => (string)i.Tag == _settings.BatteryUnit.ToString());
+        LowBatteryBox.Text = _settings.LowBatteryPercent.ToString();
+        ContinuousCheck.IsChecked = _settings.ContinuousPages;
+        AutomationCheck.IsChecked = _settings.AutomationApiEnabled;
+        await LoadAutomationAsync();
+        GapBox.Text = _settings.PageGapMm.ToString();
         FeedSlider.Value = _settings.ExtraFeedSteps;
         IdleBox.Text = _settings.IdleTimeoutSeconds.ToString();
         NameBox.Text = _settings.PrinterName;
@@ -289,7 +410,7 @@ public partial class MainWindow : Window
     {
         if (_settings is null)
             return;
-        if (!int.TryParse(IdleBox.Text, out var idle) || !int.TryParse(PortBox.Text, out var port))
+        if (!int.TryParse(IdleBox.Text, out var idle) || !int.TryParse(PortBox.Text, out var port) || !int.TryParse(LowBatteryBox.Text, out var lowBattery) || !int.TryParse(GapBox.Text, out var gap))
         {
             SettingsStatus.Text = "Revisa los campos numéricos.";
             return;
@@ -298,6 +419,12 @@ public partial class MainWindow : Window
         {
             Darkness = (int)DarknessSlider.Value,
             Dither = Enum.Parse<DitherChoice>((string)((ComboBoxItem)DitherCombo.SelectedItem).Tag),
+            PrintMode = Enum.Parse<PrintModeChoice>((string)((ComboBoxItem)PrintModeCombo.SelectedItem).Tag),
+            BatteryUnit = Enum.Parse<BatteryUnit>((string)((ComboBoxItem)BatteryUnitCombo.SelectedItem).Tag),
+            LowBatteryPercent = lowBattery,
+            ContinuousPages = ContinuousCheck.IsChecked == true,
+            AutomationApiEnabled = AutomationCheck.IsChecked == true,
+            PageGapMm = gap,
             ExtraFeedSteps = (int)FeedSlider.Value,
             IdleTimeoutSeconds = idle,
             PrinterName = NameBox.Text,
@@ -307,6 +434,7 @@ public partial class MainWindow : Window
         try
         {
             _settings = await _service.Client.SaveSettingsAsync(updated);
+            await LoadAutomationAsync();
             SettingsStatus.Text = updated.NetworkMode != NetworkMode.Local
                 ? "Guardado. El modo red se aplica cuando no hay trabajos en curso."
                 : "Guardado.";

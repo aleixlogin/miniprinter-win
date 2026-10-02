@@ -117,7 +117,7 @@ public sealed class IppPrinterService
         yield return A("ipp-features-supported", IppValue.Keyword("ipp-everywhere"));
         yield return A("ipp-versions-supported", IppValue.Keyword("1.1"), IppValue.Keyword("2.0"));
         yield return A("job-creation-attributes-supported", Keywords(["copies", "media", "media-col", "orientation-requested",
-            "print-color-mode", "print-quality", "printer-resolution", "sides"]));
+            "page-ranges", "print-color-mode", "print-quality", "printer-resolution", "sides"]));
         yield return A("job-ids-supported", IppValue.Boolean(true));
         yield return A("media-bottom-margin-supported", IppValue.Integer(0));
         yield return A("media-left-margin-supported", IppValue.Integer(0));
@@ -147,6 +147,7 @@ public sealed class IppPrinterService
         yield return A("output-bin-supported", IppValue.Keyword("face-up"));
         yield return A("pages-per-minute", IppValue.Integer(2));
         yield return A("pdl-override-supported", IppValue.Keyword("attempted"));
+        yield return A("page-ranges-supported", IppValue.Boolean(true));
         yield return A("print-color-mode-default", IppValue.Keyword("monochrome"));
         yield return A("print-color-mode-supported", IppValue.Keyword("monochrome"), IppValue.Keyword("auto"));
         yield return A("print-quality-default", IppValue.Enum(4));
@@ -219,7 +220,7 @@ public sealed class IppPrinterService
 
         var buffered = await BufferAsync(document, ct);
         var job = _backend.CreateJob(JobName(request), UserName(request));
-        job = _backend.SubmitDocument(job.Id, buffered, request.Operation("document-format")?.Value.AsString(), lastDocument: true);
+        job = _backend.SubmitDocument(job.Id, buffered, request.Operation("document-format")?.Value.AsString(), lastDocument: true, DocumentOptionsOf(request));
         return JobResponse(request, job, printerUri);
     }
 
@@ -242,7 +243,7 @@ public sealed class IppPrinterService
 
         var last = request.Operation("last-document")?.Value.Value as bool? ?? true;
         var buffered = await BufferAsync(document, ct);
-        job = _backend.SubmitDocument(id, buffered, format, last);
+        job = _backend.SubmitDocument(id, buffered, format, last, DocumentOptionsOf(request));
         return JobResponse(request, job, printerUri);
     }
 
@@ -308,6 +309,14 @@ public sealed class IppPrinterService
         yield return new("time-at-completed", job.Completed is null ? IppValue.NoValue : IppValue.Integer(Time(job.Completed)));
         yield return new("job-impressions-completed", IppValue.Integer(job.PagesCompleted));
         yield return new("job-k-octets", IppValue.Integer((int)((job.SizeBytes + 1023) / 1024)));
+    }
+
+    /// <summary>Reads <c>page-ranges</c> from the job (IPP/2.0) or operation group.</summary>
+    private static DocumentOptions DocumentOptionsOf(IppMessage request)
+    {
+        var attribute = request.Group(IppGroupTag.Job)?["page-ranges"] ?? request.Operation("page-ranges");
+        var ranges = attribute?.Values.Select(v => v.Value).OfType<IppRange>().ToList();
+        return new DocumentOptions { PageRanges = ranges is { Count: > 0 } ? ranges : null };
     }
 
     private static string JobName(IppMessage request) =>

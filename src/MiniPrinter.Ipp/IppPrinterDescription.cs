@@ -18,7 +18,7 @@ public sealed record IppPrinterDescription
     public int Dpi { get; init; } = 203;
 
     public IReadOnlyList<string> DocumentFormats { get; init; } =
-        ["image/pwg-raster", "image/jpeg", "image/png", "application/octet-stream"];
+        ["image/pwg-raster", "application/pdf", "image/jpeg", "image/png", "application/octet-stream"];
 
     /// <summary>
     /// 48 mm sizes (the printable width of a 58 mm roll, 384 dots) render 1:1 at 203 dpi; 48×210 is
@@ -31,6 +31,7 @@ public sealed record IppPrinterDescription
         new("om_x5h-48x100mm_48x100mm", 4800, 10000),
         new("om_x5h-48x50mm_48x50mm", 4800, 5000),
         new("om_x5h-48x297mm_48x297mm", 4800, 29700),
+        new("om_x5h-48x1000mm_48x1000mm", 4800, 100000), // "rollo": long strips, blank tail is trimmed
         new("om_x5h-80x297mm_80x297mm", 8000, 29700),
         new("om_x5h-80x100mm_80x100mm", 8000, 10000),
     ];

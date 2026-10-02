@@ -8,5 +8,6 @@
     <ProjectReference Include="..\MiniPrinter.Protocol\MiniPrinter.Protocol.csproj" />
     <ProjectReference Include="..\MiniPrinter.Transport\MiniPrinter.Transport.csproj" />
     <ProjectReference Include="..\MiniPrinter.Imaging\MiniPrinter.Imaging.csproj" />
+    <ProjectReference Include="..\MiniPrinter.Ipp\MiniPrinter.Ipp.csproj" />
   </ItemGroup>
 </Project>

@@ -33,6 +33,10 @@ internal sealed class CliArgs
 
     public bool Has(string name) => _options.ContainsKey(name);
 
+    /// <summary>All "--name value" options, without the leading dashes.</summary>
+    public IReadOnlyDictionary<string, string?> Options =>
+        _options.ToDictionary(o => o.Key.TrimStart('-'), o => o.Value, StringComparer.OrdinalIgnoreCase);
+
     public string? Value(string name) => _options.GetValueOrDefault(name);
 
     public string? Positional(int index) => index < _positional.Count ? _positional[index] : null;

@@ -5,7 +5,7 @@ namespace MiniPrinter.Cli;
 
 internal static class PrintFile
 {
-    public static IReadOnlyList<MonoBitmap> Rasterize(string path, int width, string? dither, bool isText)
+    public static IReadOnlyList<RasterResult> Rasterize(string path, int width, string? dither, bool isText, string? pages = null)
     {
         if (!File.Exists(path))
             throw new CliException($"File not found: {path}");
@@ -26,7 +26,13 @@ internal static class PrintFile
         using var stream = File.OpenRead(path);
         try
         {
-            return ImageDecoder.Decode(stream).Select(page => Rasterizer.Rasterize(page, options)).ToList();
+            var selection = MiniPrinter.Ipp.DocumentOptions.ParsePages(pages);
+            return ImageDecoder.Decode(stream, includePage: selection.Includes)
+                .Select(page => Rasterizer.RasterizeWithMode(page, options)).ToList();
+        }
+        catch (FormatException ex)
+        {
+            throw new CliException(ex.Message);
         }
         catch (NotSupportedException ex)
         {

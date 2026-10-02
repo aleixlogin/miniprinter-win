@@ -46,22 +46,33 @@ public sealed record RasterOptions
     public int PrinterDpi { get; init; } = 203;
 }
 
+/// <summary>A rasterized page and whether it was classified as text (line art) or image.</summary>
+public sealed record RasterResult(MonoBitmap Bitmap, bool IsText);
+
 /// <summary>Grey page → 1-bit raster at the printer's head width.</summary>
 public static class Rasterizer
 {
-    public static MonoBitmap Rasterize(GrayImage page, RasterOptions options)
+    public static MonoBitmap Rasterize(GrayImage page, RasterOptions options) => RasterizeWithMode(page, options).Bitmap;
+
+    /// <summary>
+    /// Rasterizes and classifies the page: it is text when <see cref="ChooseMode"/> picks threshold
+    /// (few mid-tones), independently of the dither mode used.
+    /// </summary>
+    public static RasterResult RasterizeWithMode(GrayImage page, RasterOptions options)
     {
         var source = options.FitContentWidth ? CropToContent(page, options.WidthPx, options.PrinterDpi) : page;
         var scaled = Scale(source, options.WidthPx);
         Adjust(scaled, options.Brightness, options.Contrast);
-        var mode = options.Dither == DitherMode.Auto ? ChooseMode(scaled) : options.Dither;
+        var classification = ChooseMode(scaled);
+        var mode = options.Dither == DitherMode.Auto ? classification : options.Dither;
         var mono = mode switch
         {
             DitherMode.Atkinson => Atkinson(scaled),
             DitherMode.FloydSteinberg => FloydSteinberg(scaled),
             _ => Threshold(scaled, options.Threshold),
         };
-        return options.TrimBlank ? TrimBlankRows(mono, options.BottomMarginRows) : mono;
+        var result = options.TrimBlank ? TrimBlankRows(mono, options.BottomMarginRows) : mono;
+        return new RasterResult(result, classification == DitherMode.Threshold);
     }
 
     /// <summary>

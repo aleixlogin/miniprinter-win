@@ -17,13 +17,15 @@ public sealed class IppHost : BackgroundService
     private readonly JobQueue _queue;
     private readonly ILogger<IppHost> _logger;
     private readonly ILoggerFactory _loggerFactory;
+    private readonly IServiceProvider _services;
     private readonly SemaphoreSlim _restart = new(0);
     private WebApplication? _app;
     private MdnsAdvertiser? _mdns;
     private ServiceSettings? _active;
 
-    public IppHost(SettingsStore settings, JobQueue queue, ILogger<IppHost> logger, ILoggerFactory loggerFactory)
+    public IppHost(SettingsStore settings, JobQueue queue, ILogger<IppHost> logger, ILoggerFactory loggerFactory, IServiceProvider services)
     {
+        _services = services;
         _settings = settings;
         _queue = queue;
         _logger = logger;
@@ -91,6 +93,8 @@ public sealed class IppHost : BackgroundService
         var app = builder.Build();
         var logger = _loggerFactory.CreateLogger("MiniPrinter.Ipp");
         app.MapPost(description.ResourcePath, context => IppEndpoint.HandleAsync(context, printer, logger));
+        AutomationApi.Map(app, _settings, _services.GetRequiredService<AutomationToken>(),
+            _services.GetRequiredService<PrintRequests>(), _queue);
         app.MapPost("/", context => IppEndpoint.HandleAsync(context, printer, logger));
         app.MapGet("/", context => IppEndpoint.StatusPageAsync(context, printer, _queue));
         app.MapGet(description.ResourcePath, context => IppEndpoint.StatusPageAsync(context, printer, _queue));

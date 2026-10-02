@@ -30,6 +30,7 @@ if ($printer) {
 Step 'Stopping the tray app'
 Get-Process -Name 'MiniPrinter.Tray' -ErrorAction SilentlyContinue | Stop-Process -Force
 Remove-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run' -Name 'MiniPrinter' -ErrorAction SilentlyContinue
+Remove-Item (Join-Path ([Environment]::GetFolderPath('SendTo')) 'MiniPrinter.lnk') -ErrorAction SilentlyContinue
 
 Step 'Removing the service'
 if (Get-Service -Name $serviceName -ErrorAction SilentlyContinue) {

@@ -17,9 +17,16 @@ builder.Services.AddHostedService(sp => sp.GetRequiredService<JobQueue>());
 builder.Services.AddSingleton<IppHost>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<IppHost>());
 builder.Services.AddSingleton<StatusBuilder>();
+builder.Services.AddSingleton<BatteryMonitor>();
+builder.Services.AddSingleton<PrintRequests>();
+builder.Services.AddSingleton<AutomationToken>();
+builder.Services.AddSingleton(sp => new TelemetryLog(paths, sp.GetRequiredService<ILogger<TelemetryLog>>(), sp.GetRequiredService<PrinterManager>()));
 
 var app = builder.Build();
 var token = ControlApi.EnsureToken(paths, app.Logger);
+app.Services.GetRequiredService<TelemetryLog>();      // start recording status replies
+var battery = app.Services.GetRequiredService<BatteryMonitor>();
+app.Services.GetRequiredService<JobQueue>().LowBatteryProbe = () => battery.IsLow;
 ControlApi.Map(app, token);
 app.Logger.LogInformation("MiniPrinter control API on http://127.0.0.1:{Port}/api (data: {Data})", controlPort, paths.DataDirectory);
 app.Run();

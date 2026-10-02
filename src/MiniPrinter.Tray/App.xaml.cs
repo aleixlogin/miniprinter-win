@@ -11,10 +11,21 @@ public partial class App : Application
     private MainWindow? _window;
     private StatusDto? _lastStatus;
     private bool _wizardShown;
+    private GlobalHotkey? _hotkey;
+    private QuickNoteWindow? _quickNote;
+    private TrayPreferences _preferences = TrayPreferences.Load();
 
-    protected override void OnStartup(StartupEventArgs e)
+    protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        // "Send to > MiniPrinter": print the files and exit without starting the tray.
+        if (e.Args.Length > 0 && e.Args[0] == "--print")
+        {
+            await PrintFromCommandLineAsync(e.Args.Skip(1).ToArray());
+            Shutdown();
+            return;
+        }
+
         _singleInstance = new Mutex(initiallyOwned: true, @"Local\MiniPrinter.Tray", out var created);
         if (!created)
         {
@@ -24,9 +35,14 @@ public partial class App : Application
 
         _service = new ServiceConnection();
         _tray = new TrayIcon(OpenPanel, ToggleConnection, () => RunAction(c => c.TestPrintAsync(), "Página de prueba enviada."),
-            () => RunAction(c => c.FeedAsync(), null), ExitApp);
+            () => RunAction(c => c.FeedAsync(), null), ExitApp, PrintClipboard, OpenQuickNote);
         _service.Changed += () => Dispatcher.BeginInvoke(OnServiceChanged);
         _service.Start();
+
+        _hotkey = new GlobalHotkey();
+        _hotkey.Pressed += OpenQuickNote;
+        ApplyHotkey(_preferences.QuickNoteHotkey, notifyOnFailure: true);
+        QuickPrint.EnsureSendToShortcut(Environment.ProcessPath ?? "");
 
         if (e.Args.Contains("--open"))
             OpenPanel();
@@ -34,6 +50,7 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        _hotkey?.Dispose();
         _tray?.Dispose();
         _service?.Dispose();
         _singleInstance?.Dispose();
@@ -67,6 +84,8 @@ public partial class App : Application
         var newAlarms = current.Alarms.Except(previous?.Alarms ?? []).ToList();
         if (newAlarms.Count > 0)
             _tray!.Notify("La impresora necesita atención", string.Join(", ", newAlarms.Select(Translate)), warning: true);
+        if (current.LowBattery && previous?.LowBattery != true)
+            _tray!.Notify("Batería baja", $"La impresora está al {current.BatteryPercent} %. Conéctala para cargar.", warning: true);
         if (current.LastErrorKind == "Busy" && previous?.LastErrorKind != "Busy")
             _tray!.Notify("Impresora ocupada", "Otra aplicación (TiMini-Print, la app del móvil…) está usando la impresora.", warning: true);
     }
@@ -110,6 +129,74 @@ public partial class App : Application
         if (_window.WindowState == WindowState.Minimized)
             _window.WindowState = WindowState.Normal;
         _window.Activate();
+    }
+
+    public TrayPreferences Preferences => _preferences;
+
+    /// <summary>Registers the quick-note hotkey; returns false (and optionally notifies) if it is invalid or taken.</summary>
+    public bool ApplyHotkey(string hotkey, bool notifyOnFailure)
+    {
+        if (_hotkey is null)
+            return false;
+        var ok = _hotkey.Register(hotkey);
+        _tray?.SetQuickNoteHotkey(ok ? hotkey : null);
+        if (ok)
+        {
+            _preferences = _preferences with { QuickNoteHotkey = hotkey };
+            _preferences.Save();
+        }
+        else if (notifyOnFailure)
+        {
+            _tray?.Notify("Atajo no disponible",
+                $"No se pudo registrar {hotkey} (¿lo usa otro programa?). Elige otro en Ajustes.", warning: true);
+        }
+        return ok;
+    }
+
+    private void OpenQuickNote()
+    {
+        if (_quickNote is not null)
+        {
+            _quickNote.Activate();
+            return;
+        }
+        _quickNote = new QuickNoteWindow(_service!, _preferences.QuickNoteSizePt);
+        _quickNote.Closed += (_, _) =>
+        {
+            _preferences = _preferences with { QuickNoteSizePt = _quickNote.SizePt };
+            _preferences.Save();
+            _quickNote = null;
+        };
+        _quickNote.Show();
+        _quickNote.Activate();
+    }
+
+    private async void PrintClipboard()
+    {
+        try
+        {
+            var message = await QuickPrint.PrintClipboardAsync(_service!.Client);
+            _tray!.Notify("MiniPrinter", message, warning: message.StartsWith("No hay", StringComparison.Ordinal));
+        }
+        catch (Exception ex)
+        {
+            _tray!.Notify("MiniPrinter", ex.Message, warning: true);
+        }
+    }
+
+    private static async Task PrintFromCommandLineAsync(string[] files)
+    {
+        try
+        {
+            using var client = ControlClient.FromTokenFile();
+            var message = await QuickPrint.PrintFilesAsync(client, files);
+            if (message.Contains("no admitido", StringComparison.Ordinal))
+                MessageBox.Show(message, "MiniPrinter", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"No se pudo imprimir: {ex.Message}", "MiniPrinter", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
     }
 
     private void ToggleConnection()

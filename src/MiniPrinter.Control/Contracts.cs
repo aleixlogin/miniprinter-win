@@ -18,6 +18,25 @@ public enum TransportChoice
     Simulated,
 }
 
+/// <summary>Printer mode per page: automatic (text pages in text mode) or forced.</summary>
+public enum PrintModeChoice
+{
+    Auto,
+    Image,
+    Text,
+}
+
+/// <summary>How to interpret byte 2 of the A3 reply (battery).</summary>
+public enum BatteryUnit
+{
+    /// <summary>Show the raw value; no percentage or low-battery warning.</summary>
+    Unknown,
+    /// <summary>The value is a percentage.</summary>
+    Percent,
+    /// <summary>The value is the cell voltage in tenths of a volt.</summary>
+    Decivolts,
+}
+
 public enum DitherChoice
 {
     Auto,
@@ -53,6 +72,26 @@ public sealed record ServiceSettings
 
     /// <summary>Minutes a job waits for an unavailable printer before it is aborted.</summary>
     public int JobRetryMinutes { get; init; } = 10;
+
+    public PrintModeChoice PrintMode { get; init; } = PrintModeChoice.Auto;
+
+    /// <summary>Print the pages of a job as one continuous strip (no paper advance between pages).</summary>
+    public bool ContinuousPages { get; init; }
+
+    /// <summary>Gap between pages in continuous mode, in millimetres.</summary>
+    public int PageGapMm { get; init; } = 4;
+
+    public BatteryUnit BatteryUnit { get; init; } = BatteryUnit.Unknown;
+
+    /// <summary>Low-battery warning threshold, in percent.</summary>
+    public int LowBatteryPercent { get; init; } = 20;
+
+    /// <summary>Enables the /api/v1 automation endpoints on the IPP listener.</summary>
+    public bool AutomationApiEnabled { get; init; }
+
+    public string TextFont { get; init; } = "Segoe UI";
+
+    public int TextSizePt { get; init; } = 10;
 }
 
 public sealed record JobDto(
@@ -78,6 +117,16 @@ public sealed record StatusDto
 
     /// <summary>Raw paper sensor reading from <c>A3</c> byte 1 (≈15 with paper, ≈27 without).</summary>
     public int? PaperSensor { get; init; }
+
+    /// <summary>Battery percentage per the configured unit (null when the unit is unknown).</summary>
+    public int? BatteryPercent { get; init; }
+
+    public BatteryUnit BatteryUnit { get; init; }
+
+    public bool LowBattery { get; init; }
+
+    /// <summary>End of the current battery sampling period, if any.</summary>
+    public DateTimeOffset? SamplingUntil { get; init; }
     public string? Firmware { get; init; }
     public bool Printing { get; init; }
     public string? LastError { get; init; }
@@ -90,6 +139,14 @@ public sealed record StatusDto
 }
 
 public sealed record ApiError(string Error);
+
+/// <summary>Automation API state shown in the tray (GET/POST /api/automation…).</summary>
+public sealed record AutomationInfo(bool Enabled, string Token, IReadOnlyList<string> Urls);
+
+/// <summary>Template description as returned by GET /api/templates.</summary>
+public sealed record TemplateFieldDto(string Name, string Label, string Kind, bool Required, IReadOnlyList<string>? Choices, string? Default);
+
+public sealed record TemplateDto(string Name, string Title, string Description, IReadOnlyList<TemplateFieldDto> Fields, bool IsImage);
 
 public static class ControlDefaults
 {

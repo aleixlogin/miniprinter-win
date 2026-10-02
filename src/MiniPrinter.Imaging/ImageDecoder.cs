@@ -8,24 +8,31 @@ namespace MiniPrinter.Imaging;
 public static class ImageDecoder
 {
     public static readonly IReadOnlyList<string> SupportedFormats =
-        ["image/pwg-raster", "image/jpeg", "image/png"];
+        ["image/pwg-raster", "application/pdf", "image/jpeg", "image/png"];
 
     /// <summary>
     /// Decodes <paramref name="stream"/>. The format is sniffed from the content, so
     /// <paramref name="contentType"/> may be <c>application/octet-stream</c> or null.
     /// </summary>
     /// <exception cref="NotSupportedException">The document format is not supported.</exception>
-    public static IEnumerable<GrayImage> Decode(Stream stream, string? contentType = null)
+    public static IEnumerable<GrayImage> Decode(Stream stream, string? contentType = null, Func<int, bool>? includePage = null)
     {
         var buffered = stream.CanSeek ? stream : CopyToMemory(stream);
         Span<byte> head = stackalloc byte[8];
         var read = buffered.Read(head);
         buffered.Seek(-read, SeekOrigin.Current);
 
-        if (PwgRasterReader.IsPwgRaster(head[..read]) || contentType == "image/pwg-raster")
-            return new PwgRasterReader(buffered).ReadPages();
+        if (PdfRasterizer.IsPdf(head[..read]) || contentType == "application/pdf")
+        {
+            using var memory = new MemoryStream();
+            buffered.CopyTo(memory);
+            return PdfRasterizer.Render(memory.ToArray(), includePage);
+        }
 
-        return DecodeBitmap(buffered);
+        var pages = PwgRasterReader.IsPwgRaster(head[..read]) || contentType == "image/pwg-raster"
+            ? new PwgRasterReader(buffered).ReadPages()
+            : DecodeBitmap(buffered);
+        return includePage is null ? pages : pages.Where((_, index) => includePage(index + 1));
     }
 
     private static IEnumerable<GrayImage> DecodeBitmap(Stream stream)

@@ -28,6 +28,7 @@ public sealed class JobQueue : IPrintBackend, IHostedService, IAsyncDisposable
     private int _nextId = 1;
     private string? _waitingReason;
     private int _stopped;
+    private bool _pageEndSent; // set by the last PrintPageAsync attempt that sent a page end (single worker)
 
     public JobQueue(PrinterManager printer, SettingsStore settings, ServicePaths paths, ILogger<JobQueue> logger)
     {
@@ -39,6 +40,9 @@ public sealed class JobQueue : IPrintBackend, IHostedService, IAsyncDisposable
 
     /// <summary>Raised when any job changes state.</summary>
     public event Action? JobsChanged;
+
+    /// <summary>Reports whether the battery is low (adds <c>other-warning</c> to the IPP state).</summary>
+    public Func<bool>? LowBatteryProbe { get; set; }
 
     /// <summary>Polling interval while waiting for the printer to become ready.</summary>
     public TimeSpan RetryInterval { get; init; } = TimeSpan.FromSeconds(5);
@@ -93,6 +97,8 @@ public sealed class JobQueue : IPrintBackend, IHostedService, IAsyncDisposable
             if (state.Alarms.HasFlag(PrinterAlarms.LowBattery)) reasons.Add("other-warning");
             if (reasons.Count == 0) reasons.Add("other-error");
         }
+        if (LowBatteryProbe?.Invoke() == true && !reasons.Contains("other-warning"))
+            reasons.Add("other-warning");
         if (status.Link == LinkState.Error)
             reasons.Add("offline-report");
         if (status.Link == LinkState.Connecting)
@@ -122,7 +128,11 @@ public sealed class JobQueue : IPrintBackend, IHostedService, IAsyncDisposable
         return job.Info;
     }
 
-    public JobInfo SubmitDocument(int jobId, Stream document, string? format, bool lastDocument)
+    public JobInfo SubmitDocument(int jobId, Stream document, string? format, bool lastDocument, DocumentOptions? options = null) =>
+        SubmitDocument(jobId, document, format, lastDocument, darkness: null, options);
+
+    /// <summary>Queues a document, optionally overriding the configured darkness for this job.</summary>
+    public JobInfo SubmitDocument(int jobId, Stream document, string? format, bool lastDocument, int? darkness, DocumentOptions? options = null)
     {
         if (!IsSupported(document, format))
             throw new NotSupportedException($"Document format {format ?? "unknown"} is not supported.");
@@ -133,6 +143,8 @@ public sealed class JobQueue : IPrintBackend, IHostedService, IAsyncDisposable
             job = _jobs.GetValueOrDefault(jobId) ?? throw new KeyNotFoundException($"Job {jobId} not found.");
             job.Document = document;
             job.Format = format;
+            job.Darkness = darkness;
+            job.Options = options;
             job.Info = job.Info with { StateReasons = ["none"], SizeBytes = document.Length };
         }
         _pending.Writer.TryWrite(jobId);
@@ -175,14 +187,15 @@ public sealed class JobQueue : IPrintBackend, IHostedService, IAsyncDisposable
 
     public Task IdentifyAsync(CancellationToken cancellationToken) => _printer.FeedAsync(48, cancellationToken);
 
-    /// <summary>Queues a raster directly (used for test prints).</summary>
-    public JobInfo SubmitBitmap(string name, MonoBitmap page)
+    /// <summary>Queues a raster directly (test prints, rendered text, templates).</summary>
+    public JobInfo SubmitBitmap(string name, MonoBitmap page, bool isText = false, string user = "MiniPrinter", int? darkness = null)
     {
-        var info = CreateJob(name, "MiniPrinter");
+        var info = CreateJob(name, user);
         lock (_gate)
         {
             var job = _jobs[info.Id];
-            job.Bitmap = page;
+            job.Darkness = darkness;
+            job.Bitmap = new RasterResult(page, isText);
             job.Info = job.Info with { StateReasons = ["none"] };
             info = job.Info;
         }
@@ -249,7 +262,7 @@ public sealed class JobQueue : IPrintBackend, IHostedService, IAsyncDisposable
         var settings = _settings.Current;
         var options = new PrintOptions
         {
-            Darkness = settings.Darkness,
+            Darkness = job.Darkness is { } d ? Math.Clamp(d, 1, 5) : settings.Darkness,
             FeedPadding = settings.FeedPadding,
             PostPrintFeedCount = _printer.Profile.PostPrintFeedCount + settings.ExtraFeedSteps,
         };
@@ -270,23 +283,90 @@ public sealed class JobQueue : IPrintBackend, IHostedService, IAsyncDisposable
         BeginDiagnostics(job);
         var pages = job.Bitmap is { } bitmap
             ? [bitmap]
-            : ImageDecoder.Decode(job.Document!, job.Format).Select(p => Rasterizer.Rasterize(p, raster));
+            : ImageDecoder.Decode(job.Document!, job.Format, job.Options is { } o ? o.Includes : null)
+                .Select(p => Rasterizer.RasterizeWithMode(p, raster));
 
+        // In continuous mode pages are joined into one strip: only the last page sends the page-end
+        // sequence. A one-page lookahead tells which page is last without loading the whole document.
+        var continuous = settings.ContinuousPages;
+        var gapRows = settings.PageGapMm * _printer.Profile.Dpi / 25;
         var printed = 0;
         var index = 0;
-        foreach (var page in pages)
+        (MonoBitmap Page, PrintOptions Options)? pending = null;
+        var pageOpen = false;
+        try
         {
-            ct.ThrowIfCancellationRequested();
-            SavePageDiagnostics(++index, page);
-            if (page.Height == 0)
-                continue; // blank page after trimming
-            await PrintPageAsync(job, page, options, ct);
-            printed++;
-            Update(job, j => j with { PagesCompleted = printed });
+            foreach (var (page, pageIsText) in pages)
+            {
+                ct.ThrowIfCancellationRequested();
+                SavePageDiagnostics(++index, page);
+                if (page.Height == 0)
+                    continue; // blank page after trimming
+                var isText = settings.PrintMode switch
+                {
+                    PrintModeChoice.Text => true,
+                    PrintModeChoice.Image => false,
+                    _ => pageIsText,
+                };
+                var pageOptions = options with { IsText = isText };
+                if (!continuous)
+                {
+                    await PrintPageAsync(job, page, pageOptions, endsPage: true, ct);
+                    Update(job, j => j with { PagesCompleted = ++printed });
+                    continue;
+                }
+
+                if (pending is { } previous)
+                {
+                    await PrintPageAsync(job, previous.Page, previous.Options, endsPage: false, ct);
+                    pageOpen = true;
+                    Update(job, j => j with { PagesCompleted = ++printed });
+                }
+                pending = (printed + (pending is null ? 0 : 1) == 0 ? page : WithTopGap(page, gapRows), pageOptions);
+            }
+
+            if (pending is { } last)
+            {
+                await PrintPageAsync(job, last.Page, last.Options, endsPage: true, ct);
+                pageOpen = false;
+                Update(job, j => j with { PagesCompleted = ++printed });
+            }
+        }
+        catch (OperationCanceledException) when (pageOpen && !_pageEndSent)
+        {
+            await ClosePageAsync(options);
+            throw;
         }
     }
 
-    private async Task PrintPageAsync(QueuedJob job, MonoBitmap page, PrintOptions options, CancellationToken ct)
+    /// <summary>Adds <paramref name="rows"/> blank rows above a page (gap between continuous pages).</summary>
+    private static MonoBitmap WithTopGap(MonoBitmap page, int rows)
+    {
+        if (rows <= 0)
+            return page;
+        var result = new MonoBitmap(page.Width, page.Height + rows);
+        for (var y = 0; y < page.Height; y++)
+            page.Row(y).CopyTo(result.MutableRow(y + rows));
+        return result;
+    }
+
+    /// <summary>Best-effort page end after a cancelled continuous job.</summary>
+    private async Task ClosePageAsync(PrintOptions options)
+    {
+        try
+        {
+            var builder = new PrintJobBuilder(_printer.Profile);
+            await _printer.RequireSession().UseAsync(
+                (connection, token) => connection.SendAsync(builder.BuildPageEnd(options), _printer.Stream, token),
+                CancellationToken.None);
+        }
+        catch (Exception ex) when (ex is TransportException or TimeoutException or PrinterNotConfiguredException)
+        {
+            _logger.LogDebug(ex, "Could not close the page after cancelling");
+        }
+    }
+
+    private async Task PrintPageAsync(QueuedJob job, MonoBitmap page, PrintOptions options, bool endsPage, CancellationToken ct)
     {
         var deadline = DateTimeOffset.UtcNow.AddMinutes(_settings.Current.JobRetryMinutes);
         while (true)
@@ -299,6 +379,7 @@ public sealed class JobQueue : IPrintBackend, IHostedService, IAsyncDisposable
                 var builder = new PrintJobBuilder(_printer.Profile);
                 var bytes = builder.BuildPage(page, options, endsPage: false);
                 var sent = false;
+                _pageEndSent = false;
                 await session.UseAsync(async (connection, token) =>
                 {
                     var state = await connection.GetStateAsync(TimeSpan.FromSeconds(3), token);
@@ -313,8 +394,13 @@ public sealed class JobQueue : IPrintBackend, IHostedService, IAsyncDisposable
                     }
                     finally
                     {
-                        // Always close the page so the printer is left in a clean state, even when cancelled.
-                        await connection.SendAsync(builder.BuildPageEnd(options), _printer.Stream, CancellationToken.None);
+                        // Close the page when it is the last one, and always when interrupted, so the
+                        // printer is left in a clean state.
+                        if (endsPage || !sent)
+                        {
+                            await connection.SendAsync(builder.BuildPageEnd(options), _printer.Stream, CancellationToken.None);
+                            _pageEndSent = true;
+                        }
                     }
                 }, ct);
                 if (sent)
@@ -416,7 +502,7 @@ public sealed class JobQueue : IPrintBackend, IHostedService, IAsyncDisposable
 
     private static bool IsSupported(Stream document, string? format)
     {
-        if (format is "image/pwg-raster" or "image/jpeg" or "image/png")
+        if (format is "image/pwg-raster" or "image/jpeg" or "image/png" or "application/pdf")
             return true;
         if (format is not (null or "application/octet-stream"))
             return false;
@@ -425,6 +511,7 @@ public sealed class JobQueue : IPrintBackend, IHostedService, IAsyncDisposable
         document.Position = 0;
         head = head[..read];
         return PwgRasterReader.IsPwgRaster(head)
+               || PdfRasterizer.IsPdf(head)
                || head.StartsWith((ReadOnlySpan<byte>)[0x89, (byte)'P', (byte)'N', (byte)'G'])
                || head.StartsWith((ReadOnlySpan<byte>)[0xFF, 0xD8, 0xFF]);
     }
@@ -434,7 +521,9 @@ public sealed class JobQueue : IPrintBackend, IHostedService, IAsyncDisposable
         public JobInfo Info { get; set; } = info;
         public Stream? Document { get; set; }
         public string? Format { get; set; }
-        public MonoBitmap? Bitmap { get; set; }
+        public int? Darkness { get; set; }
+        public DocumentOptions? Options { get; set; }
+        public RasterResult? Bitmap { get; set; }
         public CancellationTokenSource Cancellation { get; } = new();
     }
 

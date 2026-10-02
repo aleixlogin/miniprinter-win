@@ -13,3 +13,9 @@ No code from that repository is included.
 
 This product uses SixLabors.ImageSharp (https://github.com/SixLabors/ImageSharp),
 licensed under the Six Labors Split License (Apache License 2.0 for qualifying use).
+
+This product uses:
+- SixLabors.ImageSharp.Drawing and SixLabors.Fonts (Six Labors Split License).
+- ZXing.Net (https://github.com/micjahn/ZXing.Net), Apache License 2.0.
+- Docnet.Core (https://github.com/GowenGit/docnet), MIT License, which bundles
+  PDFium (https://pdfium.googlesource.com/pdfium/), BSD-3-Clause / Apache 2.0.

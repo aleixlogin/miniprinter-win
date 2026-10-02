@@ -102,6 +102,15 @@ $tray = Join-Path $InstallDir 'MiniPrinter.Tray.exe'
 Step 'Registering the tray app at logon'
 New-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run' -Name 'MiniPrinter' `
     -Value "`"$tray`"" -PropertyType String -Force | Out-Null
+# "Send to > MiniPrinter" for the installing user (the tray app creates it for other users).
+$sendTo = [Environment]::GetFolderPath('SendTo')
+$shell = New-Object -ComObject WScript.Shell
+$link = $shell.CreateShortcut((Join-Path $sendTo 'MiniPrinter.lnk'))
+$link.TargetPath = $tray
+$link.Arguments = '--print'
+$link.Description = 'Imprimir en la impresora térmica'
+$link.IconLocation = "$tray,0"
+$link.Save()
 # Start it un-elevated in the interactive session (explorer launches it as the logged-on user).
 Start-Process -FilePath explorer.exe -ArgumentList "`"$tray`""
 

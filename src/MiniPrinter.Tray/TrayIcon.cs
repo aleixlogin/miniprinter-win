@@ -20,10 +20,15 @@ public sealed class TrayIcon : IDisposable
     private readonly NotifyIcon _icon;
     private readonly ToolStripMenuItem _statusItem;
     private readonly ToolStripMenuItem _connectItem;
+    private readonly ToolStripMenuItem _quickNoteItem;
+
+    /// <summary>Shows the configured hotkey next to "Nota rápida…".</summary>
+    public void SetQuickNoteHotkey(string? hotkey) => _quickNoteItem.ShortcutKeyDisplayString = hotkey;
     private readonly Dictionary<TrayState, Icon> _icons = [];
     private TrayState _state = (TrayState)(-1);
 
-    public TrayIcon(Action openPanel, Action toggleConnection, Action testPrint, Action feed, Action exit)
+    public TrayIcon(Action openPanel, Action toggleConnection, Action testPrint, Action feed, Action exit,
+        Action printClipboard, Action quickNote)
     {
         _statusItem = new ToolStripMenuItem("MiniPrinter") { Enabled = false };
         _connectItem = new ToolStripMenuItem("Conectar", null, (_, _) => toggleConnection());
@@ -34,6 +39,10 @@ public sealed class TrayIcon : IDisposable
         menu.Items.Add(_connectItem);
         menu.Items.Add(new ToolStripMenuItem("Imprimir página de prueba", null, (_, _) => testPrint()));
         menu.Items.Add(new ToolStripMenuItem("Avanzar papel", null, (_, _) => feed()));
+        menu.Items.Add(new ToolStripSeparator());
+        menu.Items.Add(new ToolStripMenuItem("Imprimir portapapeles", null, (_, _) => printClipboard()));
+        _quickNoteItem = new ToolStripMenuItem("Nota rápida…", null, (_, _) => quickNote());
+        menu.Items.Add(_quickNoteItem);
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(new ToolStripMenuItem("Salir", null, (_, _) => exit()));
 

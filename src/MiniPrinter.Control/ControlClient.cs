@@ -51,6 +51,83 @@ public sealed class ControlClient : IDisposable
         return await response.Content.ReadAsByteArrayAsync(ct).ConfigureAwait(false);
     }
 
+    /// <summary>Keeps the printer connected and samples its state every minute for <paramref name="duration"/>.</summary>
+    public Task<StatusDto> StartSamplingAsync(TimeSpan duration, CancellationToken ct = default) =>
+        Send<StatusDto>(HttpMethod.Post, "telemetry/sampling", new { minutes = (int)duration.TotalMinutes }, ct);
+
+    public async Task StopSamplingAsync(CancellationToken ct = default)
+    {
+        using var response = await _http.DeleteAsync("telemetry/sampling", ct).ConfigureAwait(false);
+        await EnsureSuccess(response, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>All retained status readings as CSV.</summary>
+    public async Task<string> ExportTelemetryAsync(CancellationToken ct = default)
+    {
+        using var response = await _http.GetAsync("telemetry/export", ct).ConfigureAwait(false);
+        await EnsureSuccess(response, ct).ConfigureAwait(false);
+        return await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+    }
+
+    /// <summary>Prints text rendered by the service (fontSize in points; null = configured default).</summary>
+    public Task<JobDto> PrintTextAsync(string text, float? sizePt = null, bool bold = false, string align = "Left", CancellationToken ct = default) =>
+        Send<JobDto>(HttpMethod.Post, "print/text", new { text, sizePt, bold, align }, ct);
+
+    /// <summary>PNG preview of text exactly as it would be printed.</summary>
+    public async Task<byte[]> PreviewTextAsync(string text, float? sizePt = null, bool bold = false, string align = "Left", CancellationToken ct = default)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, "print/text/preview")
+        {
+            Content = JsonContent.Create(new { text, sizePt, bold, align }, options: ControlDefaults.Json),
+        };
+        using var response = await _http.SendAsync(request, ct).ConfigureAwait(false);
+        await EnsureSuccess(response, ct).ConfigureAwait(false);
+        return await response.Content.ReadAsByteArrayAsync(ct).ConfigureAwait(false);
+    }
+
+    /// <summary>Prints a file (PNG, JPEG, PWG, PDF or TXT).</summary>
+    public async Task<JobDto> PrintFileAsync(byte[] content, string fileName, string? contentType = null, CancellationToken ct = default)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, "print/file") { Content = new ByteArrayContent(content) };
+        request.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType ?? GuessContentType(fileName));
+        request.Headers.Add("X-File-Name", Uri.EscapeDataString(Path.GetFileName(fileName)));
+        using var response = await _http.SendAsync(request, ct).ConfigureAwait(false);
+        await EnsureSuccess(response, ct).ConfigureAwait(false);
+        return (await response.Content.ReadFromJsonAsync<JobDto>(ControlDefaults.Json, ct).ConfigureAwait(false))!;
+    }
+
+    public static string GuessContentType(string fileName) => Path.GetExtension(fileName).ToLowerInvariant() switch
+    {
+        ".png" => "image/png",
+        ".jpg" or ".jpeg" => "image/jpeg",
+        ".pdf" => "application/pdf",
+        ".pwg" => "image/pwg-raster",
+        ".txt" => "text/plain",
+        _ => "application/octet-stream",
+    };
+
+    public Task<IReadOnlyList<TemplateDto>> GetTemplatesAsync(CancellationToken ct = default) =>
+        Get<IReadOnlyList<TemplateDto>>("templates", ct);
+
+    public async Task<byte[]> PreviewTemplateAsync(string name, IReadOnlyDictionary<string, string> fields, CancellationToken ct = default)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"templates/{Uri.EscapeDataString(name)}/preview")
+        {
+            Content = JsonContent.Create(fields, options: ControlDefaults.Json),
+        };
+        using var response = await _http.SendAsync(request, ct).ConfigureAwait(false);
+        await EnsureSuccess(response, ct).ConfigureAwait(false);
+        return await response.Content.ReadAsByteArrayAsync(ct).ConfigureAwait(false);
+    }
+
+    public Task<JobDto> PrintTemplateAsync(string name, IReadOnlyDictionary<string, string> fields, CancellationToken ct = default) =>
+        Send<JobDto>(HttpMethod.Post, $"print/template/{Uri.EscapeDataString(name)}", fields, ct);
+
+    public Task<AutomationInfo> GetAutomationAsync(CancellationToken ct = default) => Get<AutomationInfo>("automation", ct);
+
+    public Task<AutomationInfo> RegenerateAutomationTokenAsync(CancellationToken ct = default) =>
+        Send<AutomationInfo>(HttpMethod.Post, "automation/token", null, ct);
+
     public async Task CancelJobAsync(int id, CancellationToken ct = default)
     {
         using var response = await _http.DeleteAsync($"jobs/{id}", ct).ConfigureAwait(false);

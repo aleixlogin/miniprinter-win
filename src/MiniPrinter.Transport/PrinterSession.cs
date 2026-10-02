@@ -21,6 +21,9 @@ public sealed record PrinterStatus
     public TransportErrorKind? LastErrorKind { get; init; }
     public string? LastError { get; init; }
     public DateTimeOffset? LastSeen { get; init; }
+
+    /// <summary>While set and in the future, the session stays connected and polls (battery sampling).</summary>
+    public DateTimeOffset? KeepAliveUntil { get; init; }
 }
 
 public sealed record SessionOptions
@@ -48,6 +51,8 @@ public sealed class PrinterSession : IAsyncDisposable
     private DateTimeOffset _lastUse = DateTimeOffset.MinValue;
     private DateTimeOffset _lastPoll = DateTimeOffset.MinValue;
     private PrinterStatus _status;
+    private TimeSpan _keepAlivePoll = TimeSpan.FromSeconds(60);
+    private DateTimeOffset _lastConnectAttempt = DateTimeOffset.MinValue;
 
     public PrinterSession(Func<IByteTransport> transportFactory, string target, SessionOptions? options = null)
     {
@@ -101,6 +106,17 @@ public sealed class PrinterSession : IAsyncDisposable
 
     public Task UseAsync(Func<PrinterConnection, CancellationToken, Task> action, CancellationToken cancellationToken) =>
         UseAsync<bool>(async (c, ct) => { await action(c, ct).ConfigureAwait(false); return true; }, cancellationToken);
+
+    /// <summary>
+    /// Keeps the link open until <paramref name="until"/> (no idle disconnect), reconnecting if it
+    /// drops and querying <c>A3</c> every <paramref name="poll"/>. Pass null to stop.
+    /// </summary>
+    public void KeepAlive(DateTimeOffset? until, TimeSpan? poll = null)
+    {
+        _keepAlivePoll = poll ?? TimeSpan.FromSeconds(60);
+        _lastUse = DateTimeOffset.UtcNow;
+        Update(s => s with { KeepAliveUntil = until });
+    }
 
     /// <summary>Marks the session as printing (shown in status).</summary>
     public void SetPrinting(bool printing) => Update(s => s with { Printing = printing });
@@ -204,12 +220,35 @@ public sealed class PrinterSession : IAsyncDisposable
         while (!cancellationToken.IsCancellationRequested)
         {
             await Task.Delay(tick, cancellationToken).ConfigureAwait(false);
-            if (_connection is null || !_lock.Wait(0))
+            var now = DateTimeOffset.UtcNow;
+            var keepAliveUntil = _status.KeepAliveUntil;
+            if (keepAliveUntil is { } expired && now >= expired)
+            {
+                Update(s => s with { KeepAliveUntil = null });
+                keepAliveUntil = null;
+                _lastUse = now; // idle countdown restarts when sampling ends
+            }
+            var keepAlive = keepAliveUntil is not null;
+            if ((_connection is null && !keepAlive) || !_lock.Wait(0))
                 continue;
             try
             {
-                var now = DateTimeOffset.UtcNow;
-                if (_connection is { IsConnected: true } connection)
+                if (keepAlive)
+                {
+                    if (_connection is not { IsConnected: true })
+                    {
+                        if (now - _lastConnectAttempt >= _keepAlivePoll)
+                        {
+                            _lastConnectAttempt = now;
+                            await EnsureConnectedAsync(cancellationToken).ConfigureAwait(false);
+                        }
+                    }
+                    else if (now - _lastPoll >= _keepAlivePoll)
+                    {
+                        await QueryStateAsync(_connection, cancellationToken).ConfigureAwait(false);
+                    }
+                }
+                else if (_connection is { IsConnected: true } connection)
                 {
                     if (now - _lastUse >= _options.IdleTimeout)
                     {

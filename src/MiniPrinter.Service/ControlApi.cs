@@ -12,6 +12,8 @@ using MiniPrinter.Transport;
 namespace MiniPrinter.Service;
 
 /// <summary>Loopback-only JSON API used by the tray app (design.md D6).</summary>
+public sealed record SamplingRequest(int Minutes);
+
 public static class ControlApi
 {
     private static readonly string Version =
@@ -41,6 +43,10 @@ public static class ControlApi
             catch (TimeoutException)
             {
                 return Results.Json(new ApiError("The printer did not answer in time."), ControlDefaults.Json, statusCode: 504);
+            }
+            catch (PrintRequestException ex)
+            {
+                return Results.Json(new ApiError(ex.Message), ControlDefaults.Json, statusCode: 400);
             }
         });
 
@@ -103,6 +109,68 @@ public static class ControlApi
                 : Results.Json(new ApiError("No preview for that page."), ControlDefaults.Json, statusCode: 404);
         });
 
+        api.MapPost("/telemetry/sampling", async (HttpContext http, PrinterManager printer, StatusBuilder status) =>
+        {
+            var body = await http.Request.ReadFromJsonAsync<SamplingRequest>(ControlDefaults.Json);
+            var minutes = Math.Clamp(body?.Minutes ?? 480, 1, 24 * 60);
+            printer.RequireSession().KeepAlive(DateTimeOffset.UtcNow.AddMinutes(minutes), TimeSpan.FromSeconds(60));
+            return Json(status.Build());
+        });
+
+        api.MapDelete("/telemetry/sampling", (PrinterManager printer) =>
+        {
+            printer.RequireSessionOrNull()?.KeepAlive(null);
+            return Results.NoContent();
+        });
+
+        api.MapGet("/telemetry/export", (TelemetryLog telemetry) =>
+            Results.Text(telemetry.Export(), "text/csv; charset=utf-8"));
+
+        api.MapPost("/print/text", async (HttpContext http, PrintRequests print) =>
+        {
+            var request = await ReadTextRequest(http);
+            return Json(ToDto(print.PrintText(request, Environment.UserName)));
+        });
+
+        api.MapPost("/print/text/preview", async (HttpContext http, PrintRequests print) =>
+        {
+            var bitmap = print.RenderText(await ReadTextRequest(http));
+            using var png = new MemoryStream();
+            Imaging.MonoPng.Save(bitmap, png);
+            return Results.File(png.ToArray(), "image/png");
+        });
+
+        api.MapPost("/print/file", async (HttpContext http, PrintRequests print) =>
+        {
+            using var body = new MemoryStream();
+            await http.Request.Body.CopyToAsync(body);
+            var name = http.Request.Headers["X-File-Name"].ToString();
+            var job = print.PrintFile(body.ToArray(), Uri.UnescapeDataString(name), http.Request.ContentType, Environment.UserName);
+            return Json(ToDto(job));
+        });
+
+        api.MapGet("/automation", (SettingsStore settings, AutomationToken automation, IppHost ipp) =>
+            Json(AutomationInfoOf(settings, automation, ipp)));
+
+        api.MapPost("/automation/token", (SettingsStore settings, AutomationToken automation, IppHost ipp) =>
+        {
+            automation.Regenerate();
+            return Json(AutomationInfoOf(settings, automation, ipp));
+        });
+
+        api.MapGet("/templates", () => Json(Imaging.TemplateRenderer.Definitions));
+
+        api.MapPost("/templates/{name}/preview", async (string name, HttpContext http, PrintRequests print) =>
+        {
+            var bitmap = print.RenderTemplate(name, await ReadFields(http));
+            using var png = new MemoryStream();
+            Imaging.MonoPng.Save(bitmap, png);
+            return Results.File(png.ToArray(), "image/png");
+        });
+
+        api.MapPost("/print/template/{name}", async (string name, HttpContext http, PrintRequests print) =>
+            Json(ToDto(print.PrintTemplate(name, await ReadFields(http), Environment.UserName))));
+
         api.MapGet("/jobs", (JobQueue queue) => Json(queue.AllJobs().Select(ToDto).ToList()));
 
         api.MapDelete("/jobs/{id:int}", (int id, JobQueue queue) =>
@@ -131,6 +199,42 @@ public static class ControlApi
             }
         });
     }
+
+    /// <summary>Reads a JSON object of template fields (string values; numbers and booleans are converted).</summary>
+    public static async Task<Dictionary<string, string>> ReadFields(HttpContext http)
+    {
+        try
+        {
+            var element = await http.Request.ReadFromJsonAsync<JsonElement>(ControlDefaults.Json);
+            if (element.ValueKind != JsonValueKind.Object)
+                throw new PrintRequestException("Expected a JSON object with the template fields.");
+            return element.EnumerateObject().ToDictionary(p => p.Name,
+                p => p.Value.ValueKind == JsonValueKind.String ? p.Value.GetString() ?? "" : p.Value.GetRawText(),
+                StringComparer.OrdinalIgnoreCase);
+        }
+        catch (JsonException ex)
+        {
+            throw new PrintRequestException($"Invalid JSON: {ex.Message}");
+        }
+    }
+
+    private static async Task<TextPrintRequest> ReadTextRequest(HttpContext http)
+    {
+        try
+        {
+            return await http.Request.ReadFromJsonAsync<TextPrintRequest>(ControlDefaults.Json)
+                   ?? throw new PrintRequestException("Missing body.");
+        }
+        catch (JsonException ex)
+        {
+            throw new PrintRequestException($"Invalid JSON: {ex.Message}");
+        }
+    }
+
+    private static AutomationInfo AutomationInfoOf(SettingsStore settings, AutomationToken automation, IppHost ipp) => new(
+        settings.Current.AutomationApiEnabled,
+        automation.Current,
+        ipp.Urls.Select(u => u.Replace("ipp://", "http://", StringComparison.Ordinal).Replace("/ipp/print", "/api/v1", StringComparison.Ordinal)).ToList());
 
     public static JobDto ToDto(JobInfo job) => new(job.Id, job.Name, job.UserName, job.State.ToString(), job.StateMessage,
         job.Created, job.Completed, job.PagesCompleted, job.SizeBytes);
@@ -177,8 +281,11 @@ public sealed class StatusBuilder
     private readonly IppHost _ipp;
     private readonly string _version;
 
-    public StatusBuilder(PrinterManager printer, JobQueue queue, SettingsStore settings, IppHost ipp)
+    private readonly BatteryMonitor _battery;
+
+    public StatusBuilder(PrinterManager printer, JobQueue queue, SettingsStore settings, IppHost ipp, BatteryMonitor battery)
     {
+        _battery = battery;
         _printer = printer;
         _queue = queue;
         _settings = settings;
@@ -205,6 +312,10 @@ public sealed class StatusBuilder
                 .Where(a => a != PrinterAlarms.None && state.Alarms.HasFlag(a)).Select(a => a.ToString()).ToList(),
             BatteryLevel = state?.BatteryLevel,
             PaperSensor = state?.PaperSensor,
+            BatteryPercent = _battery.Percent,
+            BatteryUnit = _settings.Current.BatteryUnit,
+            LowBattery = _battery.IsLow,
+            SamplingUntil = s.KeepAliveUntil,
             Firmware = s.Firmware,
             Printing = s.Printing,
             LastError = s.LastError,

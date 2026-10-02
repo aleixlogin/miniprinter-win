@@ -7,6 +7,7 @@ internal sealed class FakeBackend : IPrintBackend
 {
     private readonly List<JobInfo> _jobs = [];
     public List<(int Id, byte[] Data, string? Format)> Documents { get; } = [];
+    public DocumentOptions? LastOptions { get; private set; }
     public PrinterSnapshot Snapshot { get; set; } = new(PrinterState.Idle, ["none"], null, true, 0);
     public int Identified { get; private set; }
 
@@ -19,10 +20,11 @@ internal sealed class FakeBackend : IPrintBackend
         return job;
     }
 
-    public JobInfo SubmitDocument(int jobId, Stream document, string? format, bool lastDocument)
+    public JobInfo SubmitDocument(int jobId, Stream document, string? format, bool lastDocument, DocumentOptions? options = null)
     {
-        if (format == "application/pdf")
-            throw new NotSupportedException("PDF is not supported.");
+        LastOptions = options;
+        if (format == "application/postscript")
+            throw new NotSupportedException("PostScript is not supported.");
         using var memory = new MemoryStream();
         document.CopyTo(memory);
         Documents.Add((jobId, memory.ToArray(), format));
@@ -155,6 +157,15 @@ public class IppPrinterServiceTests
     }
 
     [Fact]
+    public async Task Roll_size_is_offered()
+    {
+        var service = new IppPrinterService(new IppPrinterDescription(), new FakeBackend());
+        var printer = (await Handle(service, Request(IppOperation.GetPrinterAttributes))).Group(IppGroupTag.Printer)!;
+        Assert.Contains("om_x5h-48x1000mm_48x1000mm", printer["media-supported"]!.Values.Select(v => v.AsString()));
+        Assert.Equal("om_x5h-48x210mm_48x210mm", printer["media-default"]!.Value.AsString());
+    }
+
+    [Fact]
     public async Task Requested_attributes_filter_the_response()
     {
         var service = new IppPrinterService(new IppPrinterDescription(), new FakeBackend());
@@ -196,8 +207,35 @@ public class IppPrinterServiceTests
     public async Task Unsupported_format_is_rejected()
     {
         var service = new IppPrinterService(new IppPrinterDescription(), new FakeBackend());
-        var response = await Handle(service, Request(IppOperation.PrintJob, g => g.Add("document-format", IppValue.Mime("application/pdf"))), [1]);
+        var response = await Handle(service, Request(IppOperation.PrintJob, g => g.Add("document-format", IppValue.Mime("application/postscript"))), [1]);
         Assert.Equal(IppStatus.ClientErrorDocumentFormatNotSupported, response.Code);
+    }
+
+    [Fact]
+    public async Task Page_ranges_reach_the_backend()
+    {
+        var backend = new FakeBackend();
+        var service = new IppPrinterService(new IppPrinterDescription(), backend);
+        var request = Request(IppOperation.PrintJob, g => g.Add("document-format", IppValue.Mime("application/pdf")));
+        request.GetOrAddGroup(IppGroupTag.Job).Add("page-ranges", IppValue.Range(2, 3), IppValue.Range(5, 5));
+        Assert.Equal(IppStatus.SuccessfulOk, (await Handle(service, request, [1])).Code);
+
+        var options = backend.LastOptions!;
+        Assert.False(options.Includes(1));
+        Assert.True(options.Includes(2));
+        Assert.True(options.Includes(3));
+        Assert.False(options.Includes(4));
+        Assert.True(options.Includes(5));
+    }
+
+    [Theory]
+    [InlineData("2-3,5", new[] { 2, 3, 5 })]
+    [InlineData("", new[] { 1, 2, 3, 4, 5, 6 })]
+    public void Cli_page_syntax(string pages, int[] included)
+    {
+        var options = DocumentOptions.ParsePages(pages);
+        Assert.Equal(included, Enumerable.Range(1, 6).Where(options.Includes));
+        Assert.Throws<FormatException>(() => DocumentOptions.ParsePages("3-1"));
     }
 
     [Fact]

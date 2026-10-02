@@ -22,4 +22,7 @@
     <ProjectReference Include="..\..\src\MiniPrinter.Ipp\MiniPrinter.Ipp.csproj" />
     <ProjectReference Include="..\..\src\MiniPrinter.Imaging\MiniPrinter.Imaging.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\MiniPrinter.Imaging.Tests\MiniPdf.cs" Link="MiniPdf.cs" />
+  </ItemGroup>
 </Project>

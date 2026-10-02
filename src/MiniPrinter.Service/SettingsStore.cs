@@ -50,6 +50,10 @@ public sealed class SettingsStore
         IppPort = s.IppPort is > 0 and < 65536 ? s.IppPort : 8631,
         PrinterName = string.IsNullOrWhiteSpace(s.PrinterName) ? "X5h Thermal Printer" : s.PrinterName.Trim(),
         JobRetryMinutes = Math.Clamp(s.JobRetryMinutes, 0, 1440),
+        PageGapMm = Math.Clamp(s.PageGapMm, 0, 50),
+        LowBatteryPercent = Math.Clamp(s.LowBatteryPercent, 5, 50),
+        TextFont = string.IsNullOrWhiteSpace(s.TextFont) ? "Segoe UI" : s.TextFont.Trim(),
+        TextSizePt = Math.Clamp(s.TextSizePt, 6, 48),
     };
 
     private ServiceSettings Load()

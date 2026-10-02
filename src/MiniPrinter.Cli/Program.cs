@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using MiniPrinter.Cli;
+using MiniPrinter.Imaging;
 using MiniPrinter.Protocol;
 using MiniPrinter.Protocol.Catalog;
 using MiniPrinter.Transport;
@@ -11,7 +12,9 @@ const string usage = """
       miniprinter probe        <target> [--watch <seconds>]
       miniprinter test-print   <target> [--darkness 1..5]
       miniprinter stripes      <target> --rows <n> [--darkness 1..5]
-      miniprinter print        <target> <file.png|jpg|pwg> [--darkness 1..5] [--dither atkinson|floyd|threshold] [--text]
+      miniprinter print        <target> <file.png|jpg|pwg|pdf> [--darkness 1..5] [--dither auto|atkinson|floyd|threshold] [--text] [--pages 2-3,5]
+      miniprinter template     <name> <target> [--<field> <value> …]   (qr, barcode, todo, label, sticker)
+      miniprinter templates                                          list templates and their fields
       miniprinter feed         <target> [--dots <n>]
       miniprinter find-port    <mac>
 
@@ -66,17 +69,54 @@ try
             return 0;
         }
         case "test-print":
-            return await PrintAsync([TestPatterns.Calibration(profile.WidthPx)], isText: false);
+            return await PrintAsync([new RasterResult(TestPatterns.Calibration(profile.WidthPx), false)]);
         case "stripes":
         {
             var rows = int.Parse(cli.Value("--rows") ?? throw new CliException("stripes needs --rows <n>."));
-            return await PrintAsync([TestPatterns.Stripes(profile.WidthPx, rows)], isText: false);
+            return await PrintAsync([new RasterResult(TestPatterns.Stripes(profile.WidthPx, rows), false)]);
         }
         case "print":
         {
             var file = cli.Positional(0) ?? throw new CliException("print needs a file.");
-            var pages = PrintFile.Rasterize(file, profile.WidthPx, cli.Value("--dither"), cli.Has("--text"));
-            return await PrintAsync(pages, cli.Has("--text"));
+            var pages = PrintFile.Rasterize(file, profile.WidthPx, cli.Value("--dither"), cli.Has("--text"), cli.Value("--pages"));
+            return await PrintAsync(pages);
+        }
+        case "templates":
+        {
+            foreach (var t in TemplateRenderer.Definitions)
+            {
+                Console.WriteLine($"{t.Name,-8} {t.Title} — {t.Description}");
+                foreach (var f in t.Fields)
+                    Console.WriteLine($"         --{f.Name,-8} {f.Label}{(f.Required ? " (obligatorio)" : "")}{(f.Choices is null ? "" : $" [{string.Join('|', f.Choices)}]")}");
+            }
+            return 0;
+        }
+        case "template":
+        {
+            var name = cli.Positional(0) ?? throw new CliException("template needs a template name (see 'miniprinter templates').");
+            var definition = TemplateRenderer.Find(name) ?? throw new CliException($"Unknown template '{name}'. See 'miniprinter templates'.");
+            var reserved = new HashSet<string>(["rfcomm", "port", "mac", "simulate", "profile", "log", "darkness"], StringComparer.OrdinalIgnoreCase);
+            var fields = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var (key, value) in cli.Options)
+            {
+                if (reserved.Contains(key) || value is null)
+                    continue;
+                var field = definition.Fields.FirstOrDefault(f => string.Equals(f.Name, key, StringComparison.OrdinalIgnoreCase));
+                // Image fields take a file path on the command line; "\n" in text means a new line.
+                fields[key] = field?.Kind == TemplateFieldKind.Image
+                    ? Convert.ToBase64String(File.ReadAllBytes(value))
+                    : value.Replace("\\n", "\n");
+            }
+            MonoBitmap bitmap;
+            try
+            {
+                bitmap = TemplateRenderer.Render(name, fields, profile.WidthPx);
+            }
+            catch (TemplateException ex)
+            {
+                throw new CliException(ex.Message);
+            }
+            return await PrintAsync([new RasterResult(bitmap, !definition.IsImage)]);
         }
         case "feed":
         {
@@ -112,11 +152,15 @@ catch (OperationCanceledException)
     return 130;
 }
 
-async Task<int> PrintAsync(IReadOnlyList<MonoBitmap> pages, bool isText)
+async Task<int> PrintAsync(IReadOnlyList<RasterResult> pages)
 {
-    var options = new PrintOptions { Darkness = int.Parse(cli.Value("--darkness") ?? "3"), IsText = isText };
-    var job = new PrintJobBuilder(profile).BuildDocument(pages, options);
-    var rows = pages.Sum(p => p.Height);
+    // --text forces text mode; otherwise each page uses its own classification.
+    var options = new PrintOptions { Darkness = int.Parse(cli.Value("--darkness") ?? "3") };
+    var builder = new PrintJobBuilder(profile);
+    var job = pages.Where(p => p.Bitmap.Height > 0)
+        .SelectMany(p => builder.BuildPage(p.Bitmap, options with { IsText = cli.Has("--text") || p.IsText }))
+        .ToArray();
+    var rows = pages.Sum(p => p.Bitmap.Height);
     await using var connection = await ConnectAsync();
 
     var before = await connection.GetStateAsync(timeout, cts.Token);

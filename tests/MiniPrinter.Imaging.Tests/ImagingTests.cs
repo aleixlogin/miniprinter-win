@@ -87,8 +87,8 @@ public class DecoderTests
     [Fact]
     public void Unknown_format_is_not_supported()
     {
-        using var pdf = new MemoryStream("%PDF-1.7 nonsense"u8.ToArray());
-        Assert.Throws<NotSupportedException>(() => ImageDecoder.Decode(pdf, "application/pdf").ToList());
+        using var unknown = new MemoryStream("PK not a printable document"u8.ToArray());
+        Assert.Throws<NotSupportedException>(() => ImageDecoder.Decode(unknown, "application/zip").ToList());
     }
 }
 

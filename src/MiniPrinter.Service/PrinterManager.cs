@@ -32,6 +32,9 @@ public sealed class PrinterManager : IAsyncDisposable
     /// <summary>Raised whenever the printer status changes (including session replacement).</summary>
     public event Action<PrinterStatus>? StatusChanged;
 
+    /// <summary>Raised for every message from the current printer (state replies, flow control…).</summary>
+    public event Action<PrinterMessage>? MessageReceived;
+
     public PrinterSelection? Selection
     {
         get { lock (_gate) return _selection; }
@@ -133,6 +136,7 @@ public sealed class PrinterManager : IAsyncDisposable
                 IdleTimeout = TimeSpan.FromSeconds(settings.IdleTimeoutSeconds),
             });
             session.StatusChanged += s => StatusChanged?.Invoke(s);
+            session.MessageReceived += m => MessageReceived?.Invoke(m);
             _session = session;
             _logger.LogInformation("Printer {Name} ({Target}, profile {Profile})", printer.Name, target, printer.ProfileKey);
         }
