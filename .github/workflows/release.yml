@@ -56,10 +56,18 @@ jobs:
       - name: Release notes
         shell: pwsh
         run: |
-          $previous = git describe --tags --abbrev=0 "${{ github.ref_name }}^" 2>$null
-          $range = if ($previous) { "$previous..${{ github.ref_name }}" } else { '${{ github.ref_name }}' }
-          $commits = git log $range --pretty=format:'- %s' --no-merges
-          @("## MiniPrinter $env:VERSION", '', $commits) | Set-Content -Encoding utf8 notes.md
+          # The notes are the version's entry of "Historial de cambios" in the README (what people read, and what the
+          # tray's update dialog shows); without one, the commit subjects since the previous tag.
+          $readme = Get-Content README.md -Raw -Encoding utf8
+          $entry = [regex]::Match($readme, "(?ms)^### $([regex]::Escape($env:VERSION))\b[^\r\n]*\r?\n(.*?)(?=^### |^## |\z)")
+          if ($entry.Success -and $entry.Groups[1].Value.Trim()) {
+            $body = $entry.Groups[1].Value.Trim()
+          } else {
+            $previous = git describe --tags --abbrev=0 "${{ github.ref_name }}^" 2>$null
+            $range = if ($previous) { "$previous..${{ github.ref_name }}" } else { '${{ github.ref_name }}' }
+            $body = (git log $range --pretty=format:'- %s' --no-merges) -join "`n"
+          }
+          @("## MiniPrinter $env:VERSION", '', $body) | Set-Content -Encoding utf8 notes.md
 
       - name: Create GitHub release
         shell: pwsh

@@ -1,6 +1,6 @@
 # MiniPrinter
 
-Convierte la mini impresora térmica Bluetooth **X5h-E07A** (y otras de la familia "cat printer" con protocolo `tiny`) en una **impresora normal de Windows**: aparece en *Impresoras y escáneres* y cualquier aplicación puede imprimir en ella desde el diálogo estándar. Opcionalmente, también desde otros equipos y móviles de la red local.
+Convierte la mini impresora térmica Bluetooth **X5h-E07A** (y otras de la familia "cat printer" con protocolo `tiny`) en una **impresora normal de Windows**: aparece en *Impresoras y escáneres* y cualquier aplicación puede imprimir en ella desde el diálogo estándar. Opcionalmente, también desde otros equipos y móviles de la red local, y **sin driver** por el puerto 9100 (RAW/JetDirect) para el software de tiques que habla ESC/POS (TPV, `python-escpos`, RawBT, `nc`…).
 
 ```
  Aplicaciones (Bloc de notas, Edge, Word, Fotos…)
@@ -15,10 +15,17 @@ Convierte la mini impresora térmica Bluetooth **X5h-E07A** (y otras de la famil
  App de bandeja: buscar, emparejar, conectar, estado, cola, ajustes
 ```
 
+Y, sin driver ni spooler, el software de tiques entra directamente por el **puerto 9100** (ver [Impresión directa](#impresión-directa-puerto-9100)):
+
+```
+ TPV, python-escpos, RawBT, nc…  ── TCP 9100: ESC/POS, imágenes, PDF, texto ──▶  Servicio MiniPrinter  ──▶  X5h
+```
+
 ## Requisitos
 
 - Windows 10 (2004+) o Windows 11 con Bluetooth.
 - La impresora emparejada en Windows (la app de bandeja puede emparejarla).
+- Para la impresión directa con caracteres japoneses, chinos, coreanos, árabes o tailandeses: las fuentes de Windows para esos idiomas (vienen con Windows; si faltan, esos caracteres salen como `?`).
 - Para compilar: .NET SDK 8 o superior.
 
 ## Instalación
@@ -69,7 +76,7 @@ La clave privada de firma **no está en el repositorio**: vive solo en el secret
 | **Estado** | Conexión, alarmas (sin papel o tapa abierta), batería, firmware, URL de impresión, cola de trabajos con cancelación, página de prueba, avance de papel, vista previa del último trabajo, muestreo y exportación del registro de batería. |
 | **Buscar impresoras** | Lista dispositivos Bluetooth emparejados y cercanos, reconoce el modelo por su nombre (`X5h-…` → perfil `d1`), empareja y selecciona la impresora. |
 | **Plantillas** | QR, códigos de barras, listas, etiquetas, Wi-Fi, tiques y más, definidas en JSON (también las tuyas), con vista previa en vivo a tamaño real, favoritos con nombre, copias y lotes desde CSV. |
-| **Ajustes** | Oscuridad, mantener activa (keep-alive), modo de impresión (automático / imagen / texto), tramado, avance final, páginas continuas, unidad y aviso de batería, desconexión por inactividad, nombre en Windows, tamaños de papel que se ofrecen a Windows (con recreación de la impresora), alcance de red, puerto IPP, API de automatización y atajo de la nota rápida. |
+| **Ajustes** | Oscuridad, mantener activa (keep-alive), modo de impresión (automático / imagen / texto), tramado, avance final, páginas continuas, unidad y aviso de batería, desconexión por inactividad, nombre en Windows, tamaños de papel que se ofrecen a Windows (con recreación de la impresora), alcance de red, puerto IPP, **impresión directa por el puerto 9100** (casilla, puerto, estado y aviso de seguridad), API de automatización y atajo de la nota rápida. |
 
 Puedes **soltar archivos** (PNG, JPEG, PDF, PWG, TXT) sobre la ventana del panel para imprimirlos.
 
@@ -95,7 +102,7 @@ La unidad del valor de batería que envía la X5h no está confirmada (39–40 o
 
 ### Imprimir desde la red local
 
-En **Ajustes → Imprimir desde → Toda la red local**, el servicio escucha en todas las interfaces, crea una regla de firewall solo para redes **privadas** y anuncia la impresora por mDNS (`_ipp._tcp`). Otros PCs con Windows, iPhone/iPad (Imprimir) y Android (servicio de impresión predeterminado) la encuentran solos. Solo se comparte la impresión: el panel y la API de control nunca salen de `127.0.0.1`.
+En **Ajustes → Imprimir desde → Toda la red local**, el servicio escucha en todas las interfaces, crea una regla de firewall solo para redes **privadas** y anuncia la impresora por mDNS (`_ipp._tcp`). Otros PCs con Windows, iPhone/iPad (Imprimir) y Android (servicio de impresión predeterminado) la encuentran solos. Solo se comparte la impresión: el panel y la API de control nunca salen de `127.0.0.1`. Si activas la [impresión directa](#impresión-directa-puerto-9100), su puerto 9100 se abre también a la red local (otra regla de firewall, `MiniPrinter RAW`, solo para redes privadas).
 
 ### Papel
 
@@ -142,6 +149,8 @@ Un trabajo termina cuando el cliente **cierra la conexión**, tras **2 s sin dat
 Las órdenes desconocidas **nunca salen impresas como texto**: se descartan (se registran una vez en el log) y el resto del tique sigue. La gaveta, el buzzer y similares se ignoran. Un código que no es válido (un EAN-13 con 5 dígitos) o que no cabe se omite sin tirar el tique. Aspecto: la fuente es monoespaciada del sistema (Consolas), así que no será idéntica a la de una impresora de tiques real, pero las columnas y el formato sí.
 
 **Caracteres de ancho completo.** Los ideogramas (japonés, chino simplificado y tradicional), el kana, el Hangul, las formas de ancho completo y los emoji ocupan **dos celdas** (24 puntos) y se dibujan con fuentes del sistema (Yu Gothic, MS Gothic, Microsoft YaHei, Malgun Gothic… según el texto: con kana, japonesas; con Hangul, coreanas); los símbolos que Consolas no tiene (☕ ⌘ …) salen de Segoe UI Symbol. El texto se normaliza (`e` + acento combinado → `é`) y los caracteres de ancho cero no ocupan celda. El **árabe** y el **tailandés** se dibujan como bloques proporcionales con el motor de texto del sistema (Tahoma, Segoe UI; Leelawadee UI): letras unidas, ligaduras y orden de derecha a izquierda en árabe, y vocales y tonos sobre su consonante en tailandés; un bloque ocupa un número entero de celdas y, si no cabe, se parte por palabras (el árabe, alineado a la derecha). El hebreo se dibuja celda a celda en orden visual. Un carácter que ninguna fuente tenga sale como `?`. Necesita las fuentes instaladas en el equipo del servicio (las de Windows las traen).
+
+**Ajustes avanzados** (opcionales, en el `appsettings.json` junto a `MiniPrinter.Service.exe` o como variables de entorno del servicio, por ejemplo `RawPort__KanjiCodePage`): `RawPort:KanjiCodePage` (codificación del modo kanji: `932` Shift-JIS, por defecto, `936` GBK, `950` Big5, `949` EUC-KR), `RawPort:SilenceSeconds` (2: silencio que termina un trabajo) y `RawPort:IdleSeconds` (30: inactividad que cierra la conexión).
 
 ```powershell
 # Una imagen o un texto (PowerShell, sin dependencias)
@@ -334,6 +343,11 @@ API (con el mismo token): `GET/PUT/DELETE /templates/{nombre}`, `POST /templates
 | Una plantilla mía no aparece | Pulsa **↻** en la pestaña *Plantillas*. Si sigue sin salir, el JSON es inválido: `miniprinter templates` muestra el motivo de las omitidas y `miniprinter template validate archivo.json` la valida. |
 | «Fila N: …» al imprimir un lote | Esa fila del CSV no cumple los campos de la plantilla (por ejemplo, falta uno obligatorio). No se imprime ninguna etiqueta ni se gasta ningún número. |
 | «No se puede actualizar el contador» (CLI) | `counters.json` es de solo lectura para usuarios sin privilegios: ejecuta la orden como administrador o imprime desde la bandeja o la API. |
+| Nada llega al puerto 9100 (se queda colgado o «tiempo agotado») | Desde otro equipo: el modo es «Solo este PC» (el puerto solo escucha en `127.0.0.1`), tu red está marcada como **Pública** en Windows (la regla `MiniPrinter RAW` solo vale para redes privadas) o el router aísla a los clientes (redes de invitados). Compruébalo con `Test-NetConnection IP -Port 9100`. |
+| «Conexión rechazada» en el 9100 | La casilla de *Impresión directa* no está activada y guardada, o el puerto está ocupado por otro programa (el estado en *Ajustes* muestra el motivo). |
+| El 9100 acepta la conexión y no imprime nada | El contenido no se reconoce (ni ESC/POS, ni PNG/JPEG/PDF/PWG, ni texto UTF-8) y se cierra sin imprimir, o el tique no tiene nada visible. Mira el registro del servicio. |
+| Un tique ESC/POS sale con `?` en vez de letras | El carácter no está en ninguna fuente (o falta la fuente del idioma en el equipo del servicio). Si es un texto de un TPV con acentos mal, prueba otra tabla de caracteres en el programa (`CP858` o UTF-8). |
+| Un tique con japonés o chino sale con basura | El cliente usa el modo kanji con otra codificación: el servicio asume Shift-JIS (ver *Ajustes avanzados* del puerto 9100). |
 
 Los ajustes, el token de la API, las plantillas de usuario y el contador de numeración se guardan en `%ProgramData%\MiniPrinter`.
 
@@ -362,7 +376,7 @@ Para ejecutar el servicio en consola sin instalarlo: `$env:MINIPRINTER_DATA="$PW
 
 Los tests de protocolo comparan byte a byte con trabajos de referencia generados por TiMini-Print (`tools/generate_timini_fixtures.py`).
 
-Los tests de ESC/POS interpretan tiques reales generados con `python-escpos` (`tools/generate_escpos_fixtures.py`, fixtures en `tests/MiniPrinter.Escpos.Tests/Fixtures/`) y los comparan con capturas de referencia; regenéralas con `UPDATE_GOLDEN=1` si cambias a propósito el aspecto.
+Los tests de ESC/POS interpretan tiques reales generados con `python-escpos` (`tools/generate_escpos_fixtures.py`) y `node-thermal-printer` (`tools/generate_node_escpos_fixtures.js`), con las fixtures en `tests/MiniPrinter.Escpos.Tests/Fixtures/` y los comparan con capturas de referencia; regenéralas con `UPDATE_GOLDEN=1` si cambias a propósito el aspecto.
 
 Los tests de plantillas comparan píxel a píxel las plantillas integradas con capturas de referencia (`tests/MiniPrinter.Imaging.Tests/Fixtures/templates/`); si cambias a propósito el aspecto de una, regenéralas con `$env:UPDATE_GOLDEN=1; dotnet test tests/MiniPrinter.Imaging.Tests`. Los tests de `Imaging.Tests` se ejecutan en secuencia porque PDFium no es seguro entre hilos.
 
