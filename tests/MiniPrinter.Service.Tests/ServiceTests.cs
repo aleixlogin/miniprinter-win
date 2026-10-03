@@ -37,10 +37,20 @@ internal static class TestEnv
         {
             while (true)
             {
-                var listener = new TcpListener(IPAddress.Loopback, 0);
-                listener.Start();
-                var port = ((IPEndPoint)listener.LocalEndpoint).Port;
-                listener.Stop();
+                // Not the ports the OS gives to outgoing connections (49152 and up): every probe of WaitForPortAsync is one, and
+                // one of them could take the port of a service that has not opened it yet. A port in a range the system keeps
+                // for itself fails to bind here and is skipped.
+                var port = Random.Shared.Next(20000, 40000);
+                try
+                {
+                    var listener = new TcpListener(IPAddress.Loopback, port);
+                    listener.Start();
+                    listener.Stop();
+                }
+                catch (SocketException)
+                {
+                    continue;
+                }
                 if (HandedOut.Add(port))
                     return port;
             }
