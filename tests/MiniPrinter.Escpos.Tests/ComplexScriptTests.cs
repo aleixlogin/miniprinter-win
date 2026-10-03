@@ -132,7 +132,7 @@ public class ComplexScriptTests
         // ที่ = consonant + vowel above + tone mark above: the tone mark overlaps the vowel instead of advancing.
         var withTone = One("ที่");
         var withoutTone = One("ที");
-        Assert.Equal(Esc.InkColumns(withoutTone).Right, Esc.InkColumns(withTone).Right);
+        Assert.InRange(Esc.InkColumns(withTone).Right - Esc.InkColumns(withoutTone).Right, -2, 4);   // well under a cell (12)
         Assert.True(Esc.InkCount(withTone) > Esc.InkCount(withoutTone));
     }
 

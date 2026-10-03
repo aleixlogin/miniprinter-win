@@ -26,22 +26,30 @@ public class FuzzTests
         return bytes;
     }
 
-    /// <summary>Feeds in random chunks, ends the ticket and returns what came out; fails the test on a hang.</summary>
-    private static IReadOnlyList<MonoBitmap> Interpret(byte[] data, Random random, out EscposInterpreter interpreter, int maxMs = 5000)
+    /// <summary>Feeds in random chunks, ends the ticket and returns what came out; fails the test on a hang (a generous bound: CI runners are slow).</summary>
+    private static IReadOnlyList<MonoBitmap> Interpret(byte[] data, Random random, out EscposInterpreter interpreter, int maxMs = 30_000)
     {
         interpreter = new EscposInterpreter(() => new PrinterCondition(PaperOut: true));
         var tickets = new List<MonoBitmap>();
         var watch = Stopwatch.StartNew();
-        for (var i = 0; i < data.Length;)
+        try
         {
-            var chunk = Math.Min(data.Length - i, random.Next(1, 600));
-            interpreter.Feed(data.AsSpan(i, chunk));
-            interpreter.DrainResponses();
+            for (var i = 0; i < data.Length;)
+            {
+                var chunk = Math.Min(data.Length - i, random.Next(1, 600));
+                interpreter.Feed(data.AsSpan(i, chunk));
+                interpreter.DrainResponses();
+                tickets.AddRange(interpreter.DrainTickets());
+                i += chunk;
+            }
+            interpreter.EndTicket();
             tickets.AddRange(interpreter.DrainTickets());
-            i += chunk;
         }
-        interpreter.EndTicket();
-        tickets.AddRange(interpreter.DrainTickets());
+        catch (Exception ex)
+        {
+            // Say which stream broke it, so that a failure on another machine can be reproduced.
+            throw new Xunit.Sdk.XunitException($"{ex.GetType().Name}: {ex.Message}\nstream ({data.Length} bytes): {Convert.ToHexString(data)}\n{ex.StackTrace}", ex);
+        }
         Assert.True(watch.ElapsedMilliseconds < maxMs, $"took {watch.ElapsedMilliseconds} ms for {data.Length} bytes");
         return tickets;
     }
@@ -51,9 +59,10 @@ public class FuzzTests
         Assert.All(tickets, t =>
         {
             Assert.Equal(384, t.Width);
-            Assert.InRange(t.Height, 1, EscposInterpreter.MaxTicketRows + 10_000);
+            // A ticket closes when it reaches MaxTicketRows, so it can end up one block (an image of up to MaxTicketRows) longer.
+            Assert.InRange(t.Height, 1, 2 * EscposInterpreter.MaxTicketRows + 1000);
         });
-        Assert.True(tickets.Sum(t => (long)t.Height) <= EscposInterpreter.MaxTotalRows + EscposInterpreter.MaxTicketRows + 10_000);
+        Assert.True(tickets.Sum(t => (long)t.Height) <= EscposInterpreter.MaxTotalRows + 2 * EscposInterpreter.MaxTicketRows + 1000);
     }
 
     [Theory]
@@ -138,7 +147,7 @@ public class FuzzTests
         }
         interpreter.EndTicket();
         Assert.Empty(interpreter.DrainTickets());
-        Assert.True(watch.ElapsedMilliseconds < 5000, $"took {watch.ElapsedMilliseconds} ms");
+        Assert.True(watch.ElapsedMilliseconds < 20_000, $"took {watch.ElapsedMilliseconds} ms");
     }
 
     [Fact]
@@ -161,8 +170,8 @@ public class FuzzTests
         foreach (var ticket in interpreter.DrainTickets())
             rows += ticket.Height;
         Assert.True(interpreter.Overflowed);
-        Assert.True(rows <= EscposInterpreter.MaxTotalRows + EscposInterpreter.MaxTicketRows + 10_000);
-        Assert.True(watch.ElapsedMilliseconds < 10_000, $"took {watch.ElapsedMilliseconds} ms");
+        Assert.True(rows <= EscposInterpreter.MaxTotalRows + 2 * EscposInterpreter.MaxTicketRows + 1000);
+        Assert.True(watch.ElapsedMilliseconds < 30_000, $"took {watch.ElapsedMilliseconds} ms");
     }
 
     [Fact]

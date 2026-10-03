@@ -227,6 +227,18 @@ internal static class CellFont
     /// </summary>
     public static List<MonoBitmap>? Run(string text, ComplexScript script, bool bold, bool fontB, int maxWidth)
     {
+        try
+        {
+            return RunCore(text, script, bold, fontB, maxWidth);
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            return null;   // the caller falls back to drawing the characters one by one
+        }
+    }
+
+    private static List<MonoBitmap>? RunCore(string text, ComplexScript script, bool bold, bool fontB, int maxWidth)
+    {
         var cellW = CellWidth(fontB);
         var cellH = CellHeight(fontB);
         text = new string(text.EnumerateRunes().Where(r => !IsZeroWidth(r) || r.Value is 0x200C or 0x200D).SelectMany(r => r.ToString()).ToArray());
@@ -308,18 +320,38 @@ internal static class CellFont
         if (rune.Value == 0x3000)
             return new GlyphResult(null, 2);
         var key = (rune.Value, bold, fontB, region);
-        return Cache.GetOrAdd(key, k => Draw(new Rune(k.Codepoint), k.Bold, k.FontB, k.Region));
+        if (Cache.Count > 20_000)
+            Cache.Clear();   // hostile input can ask for every code point: bound the memory
+        return Cache.GetOrAdd(key, k => SafeDraw(new Rune(k.Codepoint), k.Bold, k.FontB, k.Region));
     }
+
+    /// <summary>A font engine that chokes on some character or font must cost a '?', never the connection.</summary>
+    private static GlyphResult SafeDraw(Rune rune, bool bold, bool fontB, TextRegion region)
+    {
+        try
+        {
+            return Draw(rune, bold, fontB, region);
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            return Question(bold, fontB);
+        }
+    }
+
 
     private static FontFamily? Family(string name) =>
         Families.GetOrAdd(name, n => SystemFonts.TryGet(n, out var family) ? family : null);
 
-    private static bool HasGlyph(FontFamily family, Rune rune)
-    {
-        var font = family.CreateFont(12);
-        return font.TryGetGlyphs(new CodePoint(rune.Value), out var glyphs) && glyphs.Count > 0
-            && glyphs.All(g => g.GlyphMetrics.GlyphType != GlyphType.Fallback);
-    }
+    private static readonly ConcurrentDictionary<(string Family, int Codepoint), bool> Coverage = new();
+
+    /// <summary>Whether the family has a real glyph for the character (cached: asking creates a font each time).</summary>
+    private static bool HasGlyph(FontFamily family, Rune rune) =>
+        Coverage.GetOrAdd((family.Name, rune.Value), key =>
+        {
+            var font = family.CreateFont(12);
+            return font.TryGetGlyphs(new CodePoint(key.Codepoint), out var glyphs) && glyphs.Count > 0
+                && glyphs.All(g => g.GlyphMetrics.GlyphType != GlyphType.Fallback);
+        });
 
     private static FontFamily? FindFamily(Rune rune, IEnumerable<string> names)
     {
@@ -356,24 +388,31 @@ internal static class CellFont
         return advance > cellW ? size * cellW / advance : size;
     }
 
-    private static GlyphResult Question(bool bold, bool fontB) => new(DrawBase("?", bold, fontB), 1);
+    private static readonly ConcurrentDictionary<(bool Bold, bool FontB), GlyphResult> Questions = new();
+
+    /// <summary>The '?' for characters no font has: drawn once per weight and font, not once per character.</summary>
+    private static GlyphResult Question(bool bold, bool fontB) =>
+        Questions.GetOrAdd((bold, fontB), key => new GlyphResult(DrawBase("?", key.Bold, key.FontB), 1));
 
     private const string FitText = "ÁÉÑgjpqy";
+
+    private static readonly ConcurrentDictionary<(bool Bold, bool FontB), (Font Font, float Advance, float OffsetY)> Fits = new();
 
     private static MonoBitmap DrawBase(string text, bool bold, bool fontB)
     {
         var cellW = CellWidth(fontB);
         var cellH = CellHeight(fontB);
-        // Measure at a reference size to find the size whose advance and ink height fit the cell.
-        var style = bold ? FontStyle.Bold : FontStyle.Regular;
-        var reference = Base.Value.CreateFont(100, style);
-        var options = new TextOptions(reference) { Dpi = 72 };
-        var advanceRatio = TextMeasurer.MeasureAdvance("M", options).Width / 100f;
-        var ink = TextMeasurer.MeasureBounds(FitText, options);
-        var size = Math.Min(cellW / advanceRatio, cellH * 100f / Math.Max(1f, ink.Height));
-        var advance = advanceRatio * size;
-        var offsetY = -ink.Top * size / 100f;
-        var font = Base.Value.CreateFont(size, style);
+        var (font, advance, offsetY) = Fits.GetOrAdd((bold, fontB), key =>
+        {
+            // Measure at a reference size to find the size whose advance and ink height fit the cell.
+            var style = key.Bold ? FontStyle.Bold : FontStyle.Regular;
+            var reference = Base.Value.CreateFont(100, style);
+            var options = new TextOptions(reference) { Dpi = 72 };
+            var advanceRatio = TextMeasurer.MeasureAdvance("M", options).Width / 100f;
+            var ink = TextMeasurer.MeasureBounds(FitText, options);
+            var size = Math.Min(CellWidth(key.FontB) / advanceRatio, CellHeight(key.FontB) * 100f / Math.Max(1f, ink.Height));
+            return (Base.Value.CreateFont(size, style), advanceRatio * size, -ink.Top * size / 100f);
+        });
         using var image = new Image<L8>(cellW, cellH, new L8(255));
         var drawOptions = new RichTextOptions(font) { Dpi = 72, Origin = new PointF((cellW - advance) / 2, offsetY) };
         image.Mutate(c => c.DrawText(drawOptions, text, Color.Black));

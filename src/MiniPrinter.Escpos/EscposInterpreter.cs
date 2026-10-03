@@ -643,7 +643,7 @@ public sealed class EscposInterpreter
     private void AddBlank(int rows)
     {
         if (rows > 0)
-            AddPart(null, rows);
+            AddPart(null, Math.Min(rows, MaxTicketRows));   // a feed longer than a whole ticket is just a ticket of blank paper
     }
 
     private void AddPart(MonoBitmap part) => AddPart(part, part.Height);
