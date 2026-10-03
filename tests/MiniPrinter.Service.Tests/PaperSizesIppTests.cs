@@ -114,6 +114,7 @@ public sealed class PaperSizesIppTests : IAsyncLifetime
         var error = await Assert.ThrowsAsync<ControlApiException>(() => client.SaveSettingsAsync(settings with { PaperSizes = tooWide }));
         Assert.Equal(400, error.StatusCode);
         Assert.Contains("57", error.Message);
-        Assert.Equal(7, (await OfferedSizes()).Length);   // nothing was applied
+        Assert.Null((await client.GetSettingsAsync()).PaperSizes);   // nothing was saved
+        Assert.Equal(7, (await OfferedSizes()).Length);              // and nothing was applied
     }
 }

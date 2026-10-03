@@ -25,13 +25,26 @@ internal static class TestEnv
         return dir;
     }
 
+    private static readonly HashSet<int> HandedOut = [];
+
+    /// <summary>
+    /// A free loopback port that this test run has not handed out before. Test classes run in parallel and each starts a service on
+    /// its own port; the OS may give the same just-released port to two of them, and then a test would talk to another test's service.
+    /// </summary>
     public static int FreePort()
     {
-        var listener = new TcpListener(IPAddress.Loopback, 0);
-        listener.Start();
-        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
-        listener.Stop();
-        return port;
+        lock (HandedOut)
+        {
+            while (true)
+            {
+                var listener = new TcpListener(IPAddress.Loopback, 0);
+                listener.Start();
+                var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+                listener.Stop();
+                if (HandedOut.Add(port))
+                    return port;
+            }
+        }
     }
 
     public static PrinterSelection Simulated => new()
