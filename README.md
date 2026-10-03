@@ -396,6 +396,10 @@ Instalador en local: `powershell -ExecutionPolicy Bypass -File scripts\build-ins
 
 ## Historial de cambios
 
+### 0.9.1 — más robusto al arrancar
+- El servicio **reintenta abrir el puerto de impresión de Windows (IPP)** cada segundo si estaba ocupado un instante al arrancar, en vez de quedarse sin escuchar hasta cambiar un ajuste.
+- Los tests del servicio son más robustos en máquinas lentas.
+
 ### 0.9.0 — nueva interfaz
 - **Aspecto**: tema claro, oscuro y de contraste alto que sigue a Windows (también el menú del icono y la barra de título), tamaño del texto Pequeño/Normal/Grande, ventana que recuerda tamaño, posición y pestaña, y DPI por monitor.
 - **Ajustes por secciones** con menú lateral, búsqueda, guardado por sección, cambios sin guardar marcados, validación junto a cada campo y aviso al cerrar con cambios pendientes; salen a la vista ajustes que no tenían control (fuente y tamaño del texto, reintentos).
