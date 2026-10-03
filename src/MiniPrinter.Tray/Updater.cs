@@ -163,12 +163,22 @@ public sealed class Updater : IDisposable
 
         try
         {
-            Process.Start(new ProcessStartInfo(installer, "/SILENT /SUPPRESSMSGBOXES /NORESTART")
+            using var process = Process.Start(new ProcessStartInfo(installer, "/SILENT /SUPPRESSMSGBOXES /NORESTART")
             {
                 UseShellExecute = true, // lets the installer's manifest trigger UAC
                 WorkingDirectory = folder,
             });
-            return null; // the installer closes this app, updates and reopens it
+            if (process is null)
+                return null;
+            // An installer that goes ahead closes this app, updates it and reopens it: this line is never reached. If it ends and we are
+            // still here, nothing was installed (the permission was refused in the UAC window, or the installer failed): say so, so
+            // that the window can be used again.
+            await process.WaitForExitAsync(ct);
+            return process.ExitCode == 0 ? Strings.Get("Update.InstallerEnded") : Strings.Get("Update.InstallerFailed", process.ExitCode);
+        }
+        catch (OperationCanceledException)
+        {
+            return null; // the window was closed
         }
         catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
         {

@@ -396,6 +396,9 @@ Instalador en local: `powershell -ExecutionPolicy Bypass -File scripts\build-ins
 
 ## Historial de cambios
 
+### 0.9.2 — la ventana de actualización no se bloquea
+- Si en la ventana de actualización se rechaza el permiso de administrador (UAC) o el instalador falla, la ventana lo dice y **vuelve a activar los botones** en vez de quedarse bloqueada.
+
 ### 0.9.1 — más robusto al arrancar
 - El servicio **reintenta abrir el puerto de impresión de Windows (IPP)** cada segundo si estaba ocupado un instante al arrancar, en vez de quedarse sin escuchar hasta cambiar un ajuste.
 - Los tests del servicio son más robustos en máquinas lentas.
