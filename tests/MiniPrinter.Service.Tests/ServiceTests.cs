@@ -61,7 +61,7 @@ internal static class TestEnv
     /// Waits until the loopback port accepts connections: the IPP listener starts a moment after the host does, and on a
     /// loaded machine a test that connects straight away is refused.
     /// </summary>
-    public static async Task WaitForPortAsync(int port, int seconds = 60)
+    public static async Task WaitForPortAsync(int port, int seconds = 30)
     {
         var deadline = DateTime.UtcNow.AddSeconds(seconds);
         while (true)
@@ -72,10 +72,36 @@ internal static class TestEnv
                 await tcp.ConnectAsync(IPAddress.Loopback, port);
                 return;
             }
-            catch (SocketException) when (DateTime.UtcNow < deadline)
+            catch (SocketException ex) when (DateTime.UtcNow < deadline)
             {
+                _ = ex;
                 await Task.Delay(25);
             }
+            catch (SocketException ex)
+            {
+                // Say who has the port: a port that never opens is a different problem from a slow start.
+                throw new TimeoutException($"Nothing accepted connections on port {port} in {seconds} s. Sockets on that port:{Environment.NewLine}{SocketsOn(port)}", ex);
+            }
+        }
+    }
+
+    private static string SocketsOn(int port)
+    {
+        try
+        {
+            using var process = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("netstat", "-ano -p tcp")
+            {
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            })!;
+            var lines = process.StandardOutput.ReadToEnd().Split(Environment.NewLine).Where(l => l.Contains($":{port} ")).ToList();
+            process.WaitForExit(5000);
+            return lines.Count == 0 ? "(none)" : string.Join(Environment.NewLine, lines.Select(l => l.Trim()));
+        }
+        catch (Exception ex)
+        {
+            return "(netstat failed: " + ex.Message + ")";
         }
     }
 

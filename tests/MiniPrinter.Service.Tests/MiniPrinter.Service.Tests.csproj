@@ -28,7 +28,7 @@
     <Compile Include="..\MiniPrinter.Imaging.Tests\MiniPdf.cs" Link="MiniPdf.cs" />
   </ItemGroup>
   <ItemGroup>
-    <!-- Every class of tests starts its own service: a few at a time, so that a slow machine is not starved (and the ports are awaited longer). -->
+    <!-- Every test starts its own service and waits for its port: with several classes at once (async waits do not hold the few threads of the runner) a small CI machine was starved for minutes. One class at a time. -->
     <None Update="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
