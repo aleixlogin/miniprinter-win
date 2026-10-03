@@ -53,6 +53,25 @@ public partial class MainWindow : Window
         StartScan();
     }
 
+    /// <summary>The state of the RAW print port: off, listening (with the addresses to use) or the reason it could not open.</summary>
+    private void ShowRawPort(RawPortDto? raw)
+    {
+        if (raw is null)
+        {
+            RawPortStatus.Text = "";
+            return;
+        }
+        var ok = System.Windows.Media.Brushes.DarkGreen;
+        (RawPortStatus.Text, RawPortStatus.Foreground) = raw switch
+        {
+            { Enabled: false } => ("Desactivado", System.Windows.Media.Brushes.Gray),
+            { Listening: true } => ($"Escuchando en {string.Join(", ", raw.Addresses)}", ok),
+            { Error: { } error } => (error, System.Windows.Media.Brushes.Firebrick),
+            _ => ("Iniciando…", System.Windows.Media.Brushes.Gray),
+        };
+    }
+
+
     public void ShowStatus(StatusDto? status, bool available, string? error)
     {
         ServiceText.Text = (available ? $"En ejecución (v{status?.Version})" : error ?? "No disponible")
@@ -65,6 +84,7 @@ public partial class MainWindow : Window
         if (!_wizard)
             Banner.Visibility = Visibility.Collapsed;
 
+        ShowRawPort(status.RawPort);
         PrinterText.Text = status.Printer is null ? "Ninguna (ve a «Buscar impresoras»)" : $"{status.Printer.Name}  ·  {status.Printer.Address}  ·  {status.Printer.Transport}";
         LinkText.Text = status.Reconnecting ? $"Reconectando… ({status.LastError})" : status.Link switch
         {
@@ -431,6 +451,8 @@ public partial class MainWindow : Window
         LocalRadio.IsChecked = _settings.NetworkMode == NetworkMode.Local;
         LanRadio.IsChecked = _settings.NetworkMode == NetworkMode.Lan;
         PortBox.Text = _settings.IppPort.ToString();
+        RawPortCheck.IsChecked = _settings.RawPortEnabled;
+        RawPortBox.Text = _settings.RawPort.ToString();
         _paper.Load(_settings);
         _ = RefreshQueueStatusAsync();
         SettingsStatus.Text = "";
@@ -440,6 +462,11 @@ public partial class MainWindow : Window
     {
         if (_settings is null)
             return;
+        if (!int.TryParse(RawPortBox.Text, out var rawPort) || rawPort is < 1024 or > 65535)
+        {
+            SettingsStatus.Text = "El puerto de impresión directa debe estar entre 1024 y 65535.";
+            return;
+        }
         if (!int.TryParse(IdleBox.Text, out var idle) || !int.TryParse(PortBox.Text, out var port) || !int.TryParse(LowBatteryBox.Text, out var lowBattery) || !int.TryParse(GapBox.Text, out var gap) || !int.TryParse(KeepAliveIntervalBox.Text, out var heartbeat))
         {
             SettingsStatus.Text = "Revisa los campos numéricos.";
@@ -462,8 +489,21 @@ public partial class MainWindow : Window
             PrinterName = NameBox.Text,
             NetworkMode = LanRadio.IsChecked == true ? NetworkMode.Lan : NetworkMode.Local,
             IppPort = port,
+            RawPortEnabled = RawPortCheck.IsChecked == true,
+            RawPort = rawPort,
         };
         updated = _paper.Apply(updated);
+
+        // Opening the RAW port to the network lets any machine on the private network print without authenticating.
+        var exposed = updated.RawPortEnabled && updated.NetworkMode == NetworkMode.Lan;
+        var wasExposed = _settings.RawPortEnabled && _settings.NetworkMode == NetworkMode.Lan;
+        if (exposed && !wasExposed && MessageBox.Show(this,
+                $"Con «Toda la red local», cualquier equipo de tu red privada podrá imprimir por el puerto {updated.RawPort} sin autenticarse.\n\n¿Activar la impresión directa?",
+                "MiniPrinter", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+        {
+            SettingsStatus.Text = "Cambios sin guardar.";
+            return;
+        }
 
         // A change of sizes or of the printer name needs the Windows queue to be recreated to be seen.
         var previousName = _settings.PrinterName;

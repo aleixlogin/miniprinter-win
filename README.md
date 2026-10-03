@@ -107,6 +107,58 @@ Windows guarda los tamaños al crear la impresora, así que, al guardar con otra
 
 Botón **Vista previa del último trabajo** (pestaña Estado): muestra exactamente lo que se envió a la impresora.
 
+## Impresión directa (puerto 9100)
+
+El servicio puede escuchar en el puerto TCP **9100** (el estándar RAW/JetDirect de las impresoras de red) para que imprima cualquier programa que sepa hablar con «una impresora de tiques en red», **sin driver, sin spooler y sin token**: software de TPV, `python-escpos`, `node-thermal-printer`, RawBT en Android, Home Assistant o simplemente `nc`.
+
+Está **desactivado por defecto**. Se activa en **Ajustes → Impresión directa (puerto 9100)** (casilla, puerto de 1024 a 65535 y estado: «Escuchando en…» o el error si el puerto está ocupado) y se aplica al guardar, sin reiniciar el servicio. El alcance es el mismo que el de IPP: en *Solo este PC* escucha únicamente en `127.0.0.1`; en *Toda la red local* escucha en todas las interfaces y crea la regla de firewall `MiniPrinter RAW` solo para redes privadas (se quita al desactivarlo o volver a *Solo este PC*). Al activarlo en red local la bandeja avisa de que **el puerto no tiene autenticación**: cualquier equipo de la red privada podrá imprimir.
+
+**Qué se imprime.** El servicio decide por los primeros bytes de cada conexión:
+
+| Contenido | Cómo se reconoce | Resultado |
+|---|---|---|
+| PNG, JPEG, PDF, PWG Raster | cabecera (`89 PNG`, `FF D8 FF`, `%PDF-`, `RaS2`/`RaSt`) | documento normal (misma escala, recorte y tramado que por IPP) |
+| ESC/POS | empieza por `ESC`, `GS` o `DLE`, o los contiene en los primeros 512 bytes | intérprete de tiques (abajo) |
+| Texto plano | UTF-8 válido sin órdenes de control | renderizado de texto de los ajustes |
+| Cualquier otra cosa | — | se cierra la conexión sin imprimir |
+
+Un trabajo termina cuando el cliente **cierra la conexión**, tras **2 s sin datos** o, en ESC/POS, con la orden de **corte** (lo que llegue después empieza otro trabajo: una conexión puede llevar varios tiques). Límites: 4 conexiones a la vez, 16 MB por conexión, 30 s de inactividad y un tope de **20 m de papel por conexión** (160 000 puntos: lo que pida de más se ignora y la conexión se cierra, para que unos pocos bytes no puedan pedir toneladas de papel). Cada trabajo aparece en la cola (y en *Estado*) con el usuario `raw@<dirección del cliente>`, y pasa por la cola normal: respeta el orden, la retención si falta papel y la cancelación.
+
+**ESC/POS soportado.** El texto se maqueta en celdas fijas sobre los 384 puntos: 32 columnas de 12×24 con la fuente A y 42 de 9×17 con la B, de modo que las columnas de un tique de TPV quedan alineadas. Un tique es una sola página continua.
+
+| Orden | Efecto |
+|---|---|
+| `ESC @` | reinicia estilos, alineación y tabla de caracteres |
+| `ESC t n` | tabla de caracteres (las del perfil por defecto de `python-escpos`: CP437, 850, 858, 1252, 860, 863, 865, 866, 852, ISO 8859-7/15…); si el texto es UTF-8 válido se decodifica como UTF-8 |
+| `FS &`, `FS .` | modo kanji: con él activo los bytes son de dos bytes en Shift-JIS (por defecto; la configuración `RawPort:KanjiCodePage` admite 936 GBK, 950 Big5 y 949 EUC-KR); `ESC t 1` es CP932 (katakana de ancho medio y Shift-JIS) |
+| `ESC E`/`ESC G`, `ESC -`, `GS !`, `GS B`, `ESC a`, `ESC M`, `ESC !` | negrita, subrayado, tamaño ×1–×8, inverso, alineación, fuente A/B |
+| `ESC d`, `ESC J`, `ESC 2`/`ESC 3`, `ESC SP` | avance en líneas o puntos, interlineado y espaciado |
+| `GS V`, `ESC i`/`ESC m` | corte: fin del tique (se recortan los blancos del final) |
+| `GS v 0`, `ESC *` | imágenes raster y de bits (8 y 24 puntos); las que superan 384 puntos se recortan |
+| `GS ( k` | código QR (módulo, corrección de errores y datos) y, con los mismos pasos de almacenar e imprimir, **PDF417**, **Aztec** y **Data Matrix** (`cn` 48, 53 y 54); si no caben, se reducen hasta 3 puntos por módulo (2 en los otros) y si aun así no caben se omiten |
+| `GS k`, `GS H/h/w` | códigos de barras UPC-A, EAN-13, Code 39, Code 128 (y UPC-E, EAN-8, ITF, Codabar, Code 93) con texto legible |
+| `DLE EOT 1–4`, `GS r 1` | respuestas de estado por la misma conexión (en línea, tapa, sin papel) |
+
+Las órdenes desconocidas **nunca salen impresas como texto**: se descartan (se registran una vez en el log) y el resto del tique sigue. La gaveta, el buzzer y similares se ignoran. Un código que no es válido (un EAN-13 con 5 dígitos) o que no cabe se omite sin tirar el tique. Aspecto: la fuente es monoespaciada del sistema (Consolas), así que no será idéntica a la de una impresora de tiques real, pero las columnas y el formato sí.
+
+**Caracteres de ancho completo.** Los ideogramas (japonés, chino simplificado y tradicional), el kana, el Hangul, las formas de ancho completo y los emoji ocupan **dos celdas** (24 puntos) y se dibujan con fuentes del sistema (Yu Gothic, MS Gothic, Microsoft YaHei, Malgun Gothic… según el texto: con kana, japonesas; con Hangul, coreanas); los símbolos que Consolas no tiene (☕ ⌘ …) salen de Segoe UI Symbol. El texto se normaliza (`e` + acento combinado → `é`) y los caracteres de ancho cero no ocupan celda. El **árabe** y el **tailandés** se dibujan como bloques proporcionales con el motor de texto del sistema (Tahoma, Segoe UI; Leelawadee UI): letras unidas, ligaduras y orden de derecha a izquierda en árabe, y vocales y tonos sobre su consonante en tailandés; un bloque ocupa un número entero de celdas y, si no cabe, se parte por palabras (el árabe, alineado a la derecha). El hebreo se dibuja celda a celda en orden visual. Un carácter que ninguna fuente tenga sale como `?`. Necesita las fuentes instaladas en el equipo del servicio (las de Windows las traen).
+
+```powershell
+# Una imagen o un texto (PowerShell, sin dependencias)
+$c = New-Object Net.Sockets.TcpClient('127.0.0.1', 9100); $s = $c.GetStream()
+$b = [IO.File]::ReadAllBytes('foto.png'); $s.Write($b, 0, $b.Length); $c.Close()
+```
+```bash
+nc equipo 9100 < foto.png               # PNG, JPEG, PDF…
+cat nota.txt | nc equipo 9100           # texto UTF-8
+```
+```python
+from escpos.printer import Network       # pip install python-escpos
+p = Network("127.0.0.1", 9100)
+p.set(align="center", bold=True); p.text("MI TIENDA\n"); p.set(align="left", bold=False)
+p.text("Cafe                       1,50\n"); p.qr("https://example.com", native=True); p.cut()
+```
+
 ## API de automatización
 
 Permite imprimir desde scripts, Home Assistant, n8n o cualquier herramienta que haga peticiones HTTP. Está **desactivada por defecto**: actívala en *Ajustes → API de automatización* y copia el token. Con el modo *Solo este PC* solo responde en `127.0.0.1`; con *Toda la red local*, también desde otros equipos (la API de control del panel nunca sale de este PC).
@@ -300,7 +352,8 @@ Para ejecutar el servicio en consola sin instalarlo: `$env:MINIPRINTER_DATA="$PW
 | `MiniPrinter.Transport` | RFCOMM (WinRT), puerto COM, conexión con control de flujo, sesión con reconexión y desconexión por inactividad. |
 | `MiniPrinter.Imaging` | Lector PWG Raster, PDF (PDFium), JPEG/PNG, escalado, recorte de blancos, tramado, renderizado de texto y el motor de plantillas (`Layout/`: modelo JSON, validador, bloques, catálogo y contadores; plantillas integradas en `Templates/*.json`). |
 | `MiniPrinter.Ipp` | Codec IPP (RFC 8010) e impresora IPP Everywhere mínima. |
-| `MiniPrinter.Service` | Servicio de Windows: cola, endpoint IPP con modo local/LAN (mDNS + firewall), API de control, API de automatización y gestión de plantillas. |
+| `MiniPrinter.Escpos` | Intérprete ESC/POS en streaming (celdas de 12×24 / 9×17, tablas de caracteres, imágenes, QR, códigos de barras y respuestas de estado) para el puerto 9100. |
+| `MiniPrinter.Service` | Servicio de Windows: cola, endpoint IPP con modo local/LAN (mDNS + firewall), puerto 9100 de impresión directa, API de control, API de automatización y gestión de plantillas. |
 | `MiniPrinter.Tray` | App WPF de bandeja. |
 | `MiniPrinter.Control` | Contratos y cliente de la API de control, y lector de CSV para lotes de etiquetas (compartidos por la bandeja y la CLI). |
 | `MiniPrinter.Cli` | Diagnóstico, impresión de plantillas y gestión de plantillas. |
@@ -309,11 +362,20 @@ Para ejecutar el servicio en consola sin instalarlo: `$env:MINIPRINTER_DATA="$PW
 
 Los tests de protocolo comparan byte a byte con trabajos de referencia generados por TiMini-Print (`tools/generate_timini_fixtures.py`).
 
+Los tests de ESC/POS interpretan tiques reales generados con `python-escpos` (`tools/generate_escpos_fixtures.py`, fixtures en `tests/MiniPrinter.Escpos.Tests/Fixtures/`) y los comparan con capturas de referencia; regenéralas con `UPDATE_GOLDEN=1` si cambias a propósito el aspecto.
+
 Los tests de plantillas comparan píxel a píxel las plantillas integradas con capturas de referencia (`tests/MiniPrinter.Imaging.Tests/Fixtures/templates/`); si cambias a propósito el aspecto de una, regenéralas con `$env:UPDATE_GOLDEN=1; dotnet test tests/MiniPrinter.Imaging.Tests`. Los tests de `Imaging.Tests` se ejecutan en secuencia porque PDFium no es seguro entre hilos.
 
 Instalador en local: `powershell -ExecutionPolicy Bypass -File scripts\build-installer.ps1 -Version X.Y.Z` (necesita Inno Setup 6); genera `artifacts\installer\MiniPrinter-Setup-X.Y.Z.exe`.
 
 ## Historial de cambios
+
+### 0.8.0 — impresión directa por el puerto 9100
+- **Puerto TCP 9100 (RAW/JetDirect)**, desactivado por defecto y con el alcance de IPP: acepta ESC/POS, PNG, JPEG, PDF, PWG Raster y texto plano, con límites (4 conexiones, 16 MB, 30 s), firewall solo en redes privadas, origen `raw@dirección` en la cola y sección propia en *Ajustes*.
+- **Intérprete ESC/POS** (`MiniPrinter.Escpos`): texto en celdas fijas (32/42 columnas), tablas de caracteres, estilos, imágenes, QR, códigos de barras, corte y respuestas de estado; probado con tiques de `python-escpos`.
+- **Más códigos y escrituras**: PDF417, Aztec y Data Matrix nativos (`GS ( k`); japonés, chino, coreano y emoji en celdas de ancho doble con el modo kanji (Shift-JIS, GBK, Big5 y EUC-KR) y la tabla CP932; árabe con letras unidas y tailandés con sus marcas (dibujados como bloques con el motor de texto del sistema); hebreo en orden visual; caracteres combinados (NFC) y de ancho cero.
+- **Robusto ante entradas hostiles** (el puerto no tiene autenticación): tope de 20 m de papel por conexión, descarte sin almacenar de imágenes de gigabytes, avances en blanco sin memoria y pruebas de fuzzing; las órdenes con parámetros que no se interpretan (`ESC W`, `ESC &`, `FS p`, `FS q`, `ESC B`) ya no dejan basura en el ticket.
+- `GET /templates/{nombre}/fields` (control y `/api/v1`) y `miniprinter template fields <nombre>`; los tests del servicio ya no bloquean con `.Result`.
 
 ### 0.7.1 — tamaños de papel configurables
 - **Papel que se muestra a Windows** en *Ajustes*: elegir los tamaños activos y el por defecto, y añadir tamaños propios (ancho 30–57 mm, largo 10–1000 mm) con márgenes laterales automáticos para los de más de 48 mm. Sin cambios se ofrecen los siete tamaños de siempre.

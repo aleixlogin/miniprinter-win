@@ -7,7 +7,7 @@
     <Authors>aleixlogin</Authors>
     <Product>MiniPrinter</Product>
     <!-- Default version; release builds pass -p:Version=X.Y.Z (from the git tag). -->
-    <Version>0.7.1</Version>
+    <Version>0.8.0</Version>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <!-- TFM for projects that need WinRT (Bluetooth RFCOMM, device enumeration). -->
     <WinTfm>net8.0-windows10.0.19041.0</WinTfm>

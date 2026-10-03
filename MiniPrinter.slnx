@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/MiniPrinter.Cli/MiniPrinter.Cli.csproj" />
+    <Project Path="src/MiniPrinter.Escpos/MiniPrinter.Escpos.csproj" />
     <Project Path="src/MiniPrinter.Control/MiniPrinter.Control.csproj" />
     <Project Path="src/MiniPrinter.Imaging/MiniPrinter.Imaging.csproj" />
     <Project Path="src/MiniPrinter.Ipp/MiniPrinter.Ipp.csproj" />
@@ -11,6 +12,7 @@
     <Project Path="src/MiniPrinter.Updates/MiniPrinter.Updates.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/MiniPrinter.Escpos.Tests/MiniPrinter.Escpos.Tests.csproj" />
     <Project Path="tests/MiniPrinter.Imaging.Tests/MiniPrinter.Imaging.Tests.csproj" />
     <Project Path="tests/MiniPrinter.Ipp.Tests/MiniPrinter.Ipp.Tests.csproj" />
     <Project Path="tests/MiniPrinter.Protocol.Tests/MiniPrinter.Protocol.Tests.csproj" />

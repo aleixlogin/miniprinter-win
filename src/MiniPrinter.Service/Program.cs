@@ -16,6 +16,8 @@ builder.Services.AddSingleton<JobQueue>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<JobQueue>());
 builder.Services.AddSingleton<IppHost>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<IppHost>());
+builder.Services.AddSingleton<RawPortHost>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<RawPortHost>());
 builder.Services.AddSingleton<StatusBuilder>();
 builder.Services.AddSingleton<BatteryMonitor>();
 builder.Services.AddSingleton(MiniPrinter.Imaging.TemplateCatalog.ForDataDirectory(paths.DataDirectory));

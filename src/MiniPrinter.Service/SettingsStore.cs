@@ -51,6 +51,7 @@ public sealed class SettingsStore
         ExtraFeedSteps = Math.Clamp(s.ExtraFeedSteps, 0, 10),
         IdleTimeoutSeconds = Math.Clamp(s.IdleTimeoutSeconds, 10, 3600),
         IppPort = s.IppPort is > 0 and < 65536 ? s.IppPort : 8631,
+        RawPort = s.RawPort is >= 1024 and < 65536 ? s.RawPort : 9100,
         PrinterName = string.IsNullOrWhiteSpace(s.PrinterName) ? "X5h Thermal Printer" : s.PrinterName.Trim(),
         JobRetryMinutes = Math.Clamp(s.JobRetryMinutes, 0, 1440),
         PageGapMm = Math.Clamp(s.PageGapMm, 0, 50),

@@ -265,6 +265,26 @@
                         </Grid>
                         <!-- SETTINGS:NETWORK -->
 
+                        <TextBlock Text="Impresión directa (puerto 9100)" FontWeight="SemiBold" Margin="0,14,0,4" />
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" SharedSizeGroup="L" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource Label}" Text="Estado" />
+                            <CheckBox x:Name="RawPortCheck" Grid.Column="1" VerticalAlignment="Center"
+                                      Content="Aceptar impresión directa por TCP: ESC/POS, imágenes, PDF y texto (se aplica al guardar)" />
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" SharedSizeGroup="L" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource Label}" Text="Puerto" />
+                            <TextBox x:Name="RawPortBox" Grid.Column="1" Width="80" HorizontalAlignment="Left" />
+                        </Grid>
+                        <Grid Style="{StaticResource Row}">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" SharedSizeGroup="L" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource Label}" Text="Situación" />
+                            <TextBlock x:Name="RawPortStatus" Grid.Column="1" TextWrapping="Wrap" VerticalAlignment="Center" />
+                        </Grid>
+                        <TextBlock Text="El puerto no tiene autenticación: cualquiera que llegue a él puede imprimir. Úsalo solo en redes de confianza; en «Solo este PC» únicamente este equipo puede usarlo."
+                                   Foreground="#57606A" TextWrapping="Wrap" Margin="0,2,0,0" />
+
                         <TextBlock Text="Actualizaciones" FontWeight="SemiBold" Margin="0,14,0,4" />
                         <Grid Style="{StaticResource Row}">
                             <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" SharedSizeGroup="L" /><ColumnDefinition /></Grid.ColumnDefinitions>

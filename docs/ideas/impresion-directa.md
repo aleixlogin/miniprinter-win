@@ -1,6 +1,6 @@
 # Ideas: impresión directa (sin el driver de Windows)
 
-Ideas para imprimir en la X5h sin pasar por el spooler ni el driver IPP de Windows, enviando los trabajos directamente al servicio MiniPrinter. Pendientes de convertir en un change de OpenSpec (`/opsx:propose`).
+Ideas para imprimir en la X5h sin pasar por el spooler ni el driver IPP de Windows, enviando los trabajos directamente al servicio MiniPrinter. Los puntos 1 y 2 están hechos (puerto 9100); el 5 sigue pendiente de convertirse en un change de OpenSpec (`/opsx:propose`).
 
 Contexto: hoy ya van directas al servicio la bandeja (portapapeles, nota rápida, soltar archivos, Enviar a, plantillas), la API de automatización (`/api/v1/print/...`) y la CLI (`miniprinter print`, con conexión Bluetooth propia).
 
@@ -9,7 +9,7 @@ Con driver:  Aplicación → spooler de Windows → driver IPP → servicio → 
 Directo:     cliente (TPV, script, nc…) → puerto 9100 / API ───────→ servicio → impresora
 ```
 
-## 1. Emulación ESC/POS en el puerto 9100
+## 1. Emulación ESC/POS en el puerto 9100 — HECHO (change `raw-print-port`, ver README «Impresión directa»)
 
 El servicio escucha en el puerto TCP **9100** (estándar RAW/JetDirect) e interpreta **ESC/POS**, el lenguaje de casi todas las impresoras de tiques, traduciéndolo al protocolo `tiny` de la X5h.
 
@@ -25,7 +25,7 @@ El servicio escucha en el puerto TCP **9100** (estándar RAW/JetDirect) e interp
 - **Alcance de red**: igual que IPP (solo este PC o red local); ajuste propio para activarlo, desactivado por defecto; regla de firewall solo en redes privadas.
 - **Fin de trabajo**: por corte (`GS V`), cierre de la conexión TCP o un tiempo sin datos (p. ej. 2 s).
 
-## 2. Impresión "en bruto" por el puerto 9100
+## 2. Impresión "en bruto" por el puerto 9100 — HECHO (change `raw-print-port`)
 
 En el mismo puerto, si lo recibido **no es ESC/POS** sino un archivo, se imprime tal cual detectando el formato por su cabecera:
 

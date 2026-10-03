@@ -68,6 +68,11 @@ public sealed record ServiceSettings
     public int IdleTimeoutSeconds { get; init; } = 60;
     public NetworkMode NetworkMode { get; init; } = NetworkMode.Local;
     public int IppPort { get; init; } = 8631;
+
+    /// <summary>Listens on the RAW/JetDirect port (default 9100) for ESC/POS tickets, images, PDFs and text. Off by default.</summary>
+    public bool RawPortEnabled { get; init; }
+
+    public int RawPort { get; init; } = 9100;
     public string PrinterName { get; init; } = "X5h Thermal Printer";
 
     /// <summary>Minutes a job waits for an unavailable printer before it is aborted.</summary>
@@ -164,6 +169,9 @@ public sealed record StatusDto
     public DateTimeOffset? LastSeen { get; init; }
     public NetworkMode NetworkMode { get; init; }
     public IReadOnlyList<string> IppUrls { get; init; } = [];
+
+    /// <summary>The RAW/JetDirect port (ESC/POS, images, PDF and text over TCP).</summary>
+    public RawPortDto? RawPort { get; init; }
     public int QueuedJobs { get; init; }
     public string Version { get; init; } = "";
 }
@@ -253,3 +261,9 @@ public static class TemplatePrintParameters
         new("darkness", "Oscuridad de la impresión (1 a 5); si falta se usa la de los ajustes.", "int", 1, 5),
     ];
 }
+
+/// <summary>State of the RAW/JetDirect listener (port 9100) as shown in the tray.</summary>
+/// <param name="Listening">The port is open and accepting connections.</param>
+/// <param name="Error">Why it is not listening although enabled (port in use, ...).</param>
+/// <param name="Addresses">host:port pairs clients can use in the current network mode.</param>
+public sealed record RawPortDto(bool Enabled, int Port, bool Listening, string? Error, IReadOnlyList<string> Addresses);

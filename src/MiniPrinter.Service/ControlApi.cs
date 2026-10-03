@@ -63,6 +63,8 @@ public static class ControlApi
             var body = await http.Request.ReadFromJsonAsync<ServiceSettings>(ControlDefaults.Json);
             if (body is null)
                 return Results.Json(new ApiError("Missing settings."), ControlDefaults.Json, statusCode: 400);
+            if (body.RawPort is < 1024 or > 65535)
+                return Results.Json(new ApiError("El puerto de impresión directa debe estar entre 1024 y 65535."), ControlDefaults.Json, statusCode: 400);
             if (PaperCatalog.Problem(body.PaperSizes) is { } paperProblem)
                 return Results.Json(new ApiError(paperProblem), ControlDefaults.Json, statusCode: 400);
             // The printer is only changed through POST /printer: a client holding an older copy of
@@ -322,8 +324,12 @@ public sealed class StatusBuilder
 
     private readonly WindowsQueue _windowsQueue;
 
-    public StatusBuilder(PrinterManager printer, JobQueue queue, SettingsStore settings, IppHost ipp, BatteryMonitor battery, WindowsQueue windowsQueue)
+    private readonly RawPortHost _raw;
+
+    public StatusBuilder(PrinterManager printer, JobQueue queue, SettingsStore settings, IppHost ipp, BatteryMonitor battery, WindowsQueue windowsQueue, RawPortHost raw)
     {
+        _raw = raw;
+        raw.Changed += () => Changed?.Invoke();
         _battery = battery;
         _windowsQueue = windowsQueue;
         windowsQueue.Changed += () => Changed?.Invoke();
@@ -366,6 +372,7 @@ public sealed class StatusBuilder
             LastSeen = s.LastSeen,
             NetworkMode = _settings.Current.NetworkMode,
             IppUrls = _ipp.Urls,
+            RawPort = _raw.Current,
             QueuedJobs = _queue.GetPrinter().QueuedJobs,
             Version = _version,
             WindowsQueue = _windowsQueue.Current,
