@@ -43,21 +43,31 @@ public sealed class IppHost : BackgroundService
 
     public IppPrinterService? Printer { get; private set; }
 
+    /// <summary>How long to wait before trying again when the port could not be opened.</summary>
+    private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(1);
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
         {
             var settings = _settings.Current;
+            var started = false;
             try
             {
                 await StartAsync(settings, stoppingToken);
+                started = true;
             }
             catch (Exception ex) when (ex is IOException or SocketException or InvalidOperationException)
             {
                 _logger.LogError(ex, "Could not start the IPP endpoint on port {Port}", settings.IppPort);
             }
 
-            await _restart.WaitAsync(stoppingToken);
+            // A port that is busy for a moment (another program, a connection that is closing) is tried again soon instead of leaving the
+            // printer deaf for good; a change of the settings tries at once.
+            if (started)
+                await _restart.WaitAsync(stoppingToken);
+            else if (!await _restart.WaitAsync(RetryDelay, stoppingToken))
+                continue;
             // Apply network changes only when no job is in progress.
             while (!_queue.IsIdle && !stoppingToken.IsCancellationRequested)
                 await Task.Delay(1000, stoppingToken);
@@ -123,7 +133,15 @@ public sealed class IppHost : BackgroundService
         app.MapGet("/", context => IppEndpoint.StatusPageAsync(context, printer, _queue));
         app.MapGet(description.ResourcePath, context => IppEndpoint.StatusPageAsync(context, printer, _queue));
 
-        await app.StartAsync(ct);
+        try
+        {
+            await app.StartAsync(ct);
+        }
+        catch
+        {
+            await app.DisposeAsync();   // a listener that did not open must not stay half alive
+            throw;
+        }
         _app = app;
         _active = settings;
         Printer = printer;
