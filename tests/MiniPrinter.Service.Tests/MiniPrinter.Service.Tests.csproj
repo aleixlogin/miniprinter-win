@@ -27,4 +27,8 @@
   <ItemGroup>
     <Compile Include="..\MiniPrinter.Imaging.Tests\MiniPdf.cs" Link="MiniPdf.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- Every class of tests starts its own service: a few at a time, so that a slow machine is not starved (and the ports are awaited longer). -->
+    <None Update="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

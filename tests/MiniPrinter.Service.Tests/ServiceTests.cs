@@ -51,7 +51,7 @@ internal static class TestEnv
     /// Waits until the loopback port accepts connections: the IPP listener starts a moment after the host does, and on a
     /// loaded machine a test that connects straight away is refused.
     /// </summary>
-    public static async Task WaitForPortAsync(int port, int seconds = 20)
+    public static async Task WaitForPortAsync(int port, int seconds = 60)
     {
         var deadline = DateTime.UtcNow.AddSeconds(seconds);
         while (true)
