@@ -20,11 +20,33 @@ public enum PrinterState
     Stopped = 5,
 }
 
+/// <summary>Which entrance of the service a job came through.</summary>
+public enum JobSource
+{
+    /// <summary>The Windows printer (IPP), the usual way.</summary>
+    Windows,
+
+    /// <summary>The tray application (control API): test pages, quick notes, clipboard, templates.</summary>
+    Panel,
+
+    /// <summary>The automation API.</summary>
+    Api,
+
+    /// <summary>The RAW port 9100.</summary>
+    Raw,
+}
+
 public sealed record JobInfo
 {
     public required int Id { get; init; }
     public required string Name { get; init; }
     public string UserName { get; init; } = "anonymous";
+
+    /// <summary>The entrance the job came through (not derived from <see cref="UserName"/>, which clients choose).</summary>
+    public JobSource Source { get; init; } = JobSource.Windows;
+
+    /// <summary>Who sent it: the Windows user, or the address of the client.</summary>
+    public string? Origin { get; init; }
     public JobState State { get; init; } = JobState.Pending;
 
     /// <summary>job-state-reasons keywords, e.g. "job-printing", "job-completed-successfully".</summary>

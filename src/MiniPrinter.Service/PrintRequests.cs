@@ -60,10 +60,10 @@ public sealed class PrintRequests
         return TextRenderer.Render(request.Text, style, _printer.Profile.WidthPx);
     }
 
-    public JobInfo PrintText(TextPrintRequest request, string user)
+    public JobInfo PrintText(TextPrintRequest request, string user, JobSource source = JobSource.Panel, string? origin = null)
     {
         var bitmap = RenderText(request);
-        return _queue.SubmitBitmap(request.Name ?? FirstLine(request.Text), bitmap, isText: true, user, request.Darkness);
+        return _queue.SubmitBitmap(request.Name ?? FirstLine(request.Text), bitmap, isText: true, user, request.Darkness, source, origin);
     }
 
     public Protocol.MonoBitmap RenderTemplate(string name, IReadOnlyDictionary<string, string> fields) =>
@@ -111,14 +111,15 @@ public sealed class PrintRequests
     /// advance once per distinct label. Nothing is printed (and no counter consumed) if any row is invalid.
     /// </summary>
     public JobInfo PrintTemplate(string name, IReadOnlyDictionary<string, string> fields, string user, int? darkness = null,
-        int copies = 1, IReadOnlyList<IReadOnlyDictionary<string, string>>? rows = null)
+        int copies = 1, IReadOnlyList<IReadOnlyDictionary<string, string>>? rows = null,
+        JobSource source = JobSource.Panel, string? origin = null)
     {
         var definition = _templates.Find(name) ?? throw new PrintRequestException(
             $"Unknown template '{name}'. Available: {string.Join(", ", _templates.Definitions.Select(d => d.Name))}.");
         try
         {
             var pages = _templates.RenderBatch(name, fields, rows, copies, new RenderOptions { Width = _printer.Profile.WidthPx });
-            return _queue.SubmitBitmaps(definition.Title, pages, isText: !definition.IsImage, user, darkness);
+            return _queue.SubmitBitmaps(definition.Title, pages, isText: !definition.IsImage, user, darkness, source, origin);
         }
         catch (TemplateException ex)
         {
@@ -126,20 +127,21 @@ public sealed class PrintRequests
         }
     }
 
-    public JobInfo PrintQr(string data, string? caption, string user, int? darkness = null) =>
+    public JobInfo PrintQr(string data, string? caption, string user, int? darkness = null, JobSource source = JobSource.Panel, string? origin = null) =>
         PrintTemplate("qr", caption is null ? new Dictionary<string, string> { ["data"] = data }
-            : new Dictionary<string, string> { ["data"] = data, ["caption"] = caption }, user, darkness);
+            : new Dictionary<string, string> { ["data"] = data, ["caption"] = caption }, user, darkness, source: source, origin: origin);
 
     /// <summary>Prints a file: TXT is rendered as text, other formats go through the document pipeline.</summary>
-    public JobInfo PrintFile(byte[] content, string? fileName, string? contentType, string user, int? darkness = null)
+    public JobInfo PrintFile(byte[] content, string? fileName, string? contentType, string user, int? darkness = null,
+        JobSource source = JobSource.Panel, string? origin = null)
     {
         if (content.Length == 0)
             throw new PrintRequestException("The file is empty.");
         var name = string.IsNullOrWhiteSpace(fileName) ? "Document" : Path.GetFileName(fileName);
         if (IsText(fileName, contentType))
-            return PrintText(new TextPrintRequest { Text = DecodeText(content), Name = name, Darkness = darkness }, user);
+            return PrintText(new TextPrintRequest { Text = DecodeText(content), Name = name, Darkness = darkness }, user, source, origin);
 
-        var job = _queue.CreateJob(name, user);
+        var job = _queue.CreateJob(name, user, source, origin ?? user);
         var format = contentType is "image/png" or "image/jpeg" or "image/pwg-raster" or "application/pdf" ? contentType : null;
         try
         {

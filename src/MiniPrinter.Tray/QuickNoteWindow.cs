@@ -1,4 +1,5 @@
 using System.IO;
+using MiniPrinter.Gui;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -10,7 +11,7 @@ using MiniPrinter.Control;
 namespace MiniPrinter.Tray;
 
 /// <summary>Quick note: type, preview at real size, Ctrl+Enter prints, Esc closes.</summary>
-public sealed class QuickNoteWindow : Window
+public sealed class QuickNoteWindow : ThemedWindow
 {
     private readonly ServiceConnection _service;
     private readonly TextBox _text = new()
@@ -22,13 +23,13 @@ public sealed class QuickNoteWindow : Window
     };
     private readonly ComboBox _size = new() { Width = 70, ItemsSource = new[] { 8, 10, 12, 14, 18, 24, 32 } };
     private readonly Image _preview = new() { Stretch = Stretch.None, VerticalAlignment = VerticalAlignment.Top };
-    private readonly TextBlock _status = new() { Foreground = Brushes.DimGray, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0) };
+    private readonly TextBlock _status = Themed.Brush(new TextBlock { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0) }, Themed.Muted);
     private readonly DispatcherTimer _debounce = new() { Interval = TimeSpan.FromMilliseconds(400) };
 
     public QuickNoteWindow(ServiceConnection service, float sizePt)
     {
         _service = service;
-        Title = "Nota rápida — MiniPrinter";
+        Title = Strings.Get("QuickNote.Title");
         Icon = BitmapFrame.Create(new Uri("pack://application:,,,/miniprinter.ico"));
         Width = 760;
         Height = 460;
@@ -36,24 +37,22 @@ public sealed class QuickNoteWindow : Window
         Topmost = true;
         _size.SelectedItem = (int)sizePt is var s && ((int[])_size.ItemsSource).Contains(s) ? s : 12;
 
-        var print = new Button { Content = "Imprimir (Ctrl+Enter)", Padding = new Thickness(12, 4, 12, 4), FontWeight = FontWeights.SemiBold };
+        var print = new Button { Content = Strings.Get("QuickNote.Print"), Padding = new Thickness(12, 4, 12, 4), FontWeight = FontWeights.SemiBold };
         print.Click += async (_, _) => await PrintAsync();
         var toolbar = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 8, 0, 0) };
-        toolbar.Children.Add(new TextBlock { Text = "Tamaño:", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0) });
+        toolbar.Children.Add(new TextBlock { Text = Strings.Get("QuickNote.Size"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0) });
         toolbar.Children.Add(_size);
-        toolbar.Children.Add(new TextBlock { Text = "pt", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(4, 0, 16, 0) });
+        toolbar.Children.Add(new TextBlock { Text = Strings.Get("QuickNote.Points"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(4, 0, 16, 0) });
         toolbar.Children.Add(print);
         toolbar.Children.Add(_status);
 
-        var previewBox = new Border
+        var previewBox = Themed.Frame(new Border
         {
-            BorderBrush = Brushes.LightGray,
             BorderThickness = new Thickness(1),
-            Background = Brushes.White,
             Width = 410,
             Margin = new Thickness(12, 0, 0, 0),
             Child = new ScrollViewer { Content = _preview, Padding = new Thickness(12), VerticalScrollBarVisibility = ScrollBarVisibility.Auto },
-        };
+        }, Themed.Preview, Themed.PreviewBorder);
         var grid = new Grid { Margin = new Thickness(12) };
         grid.ColumnDefinitions.Add(new ColumnDefinition());
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -105,7 +104,7 @@ public sealed class QuickNoteWindow : Window
             _preview.Source = image;
             _preview.Width = image.PixelWidth;
             _preview.Height = image.PixelHeight;
-            _status.Text = $"{image.PixelHeight / 8.0:0} mm de papel";
+            _status.Text = Strings.Get("QuickNote.PaperLength", image.PixelHeight / 8.0);
         }
         catch (Exception ex)
         {

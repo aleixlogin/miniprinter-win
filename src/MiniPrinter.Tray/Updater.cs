@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using MiniPrinter.Gui;
 using System.Net.Http;
 using System.Reflection;
 using System.Text.Json;
@@ -106,20 +107,20 @@ public sealed class Updater : IDisposable
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException or InvalidDataException)
         {
             if (manual)
-                _notify("MiniPrinter", $"No se pudo comprobar si hay actualizaciones: {ex.Message}", true, null);
+                _notify("MiniPrinter", Strings.Get("Update.CheckFailed", ex.Message), true, null);
             return;
         }
 
         if (offer is null)
         {
             if (manual)
-                _notify("MiniPrinter", $"MiniPrinter está actualizado (versión {CurrentVersion}).", false, null);
+                _notify("MiniPrinter", Strings.Get("Update.UpToDate", CurrentVersion), false, null);
             return;
         }
         if (manual)
             Show(offer);
         else
-            _notify("Actualización disponible", $"MiniPrinter {offer.Version} disponible. Pulsa aquí para ver las novedades.", false, () => Show(offer));
+            _notify(Strings.Get("Update.AvailableTitle"), Strings.Get("Update.AvailableText", offer.Version), false, () => Show(offer));
     }
 
     public void Show(UpdateOffer offer)
@@ -153,11 +154,11 @@ public sealed class Updater : IDisposable
         }
         catch (UpdateVerificationException ex)
         {
-            return $"La actualización no supera la verificación de seguridad ({ex.Message}). No se ha instalado nada.";
+            return Strings.Get("Update.VerifyFailed", ex.Message);
         }
         catch (Exception ex) when (ex is HttpRequestException or IOException or TaskCanceledException)
         {
-            return $"No se pudo descargar la actualización: {ex.Message}";
+            return Strings.Get("Update.DownloadFailed", ex.Message);
         }
 
         try
@@ -171,11 +172,11 @@ public sealed class Updater : IDisposable
         }
         catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
         {
-            return "Actualización cancelada (no se concedieron permisos de administrador). La versión actual sigue funcionando.";
+            return Strings.Get("Update.Canceled");
         }
         catch (Win32Exception ex)
         {
-            return $"No se pudo iniciar el instalador: {ex.Message}";
+            return Strings.Get("Update.StartFailed", ex.Message);
         }
     }
 
@@ -183,12 +184,12 @@ public sealed class Updater : IDisposable
 }
 
 /// <summary>Release notes and the Update / Later / Skip choice, with download progress.</summary>
-public sealed class UpdateWindow : Window
+public sealed class UpdateWindow : ThemedWindow
 {
     private readonly UpdateOffer _offer;
     private readonly Updater _updater;
     private readonly ProgressBar _progress = new() { Height = 8, Visibility = Visibility.Collapsed, Margin = new Thickness(0, 8, 0, 0) };
-    private readonly TextBlock _status = new() { TextWrapping = TextWrapping.Wrap, Foreground = Brushes.DimGray, Margin = new Thickness(0, 6, 0, 0) };
+    private readonly TextBlock _status = Themed.Brush(new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 6, 0, 0) }, Themed.Muted);
     private readonly StackPanel _buttons = new() { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 12, 0, 0) };
     private CancellationTokenSource? _download;
 
@@ -196,7 +197,7 @@ public sealed class UpdateWindow : Window
     {
         _offer = offer;
         _updater = updater;
-        Title = $"MiniPrinter {offer.Version} disponible";
+        Title = Strings.Get("Update.DialogTitle", offer.Version);
         Width = 560;
         Height = 460;
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
@@ -204,26 +205,26 @@ public sealed class UpdateWindow : Window
 
         var header = new TextBlock
         {
-            Text = $"Hay una versión nueva: {offer.Version} (tienes la {Updater.CurrentVersion}).",
+            Text = Strings.Get("Update.NewVersion", offer.Version, Updater.CurrentVersion),
             FontWeight = FontWeights.SemiBold,
             FontSize = 14,
         };
         var notes = new TextBox
         {
-            Text = string.IsNullOrWhiteSpace(offer.Notes) ? "(Sin notas de la versión)" : offer.Notes.Replace("\r\n", "\n").Replace("\n", Environment.NewLine),
+            Text = string.IsNullOrWhiteSpace(offer.Notes) ? Strings.Get("Update.NoNotes") : offer.Notes.Replace("\r\n", "\n").Replace("\n", Environment.NewLine),
             IsReadOnly = true,
             TextWrapping = TextWrapping.Wrap,
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
             Margin = new Thickness(0, 8, 0, 0),
         };
         if (service.Status is { QueuedJobs: > 0 } status)
-            _status.Text = $"Hay {status.QueuedJobs} trabajo(s) en la cola: la actualización reinicia el servicio y los interrumpiría. Espera a que terminen.";
+            _status.Text = Strings.Get("Update.JobsInQueue", status.QueuedJobs);
 
-        var update = new Button { Content = "Actualizar", FontWeight = FontWeights.SemiBold, IsDefault = true };
+        var update = new Button { Content = Strings.Get("Update.Install"), FontWeight = FontWeights.SemiBold, IsDefault = true };
         update.Click += async (_, _) => await UpdateAsync();
-        var later = new Button { Content = "Más tarde", IsCancel = true };
+        var later = new Button { Content = Strings.Get("Update.Later"), IsCancel = true };
         later.Click += (_, _) => Close();
-        var skip = new Button { Content = "Omitir esta versión" };
+        var skip = new Button { Content = Strings.Get("Update.Skip") };
         skip.Click += (_, _) => { _updater.Skip(offer.Version); Close(); };
         _buttons.Children.Add(update);
         _buttons.Children.Add(later);
@@ -248,12 +249,12 @@ public sealed class UpdateWindow : Window
     {
         _buttons.IsEnabled = false;
         _progress.Visibility = Visibility.Visible;
-        _status.Text = "Descargando y verificando la actualización…";
+        _status.Text = Strings.Get("Update.Downloading");
         _download = new CancellationTokenSource();
         var error = await _updater.InstallAsync(_offer, new Progress<double>(p => _progress.Value = p * 100), _download.Token);
         if (error is null)
         {
-            _status.Text = "Instalando… acepta el aviso de Windows para continuar. MiniPrinter se cerrará y volverá a abrirse.";
+            _status.Text = Strings.Get("Update.Installing");
             return;
         }
         _status.Text = error;

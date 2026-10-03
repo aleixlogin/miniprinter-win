@@ -2,6 +2,7 @@ using System.IO;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Windows;
+using MiniPrinter.Gui;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -12,8 +13,8 @@ namespace MiniPrinter.Tray;
 
 public sealed partial class TemplateEditorWindow
 {
-    private static readonly Brush ErrorBrush = Brushes.Firebrick;
-    private static readonly Brush NormalBorder = new SolidColorBrush(Color.FromRgb(0xAB, 0xAD, 0xB3));
+    // Theme brushes by name (see Themed): they change with the palette.
+
 
     private readonly TextBox _raw = new()
     {
@@ -38,11 +39,11 @@ public sealed partial class TemplateEditorWindow
     private readonly StackPanel _fieldForm = new() { Margin = new Thickness(0, 6, 0, 0) };
     private readonly TextBox _fLabel = new() { IsUndoEnabled = false };
     private readonly ComboBox _fKind = new();
-    private readonly CheckBox _fRequired = new() { Content = "Obligatorio" };
+    private readonly CheckBox _fRequired = new() { Content = Strings.Get("Editor.Required") };
     private readonly TextBox _fDefault = new() { IsUndoEnabled = false };
     private readonly TextBox _fChoices = new() { IsUndoEnabled = false };
     private readonly StackPanel _fChoicesRow = new();
-    private readonly TextBlock _fieldMessage = new() { Foreground = ErrorBrush, TextWrapping = TextWrapping.Wrap };
+    private readonly TextBlock _fieldMessage = Themed.Brush(new TextBlock { TextWrapping = TextWrapping.Wrap }, Themed.Error);
     private int _fieldSelected = -1;
 
     // test data
@@ -60,15 +61,15 @@ public sealed partial class TemplateEditorWindow
         _blockError.Visibility = Visibility.Collapsed;
         if (_selected < 0 || _selected >= _model.BlockCount)
         {
-            _blockTitle.Text = "Ningún bloque seleccionado";
+            _blockTitle.Text = Strings.Get("Editor.NoBlock");
             return;
         }
         var type = _model.BlockType(_selected);
         var definition = _schema.Blocks.FirstOrDefault(b => b.Type == type);
-        _blockTitle.Text = $"Bloque {_selected + 1} — {definition?.Title ?? type}";
+        _blockTitle.Text = Strings.Get("Editor.BlockTitle", _selected + 1, definition?.Title ?? type);
         if (definition is null)
         {
-            _props.Children.Add(new TextBlock { Text = $"Tipo de bloque desconocido: {type}. Edítalo en la pestaña JSON.", TextWrapping = TextWrapping.Wrap });
+            _props.Children.Add(new TextBlock { Text = Strings.Get("Editor.UnknownBlock", type), TextWrapping = TextWrapping.Wrap });
             return;
         }
         var index = _selected;
@@ -82,8 +83,8 @@ public sealed partial class TemplateEditorWindow
         var row = new StackPanel { Margin = new Thickness(0, 0, 0, 8) };
         var range = prop.Kind is "int" or "number" && prop.Min is not null ? $" ({prop.Min:0.##}–{prop.Max:0.##})" : "";
         if (prop.Kind != "bool")
-            row.Children.Add(new TextBlock { Text = prop.Label + range, Foreground = Brushes.DimGray, Margin = new Thickness(0, 0, 0, 2) });
-        var message = new TextBlock { Foreground = ErrorBrush, TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed };
+            row.Children.Add(Themed.Brush(new TextBlock { Text = prop.Label + range, Margin = new Thickness(0, 0, 0, 2) }, Themed.Muted));
+        var message = Themed.Brush(new TextBlock { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed }, Themed.Error);
         var key = $"b{index}.{prop.Name}";
         System.Windows.Controls.Control control;
 
@@ -145,7 +146,7 @@ public sealed partial class TemplateEditorWindow
         var button = new Button
         {
             Content = "{ }",
-            ToolTip = "Insertar un campo o un valor automático",
+            ToolTip = Strings.Get("Editor.InsertTip"),
             Margin = new Thickness(4, 0, 0, 0),
             Padding = new Thickness(6, 0, 6, 0),
             VerticalAlignment = VerticalAlignment.Top,
@@ -181,17 +182,17 @@ public sealed partial class TemplateEditorWindow
         }
         var fields = _model.FieldNames.Where(n => n.Length > 0).ToList();
         if (fields.Count == 0)
-            menu.Items.Add(new MenuItem { Header = "(la plantilla no tiene campos: añádelos en la pestaña Plantilla)", IsEnabled = false });
+            menu.Items.Add(new MenuItem { Header = Strings.Get("Editor.NoFields"), IsEnabled = false });
         foreach (var field in fields)
             menu.Items.Add(Item($"{{{{{field}}}}}"));
         menu.Items.Add(new Separator());
-        menu.Items.Add(Item("{{now}}", "{{now}}  (fecha y hora)"));
-        menu.Items.Add(Item("{{now:dd/MM/yyyy}}", "{{now:dd/MM/yyyy}}  (fecha)"));
-        menu.Items.Add(Item("{{now:HH:mm}}", "{{now:HH:mm}}  (hora)"));
-        menu.Items.Add(Item("{{counter}}", "{{counter}}  (número consecutivo)"));
+        menu.Items.Add(Item("{{now}}", Strings.Get("Editor.InsertNow")));
+        menu.Items.Add(Item("{{now:dd/MM/yyyy}}", Strings.Get("Editor.InsertDate")));
+        menu.Items.Add(Item("{{now:HH:mm}}", Strings.Get("Editor.InsertTime")));
+        menu.Items.Add(Item("{{counter}}", Strings.Get("Editor.InsertCounter")));
         if (fields.Count > 0)
         {
-            var filters = new MenuItem { Header = "Campo con filtro" };
+            var filters = new MenuItem { Header = Strings.Get("Editor.FieldWithFilter") };
             foreach (var field in fields)
             {
                 var sub = new MenuItem { Header = field };
@@ -210,8 +211,8 @@ public sealed partial class TemplateEditorWindow
         var panel = new StackPanel();
         panel.Children.Add(box);
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 4, 0, 0) };
-        var choose = new Button { Content = "Elegir imagen…", Padding = new Thickness(8, 2, 8, 2) };
-        var remove = new Button { Content = "Quitar", Padding = new Thickness(8, 2, 8, 2), Margin = new Thickness(6, 0, 0, 0) };
+        var choose = new Button { Content = Strings.Get("Templates.ChooseImage"), Padding = new Thickness(8, 2, 8, 2) };
+        var remove = new Button { Content = Strings.Get("Editor.Remove"), Padding = new Thickness(8, 2, 8, 2), Margin = new Thickness(6, 0, 0, 0) };
         choose.Click += async (_, _) => await ChooseImageAsync(index, prop, box);
         remove.Click += (_, _) => Edit(() =>
         {
@@ -226,7 +227,7 @@ public sealed partial class TemplateEditorWindow
 
     private async Task ChooseImageAsync(int index, SchemaPropDto prop, TextBox box)
     {
-        var dialog = new Microsoft.Win32.OpenFileDialog { Filter = "Imágenes|*.png;*.jpg;*.jpeg" };
+        var dialog = new Microsoft.Win32.OpenFileDialog { Filter = Strings.Get("Templates.ImageFilter") };
         if (dialog.ShowDialog(this) != true)
             return;
         try
@@ -234,13 +235,13 @@ public sealed partial class TemplateEditorWindow
             var bytes = await File.ReadAllBytesAsync(dialog.FileName);
             if (bytes.Length > 1024 * 1024)
             {
-                SetStatus("La imagen supera el máximo de 1 MB.", error: true);
+                SetStatus(Strings.Get("Editor.ImageTooBig"), error: true);
                 return;
             }
             await EnsureDraftAsync();
             if (_draft is null)
             {
-                SetStatus("No se pudo preparar la subida de la imagen: el servicio no responde.", error: true);
+                SetStatus(Strings.Get("Editor.UploadFailed"), error: true);
                 return;
             }
             var name = SafeFileName(Path.GetFileName(dialog.FileName));
@@ -276,7 +277,7 @@ public sealed partial class TemplateEditorWindow
     {
         foreach (var (box, message) in _propControls.Values)
         {
-            box.BorderBrush = NormalBorder;
+            box.SetResourceReference(System.Windows.Controls.Control.BorderBrushProperty, Themed.Border);
             box.ToolTip = null;
             message.Visibility = Visibility.Collapsed;
         }
@@ -285,7 +286,7 @@ public sealed partial class TemplateEditorWindow
             return;
         if (_error.Property is { } property && _propControls.TryGetValue(property, out var control))
         {
-            control.Box.BorderBrush = ErrorBrush;
+            control.Box.SetResourceReference(System.Windows.Controls.Control.BorderBrushProperty, Themed.Error);
             control.Message.Text = _error.Message;
             control.Message.Visibility = Visibility.Visible;
         }
@@ -302,32 +303,31 @@ public sealed partial class TemplateEditorWindow
     {
         var panel = new StackPanel { Margin = new Thickness(8) };
         _originalName = _model.Name;
-        panel.Children.Add(Label("Nombre"));
-        panel.Children.Add(new TextBox
+        panel.Children.Add(Label(Strings.Get("Editor.Name")));
+        panel.Children.Add(Themed.Frame2(new TextBox
         {
             Text = _model.Name,
             IsReadOnly = true,
-            Background = new SolidColorBrush(Color.FromRgb(0xF0, 0xF0, 0xF0)),
-            ToolTip = "El nombre no se cambia: usa «Guardar como…» para crear otra plantilla.",
-        });
-        panel.Children.Add(Label("Título"));
+            ToolTip = Strings.Get("Editor.NameTip"),
+        }, Themed.SurfaceAlt));
+        panel.Children.Add(Label(Strings.Get("Editor.TitleLabel")));
         panel.Children.Add(_tplTitle);
-        panel.Children.Add(Label("Descripción"));
+        panel.Children.Add(Label(Strings.Get("Editor.Description")));
         panel.Children.Add(_tplDescription);
 
         var row = new StackPanel { Orientation = Orientation.Horizontal };
         var modeBox = new StackPanel { Margin = new Thickness(0, 0, 16, 0) };
-        modeBox.Children.Add(Label("Modo"));
+        modeBox.Children.Add(Label(Strings.Get("Editor.Mode")));
         _tplMode.ItemsSource = _schema.Template.Modes;
         modeBox.Children.Add(_tplMode);
         var gapBox = new StackPanel();
-        gapBox.Children.Add(Label($"Hueco ({_schema.Template.MinGap}–{_schema.Template.MaxGap})"));
+        gapBox.Children.Add(Label(Strings.Get("Editor.Gap", _schema.Template.MinGap, _schema.Template.MaxGap)));
         gapBox.Children.Add(_tplGap);
         row.Children.Add(modeBox);
         row.Children.Add(gapBox);
         panel.Children.Add(row);
 
-        panel.Children.Add(Label("Marco (vacío = sin marco; p. ej. {{marco}})"));
+        panel.Children.Add(Label(Strings.Get("Editor.Frame")));
         panel.Children.Add(WithInsertButton(_tplFrame));
 
         _tplTitle.TextChanged += (_, _) => TemplateEdit(() => _model.SetTemplateProperty("title", _tplTitle.Text, "tpl.title"));
@@ -338,29 +338,29 @@ public sealed partial class TemplateEditorWindow
             TemplateEdit(() => _model.SetTemplateProperty("mode", _tplMode.SelectedItem as string == "text" ? "" : _tplMode.SelectedItem as string));
 
         // Fields
-        panel.Children.Add(new TextBlock { Text = "Campos", FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 14, 0, 4) });
+        panel.Children.Add(new TextBlock { Text = Strings.Get("Editor.Fields"), FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 14, 0, 4) });
         panel.Children.Add(_fieldList);
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 4, 0, 0) };
-        var add = new Button { Content = "Añadir campo", Padding = new Thickness(8, 2, 8, 2), Margin = new Thickness(0, 0, 4, 0) };
-        var delete = new Button { Content = "Borrar campo", Padding = new Thickness(8, 2, 8, 2) };
+        var add = new Button { Content = Strings.Get("Editor.AddField"), Padding = new Thickness(8, 2, 8, 2), Margin = new Thickness(0, 0, 4, 0) };
+        var delete = new Button { Content = Strings.Get("Editor.DeleteField"), Padding = new Thickness(8, 2, 8, 2) };
         add.Click += (_, _) => AddField();
         delete.Click += (_, _) => DeleteField();
         buttons.Children.Add(add);
         buttons.Children.Add(delete);
         panel.Children.Add(buttons);
 
-        _fieldForm.Children.Add(Label("Etiqueta"));
+        _fieldForm.Children.Add(Label(Strings.Get("Editor.Label")));
         _fieldForm.Children.Add(_fLabel);
-        _fieldForm.Children.Add(Label("Tipo"));
+        _fieldForm.Children.Add(Label(Strings.Get("Editor.Kind")));
         _fKind.ItemsSource = _schema.FieldKinds;
         _fKind.HorizontalAlignment = HorizontalAlignment.Left;
         _fKind.Width = 140;
         _fieldForm.Children.Add(_fKind);
         _fRequired.Margin = new Thickness(0, 6, 0, 0);
         _fieldForm.Children.Add(_fRequired);
-        _fieldForm.Children.Add(Label("Valor por defecto"));
+        _fieldForm.Children.Add(Label(Strings.Get("Editor.DefaultValue")));
         _fieldForm.Children.Add(_fDefault);
-        _fChoicesRow.Children.Add(Label("Opciones (separadas por comas)"));
+        _fChoicesRow.Children.Add(Label(Strings.Get("Editor.Choices")));
         _fChoicesRow.Children.Add(_fChoices);
         _fieldForm.Children.Add(_fChoicesRow);
         _fieldForm.Children.Add(_fieldMessage);
@@ -386,7 +386,7 @@ public sealed partial class TemplateEditorWindow
         return new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Content = panel };
     }
 
-    private static TextBlock Label(string text) => new() { Text = text, Foreground = Brushes.DimGray, Margin = new Thickness(0, 8, 0, 2) };
+    private static TextBlock Label(string text) => Themed.Brush(new TextBlock { Text = text, Margin = new Thickness(0, 8, 0, 2) }, Themed.Muted);
 
     private void TemplateEdit(Action change)
     {
@@ -455,7 +455,7 @@ public sealed partial class TemplateEditorWindow
 
     private void AddField()
     {
-        var dialog = new NameDialog(this, "Nuevo campo", "Nombre del campo (letras, dígitos y guion bajo):", n => _model.CheckFieldName(n));
+        var dialog = new NameDialog(this, Strings.Get("Editor.NewFieldTitle"), Strings.Get("Editor.NewFieldPrompt"), n => _model.CheckFieldName(n));
         if (dialog.ShowDialog() != true)
             return;
         _fieldSelected = _model.AddField(dialog.ChosenName);
@@ -469,9 +469,9 @@ public sealed partial class TemplateEditorWindow
         var usage = _model.FieldUsage(name);
         if (usage.Count > 0)
         {
-            var where = string.Join(", ", usage.Where(u => u > 0).Select(u => $"bloque {u}").Concat(usage.Contains(0) ? ["el marco"] : []));
-            var answer = MessageBox.Show(this, $"El campo «{name}» se usa en: {where}.\n\nSi lo borras, esos marcadores quedarán sin valor y la plantilla puede dejar de ser válida. ¿Borrarlo?",
-                "Borrar campo", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            var where = string.Join(", ", usage.Where(u => u > 0).Select(u => Strings.Get("Editor.UsageBlock", u)).Concat(usage.Contains(0) ? [Strings.Get("Editor.UsageFrame")] : []));
+            var answer = MessageBox.Show(this, Strings.Get("Editor.DeleteFieldConfirm", name, where),
+                Strings.Get("Editor.DeleteFieldTitle"), MessageBoxButton.YesNo, MessageBoxImage.Warning);
             if (answer != MessageBoxResult.Yes)
                 return;
         }
@@ -485,19 +485,57 @@ public sealed partial class TemplateEditorWindow
 
     private void InitTestData() => SyncTestData(force: true);
 
-    private static string Example(string kind, string? def, string? firstChoice) => !string.IsNullOrEmpty(def) ? def : kind switch
+    /// <summary>Test values still the ones the editor made up (not typed by the user): they follow the properties the fields feed.</summary>
+    private readonly HashSet<string> _autoTest = new(StringComparer.OrdinalIgnoreCase);
+
+    private static readonly Regex DateFilter = new(@"\{\{\s*([A-Za-z_][A-Za-z0-9_]*)\s*(?::[^}|]*?)?\s*\|\s*(?:days|daysleft)\s*\}\}");
+
+    private static readonly Regex WholePlaceholder = new(@"^\s*\{\{\s*([A-Za-z_][A-Za-z0-9_]*)\s*\}\}\s*$");
+
+    /// <summary>
+    /// The ranges and word lists of the block properties whose whole value is a field, by field: a number field that feeds the height of
+    /// a bar code has to get an example inside its range, or the preview fails for something the user did not write.
+    /// </summary>
+    private Dictionary<string, List<MiniPrinter.Protocol.ExampleRule>> RulesByField()
     {
-        "multiline" => "Línea 1\nLínea 2",
-        "number" => "1",
-        "choice" => firstChoice ?? "",
-        "boolean" or "image" => "",
-        _ => "Ejemplo",
-    };
+        var rules = new Dictionary<string, List<MiniPrinter.Protocol.ExampleRule>>(StringComparer.OrdinalIgnoreCase);
+        for (var i = 0; i < _model.BlockCount; i++)
+        {
+            if (_schema.Blocks.FirstOrDefault(b => b.Type == _model.BlockType(i)) is not { } definition)
+                continue;
+            // A field through the "days" or "daysleft" filter has to be a date, whatever the property is.
+            foreach (var prop in definition.Props.Concat(_schema.Common))
+                foreach (Match filtered in DateFilter.Matches(_model.GetBlockProperty(i, prop.Name)))
+                {
+                    if (!rules.TryGetValue(filtered.Groups[1].Value, out var dates))
+                        rules[filtered.Groups[1].Value] = dates = [];
+                    dates.Add(MiniPrinter.Protocol.ExampleRule.Date);
+                }
+            foreach (var prop in definition.Props.Where(p => p.Kind is "int" or "number" or "enum"))
+            {
+                if (WholePlaceholder.Match(_model.GetBlockProperty(i, prop.Name)) is not { Success: true } match)
+                    continue;
+                var rule = prop.Kind == "enum"
+                    ? new MiniPrinter.Protocol.ExampleRule(0, 0, 0, prop.Values)
+                    : new MiniPrinter.Protocol.ExampleRule(prop.Min ?? 0, prop.Max ?? 0, prop.Default ?? 0);
+                if (!rules.TryGetValue(match.Groups[1].Value, out var list))
+                    rules[match.Groups[1].Value] = list = [];
+                list.Add(rule);
+            }
+        }
+        return rules;
+    }
+
+    private static string Example(string kind, string? def, string? firstChoice, IReadOnlyList<MiniPrinter.Protocol.ExampleRule> rules) =>
+        MiniPrinter.Protocol.TemplateExamples.Choose(kind, def, firstChoice,
+            kind == "multiline" ? Strings.Get("Editor.SampleMultiline") : Strings.Get("Editor.SampleText"), rules);
 
     /// <summary>Rebuilds the test-data form when the template's fields changed; keeps the values already typed.</summary>
     private void SyncTestData(bool force = false)
     {
-        var signature = string.Join("|", Enumerable.Range(0, _model.FieldCount).Select(i => _model.Field(i).ToJsonString()));
+        var rulesByField = RulesByField();
+        var signature = string.Join("|", Enumerable.Range(0, _model.FieldCount).Select(i => _model.Field(i).ToJsonString()))
+                        + "#" + string.Join(";", rulesByField.OrderBy(r => r.Key).Select(r => r.Key + ":" + string.Join(",", r.Value.Select(x => $"{x.Min}-{x.Max}-{x.Default}-{string.Join("/", x.Values ?? [])}{(x.IsDate ? "d" : "")}"))));
         if (!force && signature == _fieldSignature)
             return;
         _fieldSignature = signature;
@@ -507,14 +545,13 @@ public sealed partial class TemplateEditorWindow
             _testData.Remove(gone);
 
         _testPanel.Children.Clear();
-        _testPanel.Children.Add(new TextBlock
+        _testPanel.Children.Add(Themed.Brush(new TextBlock
         {
-            Text = "Valores solo para la vista previa: no se guardan en la plantilla.",
-            Foreground = Brushes.DimGray,
+            Text = Strings.Get("Editor.TestNote"),
             TextWrapping = TextWrapping.Wrap,
-        });
+        }, Themed.Muted));
         if (_model.FieldCount == 0)
-            _testPanel.Children.Add(new TextBlock { Text = "La plantilla no tiene campos.", Margin = new Thickness(0, 8, 0, 0) });
+            _testPanel.Children.Add(new TextBlock { Text = Strings.Get("Editor.NoFieldsShort"), Margin = new Thickness(0, 8, 0, 0) });
 
         for (var i = 0; i < _model.FieldCount; i++)
         {
@@ -525,8 +562,12 @@ public sealed partial class TemplateEditorWindow
             if (kind == "image")
                 continue;   // images are tried from the block itself
             var choices = _model.GetFieldProperty(i, "choices").Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-            if (!_testData.ContainsKey(name))
-                _testData[name] = Example(kind, _model.GetFieldProperty(i, "default"), choices.FirstOrDefault());
+            if (!_testData.ContainsKey(name) || _autoTest.Contains(name))
+            {
+                _testData[name] = Example(kind, _model.GetFieldProperty(i, "default"), choices.FirstOrDefault(),
+                    rulesByField.GetValueOrDefault(name) ?? []);
+                _autoTest.Add(name);
+            }
 
             var label = _model.GetFieldProperty(i, "label");
             var captured = name;
@@ -563,6 +604,7 @@ public sealed partial class TemplateEditorWindow
         if (_updating)
             return;
         _testData[name] = value;
+        _autoTest.Remove(name);   // typed by the user: no longer follows the properties
         SchedulePreview();
     }
 
@@ -614,8 +656,8 @@ public sealed partial class TemplateEditorWindow
         if (_updatingRaw)
             return;
         var error = _model.TryReplace(_raw.Text);
-        _rawStatus.Foreground = error is null ? Brushes.DarkGreen : ErrorBrush;
-        _rawStatus.Text = error ?? "JSON válido: aplicado.";
+        Themed.Foreground(_rawStatus, error is null ? Themed.Ok : Themed.Error);
+        _rawStatus.Text = error ?? Strings.Get("Editor.JsonOk");
     }
 
     // ---- preview ------------------------------------------------------------------------------------
@@ -647,7 +689,7 @@ public sealed partial class TemplateEditorWindow
             _rows = result.Blocks;
             var hadError = _error is not null;
             _error = null;
-            SetStatus($"{image.PixelHeight / 8.0:0} mm de papel", error: false);
+            SetStatus(Strings.Get("Templates.PaperLength", image.PixelHeight / 8.0), error: false);
             if (hadError)
             {
                 RefreshBlockList();
@@ -667,7 +709,7 @@ public sealed partial class TemplateEditorWindow
         catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException or TaskCanceledException)
         {
             if (mine == _sequence)
-                SetStatus($"No se pudo actualizar la vista previa: {ex.Message}", error: true);
+                SetStatus(Strings.Get("Editor.PreviewFailed", ex.Message), error: true);
         }
     }
 
@@ -711,7 +753,7 @@ public sealed partial class TemplateEditorWindow
         catch (Exception ex) when (ex is ControlApiException or HttpRequestException or InvalidOperationException or TaskCanceledException)
         {
             _draft = null;
-            SetStatus($"No se pudo preparar el editor de imágenes: {ex.Message}", error: true);
+            SetStatus(Strings.Get("Editor.ImageEditorFailed", ex.Message), error: true);
         }
     }
 
@@ -736,9 +778,9 @@ public sealed partial class TemplateEditorWindow
 
     private async Task SaveAsAsync()
     {
-        var dialog = new NameDialog(this, "Guardar como…", "Nombre de la nueva plantilla:", n =>
-            !TemplateEditorModel.IsValidName(n) ? "Solo letras, dígitos, guion y guion bajo (máximo 40) y no una palabra reservada."
-            : _existingNames.Contains(n, StringComparer.OrdinalIgnoreCase) ? $"Ya existe una plantilla llamada '{n}'."
+        var dialog = new NameDialog(this, Strings.Get("Editor.SaveAsTitle"), Strings.Get("Editor.SaveAsPrompt"), n =>
+            !TemplateEditorModel.IsValidName(n) ? Strings.Get("Templates.NameRules")
+            : _existingNames.Contains(n, StringComparer.OrdinalIgnoreCase) ? Strings.Get("Templates.NameExists", n)
             : null, initial: $"{_model.Name}-2");
         if (dialog.ShowDialog() == true)
             await SaveAsync(dialog.ChosenName);
@@ -751,12 +793,12 @@ public sealed partial class TemplateEditorWindow
         var name = _model.Name;
         if (!TemplateEditorModel.IsValidName(name))
         {
-            SetStatus($"El nombre '{name}' no es válido (letras, dígitos, guion y guion bajo; máximo 40).", error: true);
+            SetStatus(Strings.Get("Editor.InvalidName", name), error: true);
             return false;
         }
         if (!name.Equals(_originalName, StringComparison.OrdinalIgnoreCase) && _existingNames.Contains(name, StringComparer.OrdinalIgnoreCase))
         {
-            SetStatus($"Ya existe una plantilla llamada '{name}'. Usa «Guardar como…» con otro nombre.", error: true);
+            SetStatus(Strings.Get("Editor.NameTaken", name), error: true);
             return false;
         }
         try
@@ -771,14 +813,14 @@ public sealed partial class TemplateEditorWindow
         catch (ControlApiException ex)
         {
             _error = new PreviewError(ex.Block, ex.Property, ex.Message);
-            SetStatus($"No se pudo guardar: {ex.Message}", error: true);
+            SetStatus(Strings.Get("Editor.SaveFailed", ex.Message), error: true);
             RefreshBlockList();
             ApplyErrorToProps();
             return false;
         }
         catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException or TaskCanceledException)
         {
-            SetStatus($"No se pudo guardar: {ex.Message}", error: true);
+            SetStatus(Strings.Get("Editor.SaveFailed", ex.Message), error: true);
             return false;
         }
     }
@@ -789,7 +831,7 @@ public sealed partial class TemplateEditorWindow
             return;
         if (_model.IsDirty)
         {
-            var answer = MessageBox.Show(this, "Hay cambios sin guardar. ¿Quieres guardarlos antes de cerrar?", Title,
+            var answer = MessageBox.Show(this, Strings.Get("Editor.UnsavedPrompt"), Title,
                 MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
             if (answer == MessageBoxResult.Cancel)
             {

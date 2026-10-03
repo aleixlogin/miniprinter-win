@@ -170,3 +170,42 @@ public sealed partial class TemplateLayout
         }
     }
 }
+
+/// <summary>Where a template field feeds a block property that only accepts some values (see <see cref="TemplateLayout.FieldRules"/>).</summary>
+public sealed record FieldUse(string Field, Protocol.ExampleRule Rule);
+
+public sealed partial class TemplateLayout
+{
+    [GeneratedRegex(@"^\s*\{\{\s*([A-Za-z_][A-Za-z0-9_]*)\s*\}\}\s*$")]
+    private static partial Regex WholePlaceholder();
+
+    /// <summary>
+    /// The numeric ranges and word lists of the block properties whose whole value is a field (<c>"{{alto}}"</c>), by field. The
+    /// examples of the fields are chosen from these so that they pass the validation of the property they feed.
+    /// </summary>
+    public IReadOnlyList<FieldUse> FieldRules()
+    {
+        var uses = new List<FieldUse>();
+        foreach (var block in Blocks)
+        {
+            if (LayoutBlocks.Find(block.Type) is not { } type)
+                continue;
+            foreach (var (key, node) in block.Json)
+            {
+                // A field through the "days" or "daysleft" filter has to be a date, whatever the property is.
+                if (key != "type" && BlockContext.ReadRaw(node) is { } text && text.Contains("{{"))
+                    foreach (var (name, _, filter) in Interpolator.Find(text))
+                        if (filter is "days" or "daysleft")
+                            uses.Add(new FieldUse(name, Protocol.ExampleRule.Date));
+                if (!type.Props.TryGetValue(key, out var def) || def.Kind is PropKind.Text or PropKind.Bool)
+                    continue;
+                if (BlockContext.ReadRaw(node) is not { } raw || WholePlaceholder().Match(raw) is not { Success: true } match)
+                    continue;
+                uses.Add(new FieldUse(match.Groups[1].Value, def.Kind == PropKind.Enum
+                    ? new Protocol.ExampleRule(0, 0, 0, def.Values)
+                    : new Protocol.ExampleRule(def.Min, def.Max, def.Default)));
+            }
+        }
+        return uses;
+    }
+}

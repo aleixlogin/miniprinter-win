@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using MiniPrinter.Gui;
 
 namespace MiniPrinter.Tray;
 
@@ -8,11 +9,11 @@ namespace MiniPrinter.Tray;
 /// Small dialog that asks for a name (new template, Save as…, new field) and validates it as the user types.
 /// With <c>duplicateLabel</c> it also offers "blank" or "duplicate the selected template".
 /// </summary>
-public sealed class NameDialog : Window
+public sealed class NameDialog : ThemedWindow
 {
     private readonly TextBox _name = new() { MinWidth = 280, Margin = new Thickness(0, 4, 0, 4) };
-    private readonly TextBlock _error = new() { Foreground = Brushes.Firebrick, TextWrapping = TextWrapping.Wrap, MinHeight = 18 };
-    private readonly Button _ok = new() { Content = "Aceptar", IsDefault = true, MinWidth = 80, Margin = new Thickness(0, 0, 8, 0) };
+    private readonly TextBlock _error = Themed.Brush(new TextBlock { TextWrapping = TextWrapping.Wrap, MinHeight = 18 }, Themed.Error);
+    private readonly Button _ok = new() { Content = Strings.Get("Dialog.Ok"), IsDefault = true, MinWidth = 80, Margin = new Thickness(0, 0, 8, 0) };
     private readonly RadioButton? _blank;
     private readonly RadioButton? _copy;
     private readonly Func<string, string?> _validate;
@@ -34,8 +35,8 @@ public sealed class NameDialog : Window
         panel.Children.Add(_name);
         if (duplicateLabel is not null)
         {
-            _blank = new RadioButton { Content = "En blanco", IsChecked = true, Margin = new Thickness(0, 6, 0, 2) };
-            _copy = new RadioButton { Content = $"Duplicar «{duplicateLabel}»", Margin = new Thickness(0, 2, 0, 6) };
+            _blank = new RadioButton { Content = Strings.Get("Name.Blank"), IsChecked = true, Margin = new Thickness(0, 6, 0, 2) };
+            _copy = new RadioButton { Content = Strings.Get("Name.Duplicate", duplicateLabel), Margin = new Thickness(0, 2, 0, 6) };
             panel.Children.Add(_blank);
             panel.Children.Add(_copy);
         }
@@ -43,7 +44,7 @@ public sealed class NameDialog : Window
 
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 8, 0, 0) };
         buttons.Children.Add(_ok);
-        buttons.Children.Add(new Button { Content = "Cancelar", IsCancel = true, MinWidth = 80 });
+        buttons.Children.Add(new Button { Content = Strings.Get("Dialog.Cancel"), IsCancel = true, MinWidth = 80 });
         panel.Children.Add(buttons);
         Content = panel;
 

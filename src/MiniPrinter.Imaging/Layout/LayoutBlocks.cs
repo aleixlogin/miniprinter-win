@@ -73,6 +73,9 @@ internal sealed class BlockContext
     public required Interpolator Interpolator { get; init; }
     public string? AssetsDir { get; init; }
 
+    /// <summary>Previews and thumbnails: an image block with no picture shows a generic one instead of nothing.</summary>
+    public bool Lenient { get; init; }
+
     /// <summary>Where an image is looked for when it is not in <see cref="AssetsDir"/>.</summary>
     public string? FallbackAssetsDir { get; init; }
 
@@ -172,7 +175,7 @@ internal static class LayoutBlocks
                 ("thickness", PropDef.Int(1, 8, 2).L("Grosor (puntos)"))), RenderLine),
             new BlockType("qr", "Código QR", P(("data", PropDef.Text.L("Contenido", multiline: true)), ("caption", PropDef.Text.L("Texto debajo")),
                 ("ecc", PropDef.Choice("M", "L", "Q", "H").L("Corrección de errores")),
-                ("module", PropDef.Int(1, 40, 0).L("Tamaño de módulo (vacío = automático)"))), RenderQr),
+                ("module", PropDef.Int(TemplateRenderer.MinQrModule, 40, 0).L("Tamaño de módulo (vacío = automático)"))), RenderQr),
             new BlockType("barcode", "Código de barras", P(("data", PropDef.Text.L("Contenido")),
                 ("format", PropDef.Choice("code128", "code39", "ean13", "upca").L("Formato")), ("caption", PropDef.Text.L("Texto debajo")),
                 ("height", PropDef.Num(4, 50, 12).L("Altura (mm)"))), RenderBarcode),
@@ -498,6 +501,34 @@ internal static class LayoutBlocks
 
     private static readonly ConcurrentDictionary<(string Path, DateTime Stamp, int Width), MonoBitmap> AssetCache = new();
 
+    /// <summary>
+    /// A generic picture (a frame with a sun and two mountains) to stand for the image the user has still to choose, so that the
+    /// preview of a template with an image shows where it goes and about how big it is.
+    /// </summary>
+    internal static MonoBitmap SampleImage(int width)
+    {
+        var w = Math.Min(width, 384);
+        var h = w / 2;
+        var picture = new MonoBitmap(width, h);
+        var left = (width - w) / 2;
+        for (var y = 0; y < h; y++)
+        for (var x = 0; x < w; x++)
+        {
+            var frame = x < 3 || y < 3 || x >= w - 3 || y >= h - 3;
+            var sunX = w * 0.25 - x;
+            var sunY = h * 0.30 - y;
+            var sun = sunX * sunX + sunY * sunY <= Math.Pow(h * 0.14, 2);
+            // two triangles on the ground: the big one in the middle, the small one to its right
+            var ground = h * 0.88;
+            bool Mountain(double centre, double halfWidth, double peak) =>
+                y <= ground && y >= peak + Math.Abs(x - centre) * (ground - peak) / halfWidth && Math.Abs(x - centre) <= halfWidth;
+            var mountains = Mountain(w * 0.50, w * 0.28, h * 0.30) || Mountain(w * 0.76, w * 0.18, h * 0.52);
+            if (frame || sun || mountains)
+                picture[left + x, y] = true;
+        }
+        return picture;
+    }
+
     private static MonoBitmap? RenderImage(BlockSpec b, BlockContext c)
     {
         var data = c.Str(b, "data");
@@ -521,6 +552,10 @@ internal static class LayoutBlocks
             var path = AssetPath(c.AssetsDir, source) ?? AssetPath(c.FallbackAssetsDir, source) ?? throw new TemplateException($"{b.Where}: la imagen '{source}' no existe.", b.Index, "source");
             var key = (path, File.GetLastWriteTimeUtc(path), c.Width);
             picture = AssetCache.GetOrAdd(key, _ => Dither(File.ReadAllBytes(path), c.Width));
+        }
+        else if (c.Lenient)
+        {
+            picture = SampleImage(c.Width);
         }
         else
         {

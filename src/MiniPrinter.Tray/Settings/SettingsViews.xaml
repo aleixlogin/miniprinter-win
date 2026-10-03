@@ -1,0 +1,496 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:loc="clr-namespace:MiniPrinter.Tray"
+                    xmlns:gui="clr-namespace:MiniPrinter.Gui;assembly=MiniPrinter.Gui"
+                    xmlns:ctl="clr-namespace:MiniPrinter.Control;assembly=MiniPrinter.Control">
+
+    <BooleanToVisibilityConverter x:Key="BoolToVisible" />
+    <loc:InvertedBooleanToVisibilityConverter x:Key="InvertedBoolToVisible" />
+
+    <!-- A row of a setting: a label on the left, the control on the right and, below it, what is wrong with the value. -->
+    <Style x:Key="S.Row" TargetType="Border">
+        <Setter Property="Padding" Value="6,4" />
+        <Setter Property="Margin" Value="0,1" />
+    </Style>
+    <!-- The label stays at the top of its row, next to the first line of the control, even when messages appear below it. -->
+    <Style x:Key="S.Label" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}" />
+        <Setter Property="Margin" Value="0,8,12,0" />
+        <Setter Property="VerticalAlignment" Value="Top" />
+    </Style>
+    <Style x:Key="S.Title" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="17" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Margin" Value="6,0,0,10" />
+    </Style>
+    <Style x:Key="S.Hint" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="Margin" Value="0,4,0,0" />
+        <Setter Property="MaxWidth" Value="520" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+    </Style>
+    <Style x:Key="S.Error" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Error}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="Margin" Value="0,3,0,0" />
+        <Style.Triggers>
+            <Trigger Property="Text" Value="">
+                <Setter Property="Visibility" Value="Collapsed" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+    <Style x:Key="S.Unit" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Margin" Value="8,0,0,0" />
+    </Style>
+    <Style x:Key="S.Status" TargetType="TextBlock">
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <!-- ===== Impresión ===== -->
+    <DataTemplate DataType="{x:Type gui:PrintSectionViewModel}">
+        <StackPanel>
+            <TextBlock Style="{StaticResource S.Title}" Text="{Binding Title}" />
+
+            <Border Style="{StaticResource S.Row}" loc:SettingsRow.Field="Darkness">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" SharedSizeGroup="L" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource S.Label}" Text="{loc:T Main.Oscuridad}" />
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <Slider Minimum="1" Maximum="5" TickFrequency="1" IsSnapToTickEnabled="True" Width="200" TickPlacement="BottomRight" Value="{Binding Darkness}" />
+                        <TextBlock Text="{Binding Darkness}" Margin="8,0" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+            <Border Style="{StaticResource S.Row}" loc:SettingsRow.Field="PrintMode">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" SharedSizeGroup="L" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource S.Label}" Text="{loc:T Main.ModoDeImpresion}" />
+                    <ComboBox Grid.Column="1" Width="300" HorizontalAlignment="Left" SelectedValuePath="Tag" SelectedValue="{Binding PrintMode}">
+                        <ComboBoxItem Content="{loc:T Main.AutomaticoTextoEnModoTexto}" Tag="{x:Static ctl:PrintModeChoice.Auto}" />
+                        <ComboBoxItem Content="{loc:T Main.SiempreImagen}" Tag="{x:Static ctl:PrintModeChoice.Image}" />
+                        <ComboBoxItem Content="{loc:T Main.SiempreTextoMasEnergia}" Tag="{x:Static ctl:PrintModeChoice.Text}" />
+                    </ComboBox>
+                </Grid>
+            </Border>
+            <Border Style="{StaticResource S.Row}" loc:SettingsRow.Field="Dither">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" SharedSizeGroup="L" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource S.Label}" Text="{loc:T Main.Tramado}" />
+                    <ComboBox Grid.Column="1" Width="300" HorizontalAlignment="Left" SelectedValuePath="Tag" SelectedValue="{Binding Dither}">
+                        <ComboBoxItem Content="{loc:T Main.AutomaticoTextoNitidoFotosTramadas}" Tag="{x:Static ctl:DitherChoice.Auto}" />
+                        <ComboBoxItem Content="{loc:T Main.AtkinsonFotos}" Tag="{x:Static ctl:DitherChoice.Atkinson}" />
+                        <ComboBoxItem Content="{loc:T Main.FloydSteinberg}" Tag="{x:Static ctl:DitherChoice.FloydSteinberg}" />
+                        <ComboBoxItem Content="{loc:T Main.UmbralSoloTexto}" Tag="{x:Static ctl:DitherChoice.Threshold}" />
+                    </ComboBox>
+                </Grid>
+            </Border>
+            <Border Style="{StaticResource S.Row}" loc:SettingsRow.Field="ExtraFeed">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" SharedSizeGroup="L" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource S.Label}" Text="{loc:T Main.AvanceExtraAlFinal}" />
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <Slider Minimum="0" Maximum="6" TickFrequency="1" IsSnapToTickEnabled="True" Width="200" TickPlacement="BottomRight" Value="{Binding ExtraFeedSteps}" />
+                        <TextBlock Text="{Binding ExtraFeedSteps, StringFormat={}{0} × 6 mm}" Margin="8,0" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+            <Border Style="{StaticResource S.Row}" loc:SettingsRow.Field="Continuous">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" SharedSizeGroup="L" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource S.Label}" Text="{loc:T Main.PaginasContinuas}" />
+                    <StackPanel Grid.Column="1">
+                        <StackPanel Orientation="Horizontal">
+                            <CheckBox Content="{loc:T Main.UnirLasPaginasEnUna}" VerticalAlignment="Center" IsChecked="{Binding ContinuousPages}" />
+                            <TextBox Width="44" Margin="6,0" Text="{Binding PageGapMm, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Text="{loc:T Main.Mm}" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource S.Error}" Text="{Binding [PageGap]}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+            <Border Style="{StaticResource S.Row}" loc:SettingsRow.Field="TextFont">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" SharedSizeGroup="L" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource S.Label}" Text="{loc:T Settings.Print.TextFont}" />
+                    <StackPanel Grid.Column="1">
+                        <TextBox Width="220" HorizontalAlignment="Left" Text="{Binding TextFont, UpdateSourceTrigger=PropertyChanged}" />
+                        <TextBlock Style="{StaticResource S.Error}" Text="{Binding [TextFont]}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+            <Border Style="{StaticResource S.Row}" loc:SettingsRow.Field="TextSize">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" SharedSizeGroup="L" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource S.Label}" Text="{loc:T Settings.Print.TextSize}" />
+                    <StackPanel Grid.Column="1">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBox Width="50" Text="{Binding TextSizePt, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Style="{StaticResource S.Unit}" Text="{loc:T Settings.Print.TextSizeUnit}" />
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource S.Error}" Text="{Binding [TextSize]}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+            <Border Style="{StaticResource S.Row}" loc:SettingsRow.Field="KeepAlive">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" SharedSizeGroup="L" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource S.Label}" Text="{loc:T Main.MantenerActiva}" />
+                    <StackPanel Grid.Column="1">
+                        <StackPanel Orientation="Horizontal">
+                            <CheckBox Content="{loc:T Main.MantenerConectadaKeepAliveLatido}" VerticalAlignment="Center" IsChecked="{Binding KeepAlive}" />
+                            <TextBox Width="45" Margin="6,0" Text="{Binding KeepAliveSeconds, UpdateSourceTrigger=PropertyChanged}" />
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource S.Hint}" Text="{loc:T Main.SElMovilNoPodra}" />
+                        <TextBlock Style="{StaticResource S.Error}" Text="{Binding [KeepAliveSeconds]}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+            <Border Style="{StaticResource S.Row}" loc:SettingsRow.Field="Idle">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" SharedSizeGroup="L" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource S.Label}" Text="{loc:T Main.DesconectarTras}" />
+                    <StackPanel Grid.Column="1">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBox Width="60" IsEnabled="{Binding IdleApplies}" Text="{Binding IdleSeconds, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Style="{StaticResource S.Unit}" Text="{loc:T Main.SegundosSinUsoLiberaLa}" />
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource S.Error}" Text="{Binding [Idle]}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+            <Border Style="{StaticResource S.Row}" loc:SettingsRow.Field="Retry">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" SharedSizeGroup="L" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource S.Label}" Text="{loc:T Settings.Print.Retry}" />
+                    <StackPanel Grid.Column="1">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBox Width="60" Text="{Binding RetryMinutes, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Style="{StaticResource S.Unit}" Text="{loc:T Settings.Print.RetryUnit}" />
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource S.Error}" Text="{Binding [Retry]}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+            <Border Style="{StaticResource S.Row}" loc:SettingsRow.Field="History">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" SharedSizeGroup="L" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource S.Label}" Text="{loc:T Settings.Print.History}" />
+                    <StackPanel Grid.Column="1">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBox Width="50" Text="{Binding HistoryKeep, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Style="{StaticResource S.Unit}" Text="{loc:T Settings.Print.HistoryUnit}" />
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource S.Error}" Text="{Binding [History]}" />
+                        <TextBlock Style="{StaticResource S.Hint}" Text="{loc:T Settings.Print.HistoryPrivacy}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </StackPanel>
+    </DataTemplate>
+
+    <!-- ===== Papel ===== -->
+    <DataTemplate DataType="{x:Type gui:PaperSectionViewModel}">
+        <StackPanel>
+            <TextBlock Style="{StaticResource S.Title}" Text="{Binding Title}" />
+            <Border Style="{StaticResource S.Row}" loc:SettingsRow.Field="Name">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" SharedSizeGroup="L" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource S.Label}" Text="{loc:T Main.NombreEnWindows}" />
+                    <StackPanel Grid.Column="1">
+                        <TextBox Width="260" HorizontalAlignment="Left" Text="{Binding PrinterName, UpdateSourceTrigger=PropertyChanged}" />
+                        <TextBlock Style="{StaticResource S.Error}" Text="{Binding [Name]}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+            <Border Style="{StaticResource S.Row}" loc:SettingsRow.Field="Sizes">
+                <StackPanel>
+                    <TextBlock Text="{loc:T Main.PapelQueSeMuestraA}" FontWeight="SemiBold" Margin="0,6,0,4" />
+                    <loc:PaperListControl />
+                    <TextBlock Style="{StaticResource S.Error}" Text="{Binding [Sizes]}" />
+                </StackPanel>
+            </Border>
+            <Border Style="{StaticResource S.Row}" loc:SettingsRow.Field="Queue">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" SharedSizeGroup="L" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource S.Label}" Text="{loc:T Main.ImpresoraDeWindows}" />
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <Button Content="{loc:T Main.RecrearImpresoraDeWindows}" Command="{Binding RecreateQueue}" Padding="10,3" />
+                        <TextBlock Style="{StaticResource S.Status}" Margin="10,0,0,0" MaxWidth="420" Text="{Binding QueueStatus}">
+                            <TextBlock.Resources>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource S.Status}">
+                                    <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding QueueStatusIsProblem}" Value="True">
+                                            <Setter Property="Foreground" Value="{DynamicResource Brush.Warn}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Resources>
+                        </TextBlock>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </StackPanel>
+    </DataTemplate>
+
+    <!-- ===== Red ===== -->
+    <DataTemplate DataType="{x:Type gui:NetworkSectionViewModel}">
+        <StackPanel>
+            <TextBlock Style="{StaticResource S.Title}" Text="{Binding Title}" />
+            <Border Style="{StaticResource S.Row}" loc:SettingsRow.Field="Scope">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" SharedSizeGroup="L" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource S.Label}" Text="{loc:T Main.ImprimirDesde}" />
+                    <StackPanel Grid.Column="1">
+                        <RadioButton Content="{loc:T Main.SoloEstePc}" GroupName="Net" Margin="0,2" IsChecked="{Binding IsLocal}" />
+                        <RadioButton Content="{loc:T Main.TodaLaRedLocalOtros}" GroupName="Net" Margin="0,2" IsChecked="{Binding IsLan}" />
+                        <TextBlock Style="{StaticResource S.Hint}" Text="{loc:T Main.EnModoRedLocalSolo}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+            <Border Style="{StaticResource S.Row}" loc:SettingsRow.Field="Port">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" SharedSizeGroup="L" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource S.Label}" Text="{loc:T Main.PuertoIpp}" />
+                    <StackPanel Grid.Column="1">
+                        <TextBox Width="80" HorizontalAlignment="Left" Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}" />
+                        <TextBlock Style="{StaticResource S.Error}" Text="{Binding [Port]}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </StackPanel>
+    </DataTemplate>
+
+    <!-- ===== Impresión directa ===== -->
+    <DataTemplate DataType="{x:Type gui:RawPortSectionViewModel}">
+        <StackPanel>
+            <TextBlock Style="{StaticResource S.Title}" Text="{Binding Title}" />
+            <Border Style="{StaticResource S.Row}" loc:SettingsRow.Field="Enabled">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" SharedSizeGroup="L" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource S.Label}" Text="{loc:T Main.Estado}" />
+                    <CheckBox Grid.Column="1" VerticalAlignment="Center" Content="{loc:T Main.AceptarImpresionDirectaPorTcp}" IsChecked="{Binding Enabled}" />
+                </Grid>
+            </Border>
+            <Border Style="{StaticResource S.Row}" loc:SettingsRow.Field="Port">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" SharedSizeGroup="L" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource S.Label}" Text="{loc:T Main.Puerto}" />
+                    <StackPanel Grid.Column="1">
+                        <TextBox Width="80" HorizontalAlignment="Left" Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}" />
+                        <TextBlock Style="{StaticResource S.Error}" Text="{Binding [Port]}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+            <Border Style="{StaticResource S.Row}" loc:SettingsRow.Field="Status">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" SharedSizeGroup="L" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource S.Label}" Text="{loc:T Main.Situacion}" />
+                    <TextBlock Grid.Column="1" Text="{Binding Status}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource S.Status}">
+                                <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding State}" Value="Listening">
+                                        <Setter Property="Foreground" Value="{DynamicResource Brush.Ok}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding State}" Value="Failed">
+                                        <Setter Property="Foreground" Value="{DynamicResource Brush.Error}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Grid>
+            </Border>
+            <TextBlock Style="{StaticResource S.Hint}" Margin="6,6,0,0" Text="{loc:T Main.ElPuertoNoTieneAutenticacion}" />
+
+            <!-- Herramientas: direcciones, QR, ticket de prueba y últimos clientes -->
+            <StackPanel DataContext="{Binding Tools}" Margin="0,14,0,0">
+                <Border Style="{StaticResource S.Row}" Visibility="{Binding CanCopy, Converter={StaticResource BoolToVisible}}">
+                    <Grid>
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" SharedSizeGroup="L" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                        <TextBlock Style="{StaticResource S.Label}" Text="{loc:T Raw.Addresses}" />
+                        <ItemsControl Grid.Column="1" ItemsSource="{Binding Addresses}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                                        <TextBlock Text="{Binding}" FontFamily="Consolas" VerticalAlignment="Center" MinWidth="190" />
+                                        <Button Content="{loc:T Raw.CopyAddress}" CommandParameter="{Binding}" Margin="8,0,0,0"
+                                                Command="{Binding DataContext.CopyAddress, RelativeSource={RelativeSource AncestorType=ItemsControl}}" />
+                                        <Button Content="{loc:T Raw.Qr}" CommandParameter="{Binding}"
+                                                Command="{Binding DataContext.ShowQr, RelativeSource={RelativeSource AncestorType=ItemsControl}}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Grid>
+                </Border>
+                <TextBlock Style="{StaticResource S.Hint}" Margin="6,0,0,6" Text="{loc:T Raw.NeedsNetwork}"
+                           Visibility="{Binding NeedsNetworkNotice, Converter={StaticResource BoolToVisible}}" />
+                <Border Style="{StaticResource S.Row}">
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="{loc:T Raw.TestButton}" Command="{Binding SendTest}" Padding="12,4" />
+                        <TextBlock VerticalAlignment="Center" Margin="12,0,0,0" TextWrapping="Wrap" MaxWidth="420" Text="{Binding TestResult}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding TestFailed}" Value="True">
+                                            <Setter Property="Foreground" Value="{DynamicResource Brush.Error}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+                <DockPanel Margin="6,12,0,4">
+                    <Button DockPanel.Dock="Right" Content="{loc:T Raw.ClientsRefresh}" Command="{Binding Refresh}" />
+                    <TextBlock Text="{loc:T Raw.Clients}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                </DockPanel>
+                <TextBlock Style="{StaticResource S.Hint}" Margin="6,0,0,0" Text="{loc:T Raw.NoClients}"
+                           Visibility="{Binding HasClients, Converter={StaticResource InvertedBoolToVisible}}" />
+                <ListView ItemsSource="{Binding Clients}" MaxHeight="220" Margin="6,0,0,0"
+                          Visibility="{Binding HasClients, Converter={StaticResource BoolToVisible}}">
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Header="{loc:T Raw.Col.Time}" Width="70" DisplayMemberBinding="{Binding Time}" />
+                            <GridViewColumn Header="{loc:T Raw.Col.Address}" Width="120" DisplayMemberBinding="{Binding Address}" />
+                            <GridViewColumn Header="{loc:T Raw.Col.Kind}" Width="70" DisplayMemberBinding="{Binding Kind}" />
+                            <GridViewColumn Header="{loc:T Raw.Col.Size}" Width="70" DisplayMemberBinding="{Binding Size}" />
+                            <GridViewColumn Header="{loc:T Raw.Col.Detail}" Width="90" DisplayMemberBinding="{Binding Detail}" />
+                            <GridViewColumn Header="{loc:T Raw.Col.Result}" Width="270" DisplayMemberBinding="{Binding Result}" />
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+            </StackPanel>
+        </StackPanel>
+    </DataTemplate>
+
+    <!-- ===== Automatización ===== -->
+    <DataTemplate DataType="{x:Type gui:AutomationSectionViewModel}">
+        <StackPanel>
+            <TextBlock Style="{StaticResource S.Title}" Text="{Binding Title}" />
+            <Border Style="{StaticResource S.Row}" loc:SettingsRow.Field="Enabled">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" SharedSizeGroup="L" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource S.Label}" Text="{loc:T Main.Estado}" />
+                    <CheckBox Grid.Column="1" VerticalAlignment="Center" Content="{loc:T Main.PermitirImprimirDesdeScriptsHome}" IsChecked="{Binding Enabled}" />
+                </Grid>
+            </Border>
+            <Border Style="{StaticResource S.Row}" loc:SettingsRow.Field="Token">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" SharedSizeGroup="L" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource S.Label}" Text="{loc:T Main.Token}" />
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <TextBox Width="300" IsReadOnly="True" FontFamily="Consolas" Text="{Binding Token, Mode=OneWay}" />
+                        <Button Content="{loc:T Main.Copiar}" Command="{Binding CopyToken}" Margin="8,0,0,0" />
+                        <Button Content="{loc:T Main.Regenerar}" Command="{Binding RegenerateToken}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+            <Border Style="{StaticResource S.Row}" loc:SettingsRow.Field="Addresses">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" SharedSizeGroup="L" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource S.Label}" Text="{loc:T Main.Direcciones}" />
+                    <TextBlock Grid.Column="1" TextWrapping="Wrap" Foreground="{DynamicResource Brush.TextMuted}" Text="{Binding Addresses}" />
+                </Grid>
+            </Border>
+        </StackPanel>
+    </DataTemplate>
+
+    <!-- ===== Batería ===== -->
+    <DataTemplate DataType="{x:Type gui:BatterySectionViewModel}">
+        <StackPanel>
+            <TextBlock Style="{StaticResource S.Title}" Text="{Binding Title}" />
+            <Border Style="{StaticResource S.Row}" loc:SettingsRow.Field="Unit">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" SharedSizeGroup="L" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource S.Label}" Text="{loc:T Main.UnidadDelValor}" />
+                    <ComboBox Grid.Column="1" Width="300" HorizontalAlignment="Left" SelectedValuePath="Tag" SelectedValue="{Binding Unit}">
+                        <ComboBoxItem Content="{loc:T Main.DesconocidaMostrarValorEnBruto}" Tag="{x:Static ctl:BatteryUnit.Unknown}" />
+                        <ComboBoxItem Content="{loc:T Main.Porcentaje}" Tag="{x:Static ctl:BatteryUnit.Percent}" />
+                        <ComboBoxItem Content="{loc:T Main.DecimasDeVoltio}" Tag="{x:Static ctl:BatteryUnit.Decivolts}" />
+                    </ComboBox>
+                </Grid>
+            </Border>
+            <Border Style="{StaticResource S.Row}" loc:SettingsRow.Field="Low">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" SharedSizeGroup="L" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource S.Label}" Text="{loc:T Main.AvisarPorDebajoDe}" />
+                    <StackPanel Grid.Column="1">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBox Width="50" IsEnabled="{Binding LowApplies}" Text="{Binding LowPercent, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Style="{StaticResource S.Unit}" Text="{loc:T Main.SoloConUnaUnidadConocida}" />
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource S.Error}" Text="{Binding [Low]}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </StackPanel>
+    </DataTemplate>
+
+    <!-- ===== Aspecto ===== -->
+    <DataTemplate DataType="{x:Type gui:AppearanceSectionViewModel}">
+        <StackPanel>
+            <TextBlock Style="{StaticResource S.Title}" Text="{Binding Title}" />
+            <Border Style="{StaticResource S.Row}" loc:SettingsRow.Field="Theme">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" SharedSizeGroup="L" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource S.Label}" Text="{loc:T Appearance.Theme}" />
+                    <ComboBox Grid.Column="1" Width="260" HorizontalAlignment="Left" SelectedValuePath="Tag" SelectedValue="{Binding Theme}">
+                        <ComboBoxItem Content="{loc:T Appearance.ThemeAuto}" Tag="{x:Static gui:ThemeChoice.Auto}" />
+                        <ComboBoxItem Content="{loc:T Appearance.ThemeLight}" Tag="{x:Static gui:ThemeChoice.Light}" />
+                        <ComboBoxItem Content="{loc:T Appearance.ThemeDark}" Tag="{x:Static gui:ThemeChoice.Dark}" />
+                    </ComboBox>
+                </Grid>
+            </Border>
+            <Border Style="{StaticResource S.Row}" loc:SettingsRow.Field="TextSize">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" SharedSizeGroup="L" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource S.Label}" Text="{loc:T Appearance.TextSize}" />
+                    <ComboBox Grid.Column="1" Width="260" HorizontalAlignment="Left" SelectedValuePath="Tag" SelectedValue="{Binding TextSize}">
+                        <ComboBoxItem Content="{loc:T Appearance.TextSmall}" Tag="{x:Static gui:TextSizeChoice.Small}" />
+                        <ComboBoxItem Content="{loc:T Appearance.TextNormal}" Tag="{x:Static gui:TextSizeChoice.Normal}" />
+                        <ComboBoxItem Content="{loc:T Appearance.TextLarge}" Tag="{x:Static gui:TextSizeChoice.Large}" />
+                    </ComboBox>
+                </Grid>
+            </Border>
+        </StackPanel>
+    </DataTemplate>
+
+    <!-- ===== General ===== -->
+    <DataTemplate DataType="{x:Type gui:GeneralSectionViewModel}">
+        <StackPanel>
+            <TextBlock Style="{StaticResource S.Title}" Text="{Binding Title}" />
+            <Border Style="{StaticResource S.Row}" loc:SettingsRow.Field="Updates">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" SharedSizeGroup="L" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource S.Label}" Text="{loc:T Main.Comprobar}" />
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <CheckBox Content="{loc:T Main.ComprobarActualizacionesAutomaticamenteCada24}" VerticalAlignment="Center" IsChecked="{Binding AutoUpdate}" />
+                        <Button Content="{loc:T Main.BuscarAhora}" Command="{Binding CheckUpdates}" Margin="12,0,0,0" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+            <Border Style="{StaticResource S.Row}" loc:SettingsRow.Field="Hotkey">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" SharedSizeGroup="L" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource S.Label}" Text="{loc:T Main.AtajoDeNotaRapida}" />
+                    <StackPanel Grid.Column="1">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBox Width="140" Text="{Binding Hotkey, UpdateSourceTrigger=PropertyChanged}" />
+                            <Button Content="{loc:T Main.Aplicar}" Command="{Binding ApplyHotkey}" Margin="8,0,0,0" />
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource S.Hint}" Text="{Binding HotkeyStatus}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </StackPanel>
+    </DataTemplate>
+</ResourceDictionary>

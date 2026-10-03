@@ -21,4 +21,18 @@ public static class MonoPng
         using var file = File.Create(path);
         Save(bitmap, file);
     }
+
+    /// <summary>Reads back a PNG saved with <see cref="Save(MonoBitmap, string)"/>: dark pixels are ink.</summary>
+    public static MonoBitmap Load(string path)
+    {
+        using var image = Image.Load<L8>(path);
+        var bitmap = new MonoBitmap(image.Width, image.Height);
+        for (var y = 0; y < image.Height; y++)
+        {
+            var row = bitmap.MutableRow(y);
+            for (var x = 0; x < image.Width; x++)
+                row[x] = image[x, y].PackedValue < 128 ? (byte)1 : (byte)0;
+        }
+        return bitmap;
+    }
 }

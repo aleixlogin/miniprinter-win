@@ -114,7 +114,7 @@ public static class AutomationApi
                 Align = body.Align,
                 Bold = body.Bold,
                 Darkness = body.Darkness,
-            }, User(http));
+            }, User(http), source: JobSource.Api, origin: Client(http));
             return Accepted(job);
         });
 
@@ -140,7 +140,7 @@ public static class AutomationApi
             }
             if (type?.StartsWith("text/", StringComparison.OrdinalIgnoreCase) == true)
                 throw new PrintRequestException("Use /api/v1/print/text for text.");
-            return Accepted(print.PrintFile(content, name ?? "image", type, User(http), Darkness(http)));
+            return Accepted(print.PrintFile(content, name ?? "image", type, User(http), Darkness(http), JobSource.Api, Client(http)));
         });
 
         api.MapPost("/print/qr", async (HttpContext http) =>
@@ -148,7 +148,7 @@ public static class AutomationApi
             var body = await Read<AutomationQrRequest>(http);
             if (string.IsNullOrWhiteSpace(body.Data))
                 throw new PrintRequestException("Missing field 'data'.");
-            return Accepted(print.PrintQr(body.Data, body.Caption, User(http), body.Darkness));
+            return Accepted(print.PrintQr(body.Data, body.Caption, User(http), body.Darkness, JobSource.Api, Client(http)));
         });
 
         TemplateEndpoints.Map(api, templates, drafts, print);
@@ -156,7 +156,7 @@ public static class AutomationApi
         api.MapPost("/print/template/{name}", async (string name, HttpContext http) =>
         {
             var request = await TemplateEndpoints.ReadRequest(http);
-            return Accepted(print.PrintTemplate(name, request.Fields, User(http), request.Darkness, request.Copies, request.Rows));
+            return Accepted(print.PrintTemplate(name, request.Fields, User(http), request.Darkness, request.Copies, request.Rows, JobSource.Api, Client(http)));
         });
 
         api.MapGet("/jobs/{id:int}", (int id) =>
@@ -176,7 +176,9 @@ public static class AutomationApi
         _ => "aborted",
     };
 
-    private static string User(HttpContext http) => $"api@{http.Connection.RemoteIpAddress}";
+    private static string User(HttpContext http) => $"api@{Client(http)}";
+
+    private static string Client(HttpContext http) => http.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
     private static int? Darkness(HttpContext http) =>
         int.TryParse(http.Request.Query["darkness"], out var d) ? d : null;

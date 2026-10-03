@@ -1,6 +1,7 @@
 using System.IO;
 using System.Net.Http;
 using MiniPrinter.Control;
+using MiniPrinter.Gui;
 
 namespace MiniPrinter.Tray;
 
@@ -20,7 +21,7 @@ public sealed class ServiceConnection : IDisposable
     /// <summary>Raised on the thread pool; marshal to the UI thread before touching controls.</summary>
     public event Action? Changed;
 
-    public ControlClient Client => _client ?? throw new InvalidOperationException(ServiceError ?? "Servicio no disponible.");
+    public ControlClient Client => _client ?? throw new InvalidOperationException(ServiceError ?? Strings.Get("Service.Unavailable"));
 
     public void Start() => _ = Task.Run(() => WatchLoopAsync(_lifetime.Token));
 
@@ -55,10 +56,10 @@ public sealed class ServiceConnection : IDisposable
             {
                 ServiceError = ex switch
                 {
-                    FileNotFoundException or DirectoryNotFoundException => "El servicio MiniPrinter no está instalado o no se ha iniciado nunca.",
-                    UnauthorizedAccessException => "Sin permiso para leer el token del servicio.",
-                    ControlApiException { StatusCode: 401 } => "Token del servicio no válido (¿se reinstaló?).",
-                    _ => "No se puede contactar con el servicio MiniPrinter.",
+                    FileNotFoundException or DirectoryNotFoundException => Strings.Get("Service.NotInstalled"),
+                    UnauthorizedAccessException => Strings.Get("Service.NoTokenAccess"),
+                    ControlApiException { StatusCode: 401 } => Strings.Get("Service.BadToken"),
+                    _ => Strings.Get("Service.Unreachable"),
                 };
                 if (ex is ControlApiException { StatusCode: 401 } or FileNotFoundException)
                 {

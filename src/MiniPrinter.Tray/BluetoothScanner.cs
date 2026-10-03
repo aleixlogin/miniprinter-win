@@ -1,3 +1,4 @@
+using MiniPrinter.Gui;
 using System.Collections.Concurrent;
 using MiniPrinter.Protocol.Catalog;
 using Windows.Devices.Bluetooth;
@@ -52,7 +53,7 @@ public sealed class BluetoothScanner : IDisposable
     {
         var info = await DeviceInformation.CreateFromIdAsync(deviceId);
         if (info.Pairing.IsPaired)
-            return "Ya estaba emparejada.";
+            return Strings.Get("Bluetooth.AlreadyPaired");
 
         void OnRequested(DeviceInformationCustomPairing sender, DevicePairingRequestedEventArgs args)
         {
@@ -69,10 +70,10 @@ public sealed class BluetoothScanner : IDisposable
                 DevicePairingKinds.ConfirmOnly | DevicePairingKinds.ProvidePin | DevicePairingKinds.DisplayPin | DevicePairingKinds.ConfirmPinMatch);
             return result.Status switch
             {
-                DevicePairingResultStatus.Paired or DevicePairingResultStatus.AlreadyPaired => "Emparejada correctamente.",
+                DevicePairingResultStatus.Paired or DevicePairingResultStatus.AlreadyPaired => Strings.Get("Bluetooth.Paired"),
                 DevicePairingResultStatus.AuthenticationFailure or DevicePairingResultStatus.Failed =>
-                    "No se pudo emparejar (¿PIN distinto de 0000?). Prueba desde Configuración > Bluetooth.",
-                _ => $"Emparejamiento: {result.Status}",
+                    Strings.Get("Bluetooth.PairFailed"),
+                _ => Strings.Get("Bluetooth.PairStatus", result.Status),
             };
         }
         finally

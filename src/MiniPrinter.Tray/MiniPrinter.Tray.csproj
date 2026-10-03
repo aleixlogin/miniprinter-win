@@ -6,6 +6,9 @@
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>MiniPrinter.Tray</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- WinForms is only for NotifyIcon; the DPI mode of the WPF panel is declared in the manifest. -->
+    <NoWarn>$(NoWarn);WFAC010</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <!-- WinForms is only used for NotifyIcon; keep WPF types unambiguous. -->
@@ -14,6 +17,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\MiniPrinter.Control\MiniPrinter.Control.csproj" />
+    <ProjectReference Include="..\MiniPrinter.Gui\MiniPrinter.Gui.csproj" />
     <ProjectReference Include="..\MiniPrinter.Protocol\MiniPrinter.Protocol.csproj" />
     <ProjectReference Include="..\MiniPrinter.Updates\MiniPrinter.Updates.csproj" />
   </ItemGroup>

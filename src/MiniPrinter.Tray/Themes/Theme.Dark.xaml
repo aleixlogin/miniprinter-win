@@ -1,0 +1,30 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Semantic brushes of the dark theme. -->
+    <SolidColorBrush x:Key="Brush.Surface" Color="#0D1117" />
+    <SolidColorBrush x:Key="Brush.SurfaceAlt" Color="#161B22" />
+    <SolidColorBrush x:Key="Brush.Text" Color="#E6EDF3" />
+    <SolidColorBrush x:Key="Brush.TextMuted" Color="#8B949E" />
+    <SolidColorBrush x:Key="Brush.Disabled" Color="#6E7681" />
+    <SolidColorBrush x:Key="Brush.Border" Color="#30363D" />
+    <SolidColorBrush x:Key="Brush.Accent" Color="#2F81F7" />
+    <SolidColorBrush x:Key="Brush.AccentText" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="Brush.Hover" Color="#21262D" />
+    <SolidColorBrush x:Key="Brush.Pressed" Color="#30363D" />
+    <SolidColorBrush x:Key="Brush.Selection" Color="#1F3A5F" />
+    <SolidColorBrush x:Key="Brush.SelectionText" Color="#E6EDF3" />
+    <SolidColorBrush x:Key="Brush.Ok" Color="#3FB950" />
+    <SolidColorBrush x:Key="Brush.Warn" Color="#D29922" />
+    <SolidColorBrush x:Key="Brush.Error" Color="#F85149" />
+    <SolidColorBrush x:Key="Brush.WarnBackground" Color="#3B2E00" />
+    <SolidColorBrush x:Key="Brush.WarnBorder" Color="#9E6A03" />
+    <SolidColorBrush x:Key="Brush.OkBackground" Color="#0F2D1B" />
+    <SolidColorBrush x:Key="Brush.OkBorder" Color="#2EA043" />
+    <SolidColorBrush x:Key="Brush.ErrorBackground" Color="#3D1418" />
+    <SolidColorBrush x:Key="Brush.ErrorBorder" Color="#DA3633" />
+    <SolidColorBrush x:Key="Brush.InfoBackground" Color="#12263F" />
+    <SolidColorBrush x:Key="Brush.InfoBorder" Color="#1F6FEB" />
+    <!-- The preview shows what the paper gets (black on white): it stays white in every theme. -->
+    <SolidColorBrush x:Key="Brush.Preview" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="Brush.PreviewBorder" Color="#484F58" />
+</ResourceDictionary>

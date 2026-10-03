@@ -232,6 +232,10 @@ begin
 
   if CurUninstallStep = usPostUninstall then
   begin
+    { What was printed (the pages kept of the latest jobs) is never left behind, even when the configuration is kept. }
+    DelTree(ExpandConstant('{commonappdata}\MiniPrinter\jobs'), True, True, True);
+    DelTree(ExpandConstant('{commonappdata}\MiniPrinter\last-job'), True, True, True);
+
     { Silent uninstalls keep the configuration. }
     KeepConfig := UninstallSilent or
       (MsgBox(CustomMessage('KeepConfig'), mbConfirmation, MB_YESNO or MB_DEFBUTTON1) = IDYES);

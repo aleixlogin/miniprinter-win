@@ -5,6 +5,7 @@ using System.Text;
 using MiniPrinter.Control;
 using MiniPrinter.Escpos;
 using MiniPrinter.Imaging;
+using MiniPrinter.Ipp;
 using MiniPrinter.Protocol;
 using MiniPrinter.Transport;
 
@@ -33,6 +34,7 @@ public sealed class RawPortHost : BackgroundService
 {
     public const int MaxConnections = 4;
     public const int MaxBytes = 16 * 1024 * 1024;
+    public const int MaxRememberedClients = 50;
 
     private readonly SettingsStore _settings;
     private readonly JobQueue _queue;
@@ -42,6 +44,7 @@ public sealed class RawPortHost : BackgroundService
     private readonly SemaphoreSlim _restart = new(0);
     private readonly SemaphoreSlim _connections = new(MaxConnections, MaxConnections);
     private readonly object _gate = new();
+    private readonly RawClientLog _clients = new(MaxRememberedClients);
     private RawPortDto _current = new(false, 9100, false, null, []);
     private ServiceSettings? _applied;   // the settings the listener (or its error / disabled state) was last started with
     private bool _firewallRule;
@@ -80,6 +83,9 @@ public sealed class RawPortHost : BackgroundService
 
     /// <summary>Code page of kanji mode (<c>FS &amp;</c>): 932 Shift-JIS, 936 GBK, 950 Big5, 949 EUC-KR (configuration <c>RawPort:KanjiCodePage</c>).</summary>
     public int KanjiCodePage { get; }
+
+    /// <summary>The latest clients of the port, newest first (kept in memory only: address, kind and size, never the content).</summary>
+    public IReadOnlyList<RawClientDto> Clients => _clients.Snapshot();
 
     public RawPortDto Current
     {
@@ -214,6 +220,7 @@ public sealed class RawPortHost : BackgroundService
             if (!_connections.Wait(0))
             {
                 _logger.LogWarning("RAW print port: connection from {Remote} refused (limit of {Max} reached)", client.Client.RemoteEndPoint, MaxConnections);
+                _clients.Add(new RawClientDto(DateTimeOffset.Now, AddressOf(client), "unknown", 0, 0, null, RawClientResult.RefusedLimit));
                 client.Dispose();
                 continue;
             }
@@ -255,7 +262,53 @@ public sealed class RawPortHost : BackgroundService
         }
     }
 
+    private static string AddressOf(TcpClient client) =>
+        (client.Client.RemoteEndPoint as IPEndPoint)?.Address.MapToIPv4().ToString() ?? IPAddress.Loopback.ToString();
+
+    /// <summary>What happened on one connection, written to the log of clients when it ends.</summary>
+    private sealed class Trace
+    {
+        public RawContent Kind = RawContent.Unknown;
+        public long Bytes;
+        public int Tickets;
+        public int? JobId;
+        public string Result = RawClientResult.Queued;
+    }
+
     private async Task HandleAsync(TcpClient client, CancellationToken ct)
+    {
+        var started = DateTimeOffset.Now;
+        var address = AddressOf(client);
+        var trace = new Trace();
+        try
+        {
+            await HandleCoreAsync(client, trace, ct);
+        }
+        catch (Exception ex) when (ex is IOException or SocketException or OperationCanceledException or ObjectDisposedException)
+        {
+            trace.Result = RawClientResult.Error;
+            throw;
+        }
+        finally
+        {
+            // A connection that sent nothing (a probe that connects and leaves) is not a client worth listing.
+            if (trace.Bytes > 0)
+                _clients.Add(new RawClientDto(started, address, KindName(trace.Kind), trace.Bytes, trace.Tickets, trace.JobId, trace.Result));
+        }
+    }
+
+    private static string KindName(RawContent kind) => kind switch
+    {
+        RawContent.EscPos => "ESC/POS",
+        RawContent.Png => "PNG",
+        RawContent.Jpeg => "JPEG",
+        RawContent.Pdf => "PDF",
+        RawContent.PwgRaster => "PWG",
+        RawContent.PlainText => "text",
+        _ => "unknown",
+    };
+
+    private async Task HandleCoreAsync(TcpClient client, Trace trace, CancellationToken ct)
     {
         var user = $"raw@{(client.Client.RemoteEndPoint as IPEndPoint)?.Address.MapToIPv4() ?? IPAddress.Loopback}";
         var stream = client.GetStream();
@@ -277,23 +330,26 @@ public sealed class RawPortHost : BackgroundService
                 break;
             }
             total += read;
+            trace.Bytes = total;
             received.Write(buffer, 0, read);
             kind = Detect(received.GetBuffer().AsSpan(0, (int)Math.Min(received.Length, 512)), final: false);
         }
         if (kind == RawContent.NeedMore)
             kind = received.Length == 0 ? RawContent.Unknown : Detect(received.GetBuffer().AsSpan(0, (int)Math.Min(received.Length, 512)), final: true);
+        trace.Kind = kind;
         if (received.Length == 0)
             return;
         if (kind == RawContent.Unknown)
         {
             _logger.LogWarning("RAW print connection from {User} rejected: unrecognised content", user);
+            trace.Result = RawClientResult.Rejected;
             return;
         }
 
         // 2. Hand it over according to its type.
         if (kind == RawContent.EscPos)
         {
-            await RunEscPosAsync(stream, received, closed, total, user, ct);
+            await RunEscPosAsync(stream, received, closed, total, user, trace, ct);
             return;
         }
 
@@ -303,23 +359,28 @@ public sealed class RawPortHost : BackgroundService
             if (read == 0)
                 break;
             total += read;
+            trace.Bytes = total;
             if (total > MaxBytes)
             {
                 _logger.LogWarning("RAW print connection from {User} closed: more than {Mb} MB", user, MaxBytes / 1024 / 1024);
+                trace.Result = RawClientResult.ClosedByLimit;
                 return;
             }
             received.Write(buffer, 0, read);
         }
-        SubmitDocument(kind, received, user);
+        SubmitDocument(kind, received, user, trace);
     }
 
-    private void SubmitDocument(RawContent kind, MemoryStream data, string user)
+    /// <summary>The address of the client, from the <c>raw@address</c> user of its connection.</summary>
+    private static string ClientOf(string user) => user[(user.IndexOf('@') + 1)..];
+
+    private void SubmitDocument(RawContent kind, MemoryStream data, string user, Trace trace)
     {
         try
         {
             if (kind == RawContent.PlainText)
             {
-                _requests.PrintText(new TextPrintRequest { Text = Encoding.UTF8.GetString(data.GetBuffer(), 0, (int)data.Length).Replace("\0", "") }, user);
+                _requests.PrintText(new TextPrintRequest { Text = Encoding.UTF8.GetString(data.GetBuffer(), 0, (int)data.Length).Replace("\0", "") }, user, JobSource.Raw, ClientOf(user));
                 return;
             }
             var (format, name) = kind switch
@@ -330,17 +391,19 @@ public sealed class RawPortHost : BackgroundService
                 _ => ("image/pwg-raster", "Raw PWG"),
             };
             data.Position = 0;
-            var job = _queue.CreateJob(name, user);
+            var job = _queue.CreateJob(name, user, JobSource.Raw, ClientOf(user));
             _queue.SubmitDocument(job.Id, new MemoryStream(data.ToArray(), writable: false), format, lastDocument: true);
+            trace.JobId = job.Id;
             _logger.LogInformation("RAW print: {Name} ({Bytes} bytes) from {User} queued as job {Id}", name, data.Length, user, job.Id);
         }
         catch (Exception ex) when (ex is PrintRequestException or NotSupportedException)
         {
             _logger.LogWarning("RAW print from {User} not queued: {Message}", user, ex.Message);
+            trace.Result = RawClientResult.Rejected;
         }
     }
 
-    private async Task RunEscPosAsync(NetworkStream stream, MemoryStream first, bool closed, int total, string user, CancellationToken ct)
+    private async Task RunEscPosAsync(NetworkStream stream, MemoryStream first, bool closed, int total, string user, Trace trace, CancellationToken ct)
     {
         var interpreter = new EscposInterpreter(StatusOf, message => _logger.LogDebug("{Message}", message), kanjiCodePage: KanjiCodePage);
         var buffer = new byte[16 * 1024];
@@ -354,7 +417,9 @@ public sealed class RawPortHost : BackgroundService
             foreach (var ticket in interpreter.DrainTickets())
             {
                 tickets++;
-                var job = _queue.SubmitBitmaps("Ticket ESC/POS", [ticket], isText: true, user);
+                trace.Tickets = tickets;
+                var job = _queue.SubmitBitmaps("Ticket ESC/POS", [ticket], isText: true, user, source: JobSource.Raw, origin: ClientOf(user));
+                trace.JobId = job.Id;
                 _logger.LogInformation("RAW print: ESC/POS ticket {Number} ({Rows} rows) from {User} queued as job {Id}", tickets, ticket.Height, user, job.Id);
             }
         }
@@ -377,9 +442,11 @@ public sealed class RawPortHost : BackgroundService
                 break;
             }
             total += read;
+            trace.Bytes = total;
             if (total > MaxBytes)
             {
                 _logger.LogWarning("RAW print connection from {User} closed: more than {Mb} MB", user, MaxBytes / 1024 / 1024);
+                trace.Result = RawClientResult.ClosedByLimit;
                 return;
             }
             interpreter.Feed(buffer.AsSpan(0, read));
@@ -387,6 +454,7 @@ public sealed class RawPortHost : BackgroundService
             if (interpreter.Overflowed)
             {
                 _logger.LogWarning("RAW print connection from {User} closed: it asked for more paper than a ticket connection may (limit {Rows} dots)", user, EscposInterpreter.MaxTotalRows);
+                trace.Result = RawClientResult.ClosedByLimit;
                 interpreter.EndTicket();
                 await PumpAsync();
                 return;
@@ -394,6 +462,8 @@ public sealed class RawPortHost : BackgroundService
         }
         interpreter.EndTicket();
         await PumpAsync();
+        if (tickets == 0)
+            trace.Result = RawClientResult.Empty;
     }
 
     private PrinterCondition? StatusOf()

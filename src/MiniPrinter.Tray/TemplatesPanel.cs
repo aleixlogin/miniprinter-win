@@ -1,4 +1,5 @@
 using System.IO;
+using MiniPrinter.Gui;
 using System.Net.Http;
 using System.Text.Json;
 using System.Windows;
@@ -37,7 +38,7 @@ public sealed class TemplatesPanel
     private static readonly string Folder = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MiniPrinter");
     private static readonly string StatePath = Path.Combine(Folder, "templates.json");
-    private static readonly string FavoritesPath = Path.Combine(Folder, "favorites.json");
+    internal static readonly string FavoritesPath = Path.Combine(Folder, "favorites.json");
 
     private readonly ServiceConnection _service;
     private readonly TemplatesUi _ui;
@@ -52,6 +53,20 @@ public sealed class TemplatesPanel
     private int _sequence;
     private bool _building;
 
+    /// <summary>Raised with the templates of the service when the list changes (the gallery shows them).</summary>
+    public event Action<IReadOnlyList<TemplateDto>>? ListChanged;
+
+    /// <summary>Raised with the name of a template after it was printed from the tab (it becomes a recent one).</summary>
+    public event Action<string>? Printed;
+
+    /// <summary>Raised with the name of a template that was edited or deleted (its picture is out of date).</summary>
+    public event Action<string>? Edited;
+
+    /// <summary>Raised with the name of the template chosen (null when there is none).</summary>
+    public event Action<string?>? SelectionChanged;
+
+    public string? CurrentName => Current()?.Name;
+
     public TemplatesPanel(ServiceConnection service, TemplatesUi ui)
     {
         _service = service;
@@ -60,6 +75,7 @@ public sealed class TemplatesPanel
         {
             BuildForm();
             UpdateButtons();
+            SelectionChanged?.Invoke(CurrentName);
         };
         _ui.Create.Click += async (_, _) => await CreateAsync();
         _ui.Edit.Click += async (_, _) => await EditAsync();
@@ -100,6 +116,7 @@ public sealed class TemplatesPanel
                 return;
             }
             _templates = fresh;
+            ListChanged?.Invoke(fresh);
             _ui.TemplateCombo.ItemsSource = _templates;
             _ui.TemplateCombo.DisplayMemberPath = nameof(TemplateDto.Title);
             var index = wanted is null ? -1 : _templates.ToList().FindIndex(t => t.Name == wanted);
@@ -113,6 +130,9 @@ public sealed class TemplatesPanel
             SetStatus(ex.Message, error: true);
         }
     }
+
+    /// <summary>Chooses the template with that name (once the list is loaded).</summary>
+    public void SelectTemplate(string name) => SelectByName(name);
 
     private void SelectByName(string name)
     {
@@ -130,16 +150,16 @@ public sealed class TemplatesPanel
         _ui.Edit.IsEnabled = current is not null;
         // Built-in templates without a user version cannot be deleted; a user version restores the built-in.
         _ui.Delete.IsEnabled = current is { Source: not "builtin" };
-        _ui.Delete.Content = current?.Source == "override" ? "Restaurar integrada" : "Eliminar";
-        _ui.Delete.ToolTip = current?.Source == "builtin" ? "Las plantillas integradas no se pueden eliminar" : null;
+        _ui.Delete.Content = current?.Source == "override" ? Strings.Get("Templates.RestoreBuiltIn") : Strings.Get("Templates.Delete");
+        _ui.Delete.ToolTip = current?.Source == "builtin" ? Strings.Get("Templates.BuiltInCannotDelete") : null;
     }
 
     private async Task CreateAsync()
     {
         var names = _templates.Select(t => t.Name).ToList();
-        var dialog = new NameDialog(_ui.Owner, "Crear plantilla", "Nombre de la plantilla (letras, dígitos, guion y guion bajo):",
-            n => !TemplateEditorModel.IsValidName(n) ? "Solo letras, dígitos, guion y guion bajo (máximo 40) y no una palabra reservada."
-                : names.Contains(n, StringComparer.OrdinalIgnoreCase) ? $"Ya existe una plantilla llamada '{n}'."
+        var dialog = new NameDialog(_ui.Owner, Strings.Get("Templates.CreateTitle"), Strings.Get("Templates.CreatePrompt"),
+            n => !TemplateEditorModel.IsValidName(n) ? Strings.Get("Templates.NameRules")
+                : names.Contains(n, StringComparer.OrdinalIgnoreCase) ? Strings.Get("Templates.NameExists", n)
                 : null,
             duplicateLabel: Current()?.Title);
         if (dialog.ShowDialog() != true)
@@ -177,6 +197,8 @@ public sealed class TemplatesPanel
         var index = _ui.TemplateCombo.SelectedIndex;
         var window = new TemplateEditorWindow(_ui.Owner, _service, schema, json, existing, source, _templates.Select(t => t.Name).ToList());
         window.ShowDialog();
+        if (window.SavedName is { } saved)
+            Edited?.Invoke(saved);
         await RefreshListAsync(window.SavedName, index, force: true);
     }
 
@@ -186,16 +208,17 @@ public sealed class TemplatesPanel
             return;
         var restore = template.Source == "override";
         var question = restore
-            ? $"Se borrará tu versión de «{template.Title}» y volverá a usarse la plantilla integrada. ¿Continuar?"
-            : $"¿Eliminar la plantilla «{template.Title}»? No se puede deshacer.";
-        if (MessageBox.Show(_ui.Owner, question, restore ? "Restaurar plantilla integrada" : "Eliminar plantilla",
+            ? Strings.Get("Templates.RestoreQuestion", template.Title)
+            : Strings.Get("Templates.DeleteQuestion", template.Title);
+        if (MessageBox.Show(_ui.Owner, question, restore ? Strings.Get("Templates.RestoreTitle") : Strings.Get("Templates.DeleteTitle"),
                 MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
             return;
         try
         {
             var index = _ui.TemplateCombo.SelectedIndex;
             await _service.Client.DeleteTemplateAsync(template.Name);
-            SetStatus(restore ? "Plantilla integrada restaurada." : "Plantilla eliminada.", error: false);
+            Edited?.Invoke(template.Name);
+            SetStatus(restore ? Strings.Get("Templates.Restored") : Strings.Get("Templates.Deleted"), error: false);
             await RefreshListAsync(restore ? template.Name : null, Math.Max(0, index - 1), force: true);
         }
         catch (Exception ex) when (ex is ControlApiException or HttpRequestException or InvalidOperationException)
@@ -247,8 +270,8 @@ public sealed class TemplatesPanel
 
     private string Summary(double mm)
     {
-        var labels = _csvRows is null ? "" : $"{_csvRows.Count} etiqueta(s) del CSV · ";
-        return $"{labels}{mm:0} mm de papel";
+        var labels = _csvRows is null ? "" : Strings.Get("Templates.CsvLabels", _csvRows.Count) + " · ";
+        return labels + Strings.Get("Templates.PaperLength", mm);
     }
 
     public async Task PrintAsync()
@@ -257,18 +280,19 @@ public sealed class TemplatesPanel
             return;
         if (!int.TryParse(_ui.Copies.Text.Trim(), out var copies) || copies is < 1 or > 50)
         {
-            SetStatus("Las copias deben estar entre 1 y 50.", error: true);
+            SetStatus(Strings.Get("Templates.CopiesRange"), error: true);
             return;
         }
         if (_csvRows is { Count: > ConfirmBatchOver } rows
-            && MessageBox.Show($"Se van a imprimir {rows.Count * copies} etiquetas. ¿Continuar?", "Plantillas",
+            && MessageBox.Show(Strings.Get("Templates.BatchConfirm", rows.Count * copies), Strings.Get("Templates.Title"),
                 MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
             return;
         try
         {
             await _service.Client.PrintTemplateAsync(template.Name, Values(), copies, _csvRows);
-            SetStatus("Enviado a la impresora.", error: false);
+            SetStatus(Strings.Get("Templates.Sent"), error: false);
             Save(template.Name);
+            Printed?.Invoke(template.Name);
             await PreviewAsync();   // a numbered template now shows the next number
         }
         catch (Exception ex)
@@ -283,7 +307,7 @@ public sealed class TemplatesPanel
     {
         if (Current() is not { } template)
             return;
-        var dialog = new Microsoft.Win32.OpenFileDialog { Filter = "CSV|*.csv;*.txt|Todos|*.*" };
+        var dialog = new Microsoft.Win32.OpenFileDialog { Filter = Strings.Get("Templates.CsvFilter") };
         if (dialog.ShowDialog() != true)
             return;
         try
@@ -293,7 +317,7 @@ public sealed class TemplatesPanel
             _ui.CsvClear.Visibility = Visibility.Visible;
             await PreviewAsync();
             if (csv.IgnoredColumns.Count > 0)
-                SetStatus($"{Summary(_ui.Preview.Height / 8.0)} · se ignoran las columnas: {string.Join(", ", csv.IgnoredColumns)}", error: false);
+                SetStatus($"{Summary(_ui.Preview.Height / 8.0)} · " + Strings.Get("Templates.IgnoredColumns", string.Join(", ", csv.IgnoredColumns)), error: false);   // i18n-ok: composed of the summary and a translated part
         }
         catch (Exception ex) when (ex is InvalidDataException or IOException)
         {
@@ -317,7 +341,7 @@ public sealed class TemplatesPanel
         var name = _ui.FavoriteCombo.Text.Trim();
         if (name.Length == 0)
         {
-            SetStatus("Escribe un nombre para el favorito.", error: true);
+            SetStatus(Strings.Get("Templates.FavoriteNeedsName"), error: true);
             return;
         }
         if (!_favorites.TryGetValue(template.Name, out var set))
@@ -325,7 +349,7 @@ public sealed class TemplatesPanel
         set[name] = ValuesWithoutImages(template);
         SaveJson(FavoritesPath, _favorites);
         RefreshFavorites(template, name);
-        SetStatus($"Favorito '{name}' guardado.", error: false);
+        SetStatus(Strings.Get("Templates.FavoriteSaved", name), error: false);
     }
 
     public void DeleteFavorite()
@@ -336,7 +360,7 @@ public sealed class TemplatesPanel
         {
             SaveJson(FavoritesPath, _favorites);
             RefreshFavorites(template, null);
-            SetStatus($"Favorito '{name}' borrado.", error: false);
+            SetStatus(Strings.Get("Templates.FavoriteDeleted", name), error: false);
         }
     }
 
@@ -380,7 +404,7 @@ public sealed class TemplatesPanel
     private void SetStatus(string text, bool error)
     {
         _ui.Status.Text = text;
-        _ui.Status.Foreground = error ? Brushes.Firebrick : new SolidColorBrush(Color.FromRgb(0x57, 0x60, 0x6A));
+        Themed.Foreground(_ui.Status, error ? Themed.Error : Themed.Muted);
     }
 
     private Dictionary<string, string> Values() =>
@@ -421,9 +445,9 @@ public sealed class TemplatesPanel
             return;
         RefreshFavorites(template, null);
 
-        form.Children.Add(new TextBlock { Text = template.Description, Foreground = Brushes.DimGray, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 8) });
+        form.Children.Add(Themed.Brush(new TextBlock { Text = template.Description, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 8) }, Themed.Muted));
         if (template.Source == "override")
-            form.Children.Add(new TextBlock { Text = "Una plantilla de usuario sustituye a esta plantilla integrada.", Foreground = Brushes.DarkOrange, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 8) });
+            form.Children.Add(Themed.Brush(new TextBlock { Text = Strings.Get("Templates.OverrideNote"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 8) }, Themed.Warn));
         var saved = _saved.GetValueOrDefault(template.Name) ?? [];
 
         foreach (var field in template.Fields)
@@ -453,12 +477,12 @@ public sealed class TemplatesPanel
                 }
                 case "Image":
                 {
-                    var path = new TextBlock { Text = "(ninguna)", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0) };
+                    var path = new TextBlock { Text = Strings.Get("Templates.NoImage"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0) };
                     string? base64 = null;
-                    var button = new Button { Content = "Elegir imagen…" };
+                    var button = new Button { Content = Strings.Get("Templates.ChooseImage") };
                     button.Click += (_, _) =>
                     {
-                        var dialog = new Microsoft.Win32.OpenFileDialog { Filter = "Imágenes|*.png;*.jpg;*.jpeg" };
+                        var dialog = new Microsoft.Win32.OpenFileDialog { Filter = Strings.Get("Templates.ImageFilter") };
                         if (dialog.ShowDialog() != true) return;
                         base64 = Convert.ToBase64String(File.ReadAllBytes(dialog.FileName));
                         path.Text = Path.GetFileName(dialog.FileName);

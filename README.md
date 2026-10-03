@@ -73,16 +73,24 @@ La clave privada de firma **no está en el repositorio**: vive solo en el secret
 
 | Pestaña | Qué hace |
 |---|---|
-| **Estado** | Conexión, alarmas (sin papel o tapa abierta), batería, firmware, URL de impresión, cola de trabajos con cancelación, página de prueba, avance de papel, vista previa del último trabajo, muestreo y exportación del registro de batería. |
+| **Estado** | Una tarjeta con el estado de la impresora (lista, imprimiendo, sin papel, desconectada, error o servicio no disponible) y la batería; *Conectar* y *Página de prueba* a la vista y el resto (avanzar papel, muestrear y exportar la batería, vista previa del último trabajo) en el menú «⋯»; *Detalles* plegable (firmware, direcciones, servicio, versión) la lista de trabajos con su estado, su origen y la vista previa y la reimpresión de cada uno, y el botón **Diagnosticar** (también en «⋯») cuando algo falla. |
 | **Buscar impresoras** | Lista dispositivos Bluetooth emparejados y cercanos, reconoce el modelo por su nombre (`X5h-…` → perfil `d1`), empareja y selecciona la impresora. |
-| **Plantillas** | QR, códigos de barras, listas, etiquetas, Wi-Fi, tiques y más, definidas en JSON (también las tuyas), con vista previa en vivo a tamaño real, favoritos con nombre, copias y lotes desde CSV. |
-| **Ajustes** | Oscuridad, mantener activa (keep-alive), modo de impresión (automático / imagen / texto), tramado, avance final, páginas continuas, unidad y aviso de batería, desconexión por inactividad, nombre en Windows, tamaños de papel que se ofrecen a Windows (con recreación de la impresora), alcance de red, puerto IPP, **impresión directa por el puerto 9100** (casilla, puerto, estado y aviso de seguridad), API de automatización y atajo de la nota rápida. |
+| **Plantillas** | Galería de tarjetas con la miniatura de cada plantilla (o lista, como prefieras; se recuerda), buscador, las usadas hace poco primero; QR, códigos de barras, listas, etiquetas, Wi-Fi, tiques y más, definidas en JSON (también las tuyas), con vista previa en vivo a tamaño real, favoritos con nombre, copias y lotes desde CSV. |
+| **Ajustes** | Menú lateral con búsqueda y una sección por tema —**Impresión** (oscuridad, modo, tramado, avance final, páginas continuas, fuente, mantener activa, desconexión por inactividad, reintentos e historial de trabajos), **Papel** (nombre en Windows, tamaños que se ofrecen y recreación de la impresora), **Red** (alcance y puerto IPP), **Impresión directa** (puerto 9100), **Automatización** (API y token), **Batería**, **Aspecto** y **General** (actualizaciones y atajo de la nota rápida)—. Cada sección se guarda por separado, marca con un punto los cambios sin guardar y avisa junto al campo si un valor no es válido. |
 
 Puedes **soltar archivos** (PNG, JPEG, PDF, PWG, TXT) sobre la ventana del panel para imprimirlos.
 
 El servicio se conecta a la impresora al imprimir y se desconecta tras 60 s sin uso, para que la app del móvil pueda volver a usarla.
 
+**Historial y reimpresión** — el servicio guarda las páginas de los últimos trabajos (por defecto 10, de 0 a 50; hasta 50 MB y como máximo 40 páginas por trabajo) para poder verlas tal como se imprimieron: doble clic en un trabajo de la lista abre su vista previa, y *Reimprimir* pone en la cola las mismas páginas como un trabajo nuevo («Reimpresión de …») con la misma oscuridad y modo. Lo guardado se borra al arrancar el servicio y al desinstalar, y se desactiva poniendo 0 en *Ajustes → Impresión → Historial de trabajos* (entonces solo se conserva la vista previa del último). Cada trabajo registra su **origen**: Windows (con el usuario), Panel, API (con la dirección del cliente) o Puerto 9100 (con la dirección del cliente).
+
 **Mantener activa (keep-alive)** — en *Ajustes* o en el menú del icono: el servicio mantiene la impresora conectada, le envía una consulta de estado (`A3`) cada 30 s (configurable, 10–300 s) y se reconecta solo si el enlace se cae (reintentos cada 5 s hasta 60 s). La primera impresión es inmediata y los avisos de papel llegan aunque no imprimas. A cambio, **la app del móvil y TiMini-Print no pueden usar la impresora** mientras esté activa (desmárcala en el menú del icono para liberarla) y su batería dura menos.
+
+**Diagnóstico** — el botón *Diagnosticar* de la tarjeta de *Estado* (o la opción del menú «⋯») abre una ventana con un semáforo por comprobación: servicio, Bluetooth de Windows, impresora emparejada, conexión, papel y alarmas, impresora en Windows, escucha IPP, puerto 9100 (y su regla del cortafuegos en red local) y fuentes para japonés, chino, coreano, árabe y tailandés. Cada fila dice qué significa y qué hacer, con un botón que lleva a la solución (buscar impresoras, el Bluetooth de Windows, la sección de Ajustes que toca). Lo que no se puede comprobar sale como «?», nunca como un fallo. **Copiar informe** deja en el portapapeles un texto para pegar en una incidencia (versiones, resumen de ajustes y resultados) **sin token, sin nombres de plantillas ni direcciones de clientes ni de la impresora**.
+
+**Plantillas desde el icono** — el menú del icono tiene *Plantillas*: *Favoritos* (cada uno con el nombre «Plantilla — favorito»; al elegirlo **se imprime al instante** con sus valores y un aviso, que se puede cancelar desde *Estado*; con más de 15 se agrupan por plantilla) y *Recientes* (las últimas 5 impresas desde la pestaña; abren el panel en esa plantilla con sus últimos valores, sin imprimir).
+
+**Aspecto** — el panel y el menú del icono siguen el tema de Windows (claro u oscuro, y el de contraste alto cuando está activo) y cambian al instante si lo cambias en Windows. En *Ajustes → Aspecto* puedes fijar el tema (automático, claro u oscuro) y el tamaño del texto (pequeño, normal o grande); la ventana crece lo necesario para que nada se corte. El panel recuerda su tamaño, su posición, si estaba maximizado y la pestaña abierta (si el monitor ya no existe, se abre centrado), y se ve nítido en cada monitor aunque tengan escalas distintas. Las preferencias se guardan en `%LOCALAPPDATA%\MiniPrinter	ray.json`.
 
 ### Impresión rápida
 
@@ -119,6 +127,8 @@ Botón **Vista previa del último trabajo** (pestaña Estado): muestra exactamen
 El servicio puede escuchar en el puerto TCP **9100** (el estándar RAW/JetDirect de las impresoras de red) para que imprima cualquier programa que sepa hablar con «una impresora de tiques en red», **sin driver, sin spooler y sin token**: software de TPV, `python-escpos`, `node-thermal-printer`, RawBT en Android, Home Assistant o simplemente `nc`.
 
 Está **desactivado por defecto**. Se activa en **Ajustes → Impresión directa (puerto 9100)** (casilla, puerto de 1024 a 65535 y estado: «Escuchando en…» o el error si el puerto está ocupado) y se aplica al guardar, sin reiniciar el servicio. El alcance es el mismo que el de IPP: en *Solo este PC* escucha únicamente en `127.0.0.1`; en *Toda la red local* escucha en todas las interfaces y crea la regla de firewall `MiniPrinter RAW` solo para redes privadas (se quita al desactivarlo o volver a *Solo este PC*). Al activarlo en red local la bandeja avisa de que **el puerto no tiene autenticación**: cualquier equipo de la red privada podrá imprimir.
+
+**Desde la aplicación.** Con el puerto escuchando, la sección *Impresión directa* de *Ajustes* ofrece: las direcciones para usarlo (en red local, el nombre del equipo y sus IP; en *Solo este PC*, `127.0.0.1`) con **Copiar** y **Mostrar código QR** (para escanearlo desde el móvil), **Imprimir ticket de prueba** (un tique ESC/POS real —cabecera, estilos, dos columnas, un QR y el corte— enviado por TCP al propio puerto, de modo que prueba todo el camino, y con el motivo si falla: desactivado, ocupado…) y la lista de los **últimos 50 clientes** (hora, dirección, tipo, tamaño, tiques o trabajo y resultado, incluidos los rechazados o cortados por un límite; solo en memoria y sin guardar nunca el contenido).
 
 **Qué se imprime.** El servicio decide por los primeros bytes de cada conexión:
 
@@ -368,9 +378,11 @@ Para ejecutar el servicio en consola sin instalarlo: `$env:MINIPRINTER_DATA="$PW
 | `MiniPrinter.Ipp` | Codec IPP (RFC 8010) e impresora IPP Everywhere mínima. |
 | `MiniPrinter.Escpos` | Intérprete ESC/POS en streaming (celdas de 12×24 / 9×17, tablas de caracteres, imágenes, QR, códigos de barras y respuestas de estado) para el puerto 9100. |
 | `MiniPrinter.Service` | Servicio de Windows: cola, endpoint IPP con modo local/LAN (mDNS + firewall), puerto 9100 de impresión directa, API de control, API de automatización y gestión de plantillas. |
-| `MiniPrinter.Tray` | App WPF de bandeja. |
+| `MiniPrinter.Tray` | App WPF de bandeja: temas propios (`Themes/`), textos en `Strings.resx`. |
+| `MiniPrinter.Gui` | Lógica de la interfaz sin WPF (modelos de vista, preferencias de la bandeja, tema, textos) para poder probarla. |
 | `MiniPrinter.Control` | Contratos y cliente de la API de control, y lector de CSV para lotes de etiquetas (compartidos por la bandeja y la CLI). |
 | `MiniPrinter.Cli` | Diagnóstico, impresión de plantillas y gestión de plantillas. |
+| `tools/UiShots` | Fotografía el panel real (claro, oscuro, texto grande) con datos inventados, para revisar la interfaz sin servicio: `dotnet run --project tools/UiShots -- <carpeta> --app`. |
 | `installer/` · `tools/IconGen` | Script de Inno Setup y generador del icono (`assets/miniprinter.ico`). |
 | `MiniPrinter.Updates` · `tools/SignRelease` | Comprobación y verificación de actualizaciones; firma de releases. |
 
@@ -383,6 +395,17 @@ Los tests de plantillas comparan píxel a píxel las plantillas integradas con c
 Instalador en local: `powershell -ExecutionPolicy Bypass -File scripts\build-installer.ps1 -Version X.Y.Z` (necesita Inno Setup 6); genera `artifacts\installer\MiniPrinter-Setup-X.Y.Z.exe`.
 
 ## Historial de cambios
+
+### 0.9.0 — nueva interfaz
+- **Aspecto**: tema claro, oscuro y de contraste alto que sigue a Windows (también el menú del icono y la barra de título), tamaño del texto Pequeño/Normal/Grande, ventana que recuerda tamaño, posición y pestaña, y DPI por monitor.
+- **Ajustes por secciones** con menú lateral, búsqueda, guardado por sección, cambios sin guardar marcados, validación junto a cada campo y aviso al cerrar con cambios pendientes; salen a la vista ajustes que no tenían control (fuente y tamaño del texto, reintentos).
+- **Estado como panel**: tarjeta con el estado, la batería en barra, acciones principales a la vista y el resto en «⋯», detalles plegables y lista de trabajos en español con iconos y columna *Origen*.
+- **Historial de trabajos**: origen de cada trabajo, páginas de los últimos trabajos guardadas por el servicio, vista previa de cualquiera de ellos (`GET /api/jobs/{id}/pages/{n}`) y reimpresión (`POST /api/jobs/{id}/reprint`); ajuste `JobHistoryKeep`.
+- **Diagnóstico** con semáforos y qué hacer en cada caso, y un informe copiable sin secretos (`GET /api/diagnostics`).
+- **Puerto 9100 en la interfaz**: copiar la dirección, código QR, ticket de prueba por el propio puerto (`POST /api/raw-port/test`) y últimos clientes (`GET /api/raw-port/clients`).
+- **Plantillas**: galería con miniaturas (`GET /api/templates/{nombre}/thumbnail`), buscador y las recientes primero; submenú *Plantillas* del icono con favoritos (se imprimen al instante) y recientes.
+- **Editor de plantillas**: los datos de prueba cumplen las validaciones de lo que alimentan (un campo numérico ligado a la altura de un código de barras recibe un valor dentro de su rango, y las fechas de los filtros `days` y `daysleft` una fecha válida) y un bloque de imagen sin imagen enseña una imagen genérica en la vista previa y en las miniaturas (nunca en papel). El tamaño de módulo del QR se valida de 4 a 40, como ya exigía el motor.
+- Todos los textos de la bandeja en `Strings.resx` (base para traducciones) con pruebas que impiden textos o colores sueltos.
 
 ### 0.8.0 — impresión directa por el puerto 9100
 - **Puerto TCP 9100 (RAW/JetDirect)**, desactivado por defecto y con el alcance de IPP: acepta ESC/POS, PNG, JPEG, PDF, PWG Raster y texto plano, con límites (4 conexiones, 16 MB, 30 s), firewall solo en redes privadas, origen `raw@dirección` en la cola y sección propia en *Ajustes*.

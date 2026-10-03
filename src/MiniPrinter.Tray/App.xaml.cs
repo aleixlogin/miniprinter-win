@@ -1,5 +1,7 @@
+using System.IO;
 using System.Windows;
 using MiniPrinter.Control;
+using MiniPrinter.Gui;
 
 namespace MiniPrinter.Tray;
 
@@ -9,6 +11,7 @@ public partial class App : Application
     private ServiceConnection? _service;
     private TrayIcon? _tray;
     private MainWindow? _window;
+    private bool _exitRequested;
     private StatusDto? _lastStatus;
     private const string OpenPanelEventName = @"Local\MiniPrinter.Tray.OpenPanel";
     private const string ExitEventName = @"Local\MiniPrinter.Tray.Exit";
@@ -19,12 +22,18 @@ public partial class App : Application
     private Updater? _updater;
 
     public Updater? Updater => _updater;
+
+    /// <summary>The palette service (light, dark, high contrast); null before the tray starts.</summary>
+    public ThemeService? Theme { get; private set; }
     private QuickNoteWindow? _quickNote;
     private TrayPreferences _preferences = TrayPreferences.Load();
 
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        // tools/UiShots builds the panel on its own, without the tray, the single-instance mutex or the service.
+        if (Environment.GetEnvironmentVariable("MINIPRINTER_UISHOTS") == "1")
+            return;
         // "Send to > MiniPrinter": print the files and exit without starting the tray.
         if (e.Args.Length > 0 && e.Args[0] == "--print")
         {
@@ -64,10 +73,18 @@ public partial class App : Application
                 Dispatcher.BeginInvoke(OpenPanel);
         }) { IsBackground = true, Name = "OpenPanelSignal" }.Start();
 
+        ApplyTextSize(_preferences.TextSize);
+        Theme = new ThemeService(this, _preferences.Theme);
         _service = new ServiceConnection();
-        _tray = new TrayIcon(OpenPanel, ToggleConnection, () => RunAction(c => c.TestPrintAsync(), "Página de prueba enviada."),
+        _tray = new TrayIcon(OpenPanel, ToggleConnection, () => RunAction(c => c.TestPrintAsync(), Strings.Get("App.TestPrintSent")),
             () => RunAction(c => c.FeedAsync(), null), ExitApp, PrintClipboard, OpenQuickNote, ToggleKeepAlive,
-            () => _ = _updater?.CheckAsync(manual: true));
+            () => _ = _updater?.CheckAsync(manual: true),
+            new TrayIcon.TemplateMenuSource(
+                () => TrayTemplatesMenu.Favorites(TemplateFavorites.Read(TemplatesPanel.FavoritesPath), TemplatesForMenu()),
+                () => TrayTemplatesMenu.Recent(_preferences.RecentTemplates, TemplatesForMenu()),
+                PrintFavorite, OpenTemplate));
+        _tray.ApplyTheme(Theme.Current);
+        Theme.Changed += theme => _tray?.ApplyTheme(theme);
         _service.Changed += () => Dispatcher.BeginInvoke(OnServiceChanged);
         _service.Start();
 
@@ -83,6 +100,7 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        Theme?.Dispose();
         _hotkey?.Dispose();
         _updater?.Dispose();
         _tray?.Dispose();
@@ -118,39 +136,33 @@ public partial class App : Application
     {
         var newAlarms = current.Alarms.Except(previous?.Alarms ?? []).ToList();
         if (newAlarms.Count > 0)
-            _tray!.Notify("La impresora necesita atención", string.Join(", ", newAlarms.Select(Translate)), warning: true);
+            _tray!.Notify(Strings.Get("App.NeedsAttention"), string.Join(", ", newAlarms.Select(ServiceTexts.AlarmNotice)), warning: true);
         if (current.LowBattery && previous?.LowBattery != true)
-            _tray!.Notify("Batería baja", $"La impresora está al {current.BatteryPercent} %. Conéctala para cargar.", warning: true);
+            _tray!.Notify(Strings.Get("App.LowBatteryTitle"), Strings.Get("App.LowBatteryText", current.BatteryPercent), warning: true);
         if (current.LastErrorKind == "Busy" && previous?.LastErrorKind != "Busy")
-            _tray!.Notify("Impresora ocupada", "Otra aplicación (TiMini-Print, la app del móvil…) está usando la impresora.", warning: true);
+            _tray!.Notify(Strings.Get("App.BusyTitle"), Strings.Get("App.BusyText"), warning: true);
     }
 
-    public static string Translate(string alarm) => alarm switch
-    {
-        "OutOfPaper" => "sin papel o tapa abierta",
-        "Overheated" => "sobrecalentada",
-        "LowBattery" => "batería baja",
-        _ => alarm,
-    };
-
+    /// <summary>The one-line state shown as the tooltip of the tray icon.</summary>
     public static string Describe(StatusDto? status, bool available, string? error)
     {
         if (!available || status is null)
-            return error ?? "Servicio no disponible";
+            return error ?? Strings.Get("App.ServiceUnavailable");
         if (status.Printer is null)
-            return "Sin impresora seleccionada";
+            return Strings.Get("App.NoPrinter");
+        var name = status.Printer.Name;
         if (status.Alarms.Count > 0)
-            return $"{status.Printer.Name}: {string.Join(", ", status.Alarms.Select(Translate))}";
+            return $"{name}: {string.Join(", ", status.Alarms.Select(ServiceTexts.AlarmNotice))}";
         if (status.Printing)
-            return $"{status.Printer.Name}: imprimiendo";
+            return Strings.Get("App.TipPrinting", name);
         if (status.Reconnecting)
-            return $"{status.Printer.Name}: reconectando…";
+            return Strings.Get("App.TipReconnecting", name);
         return status.Link switch
         {
-            "Connected" => status.KeepAlive ? $"{status.Printer.Name}: lista (keep-alive)" : $"{status.Printer.Name}: lista",
-            "Connecting" => $"{status.Printer.Name}: conectando…",
-            "Error" => $"{status.Printer.Name}: {status.LastError}",
-            _ => $"{status.Printer.Name}: desconectada (se conecta al imprimir)",
+            "Connected" => status.KeepAlive ? Strings.Get("App.TipReadyKeepAlive", name) : Strings.Get("App.TipReady", name),
+            "Connecting" => Strings.Get("App.TipConnecting", name),
+            "Error" => $"{name}: {status.LastError}",
+            _ => Strings.Get("App.TipDisconnected", name),
         };
     }
 
@@ -159,7 +171,12 @@ public partial class App : Application
         if (_window is null)
         {
             _window = new MainWindow(_service!);
-            _window.Closed += (_, _) => _window = null;
+            _window.Closed += (_, _) =>
+            {
+                _window = null;
+                if (_exitRequested)
+                    Shutdown();
+            };
             _window.ShowStatus(_service!.Status, _service.ServiceAvailable, _service.ServiceError);
         }
         _window.Show();
@@ -169,6 +186,40 @@ public partial class App : Application
     }
 
     public TrayPreferences Preferences => _preferences;
+
+    /// <summary>Changes a preference of the user and saves them (a failure to write is not worth stopping for).</summary>
+    public void UpdatePreferences(Func<TrayPreferences, TrayPreferences> change)
+    {
+        _preferences = change(_preferences);
+        try
+        {
+            _preferences.Save();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // the preferences stay in memory for this session
+        }
+    }
+
+    /// <summary>Applies and remembers the theme chosen in Settings, Appearance.</summary>
+    public void SetTheme(ThemeChoice choice)
+    {
+        Theme?.SetChoice(choice);
+        UpdatePreferences(p => p with { Theme = choice });
+    }
+
+    /// <summary>Applies and remembers the text size chosen in Settings, Appearance.</summary>
+    public void SetTextSize(TextSizeChoice size)
+    {
+        ApplyTextSize(size);
+        UpdatePreferences(p => p with { TextSize = size });
+    }
+
+    private void ApplyTextSize(TextSizeChoice size)
+    {
+        Resources["Ui.FontSize"] = TextSizes.FontSize(size);
+        _window?.ApplyMinimumScale(TextSizes.MinimumScale(size));
+    }
 
     /// <summary>Registers the quick-note hotkey; returns false (and optionally notifies) if it is invalid or taken.</summary>
     public bool ApplyHotkey(string hotkey, bool notifyOnFailure)
@@ -184,8 +235,8 @@ public partial class App : Application
         }
         else if (notifyOnFailure)
         {
-            _tray?.Notify("Atajo no disponible",
-                $"No se pudo registrar {hotkey} (¿lo usa otro programa?). Elige otro en Ajustes.", warning: true);
+            _tray?.Notify(Strings.Get("App.HotkeyUnavailableTitle"),
+                Strings.Get("App.HotkeyUnavailableText", hotkey), warning: true);
         }
         return ok;
     }
@@ -213,7 +264,7 @@ public partial class App : Application
         try
         {
             var message = await QuickPrint.PrintClipboardAsync(_service!.Client);
-            _tray!.Notify("MiniPrinter", message, warning: message.StartsWith("No hay", StringComparison.Ordinal));
+            _tray!.Notify("MiniPrinter", message.Message, warning: message.Warning);
         }
         catch (Exception ex)
         {
@@ -227,12 +278,12 @@ public partial class App : Application
         {
             using var client = ControlClient.FromTokenFile();
             var message = await QuickPrint.PrintFilesAsync(client, files);
-            if (message.Contains("no admitido", StringComparison.Ordinal))
-                MessageBox.Show(message, "MiniPrinter", MessageBoxButton.OK, MessageBoxImage.Warning);
+            if (message.Warning)
+                MessageBox.Show(message.Message, "MiniPrinter", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"No se pudo imprimir: {ex.Message}", "MiniPrinter", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(Strings.Get("App.PrintFailed", ex.Message), "MiniPrinter", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
 
@@ -246,8 +297,8 @@ public partial class App : Application
             var updated = await client.SaveSettingsAsync(settings with { KeepAlive = !settings.KeepAlive });
             _tray!.SetKeepAlive(updated.KeepAlive);
             _tray.Notify("MiniPrinter", updated.KeepAlive
-                ? "Keep-alive activado: la impresora se mantendrá conectada."
-                : "Keep-alive desactivado: la impresora se liberará tras el tiempo de inactividad.", warning: false);
+                ? Strings.Get("App.KeepAliveOn")
+                : Strings.Get("App.KeepAliveOff"), warning: false);
         }
         catch (Exception ex)
         {
@@ -275,9 +326,68 @@ public partial class App : Application
         }
     }
 
+    // ---- templates from the icon ---------------------------------------------------------------------------------
+
+    private IReadOnlyList<TemplateDto> _templateCache = [];
+
+    /// <summary>The templates of the service for the menu: asked for each time it opens, and the last known ones if the service does not answer at once.</summary>
+    private IReadOnlyList<TemplateDto> TemplatesForMenu()
+    {
+        try
+        {
+            var task = Task.Run(() => _service!.Client.GetTemplatesAsync());
+            if (task.Wait(TimeSpan.FromMilliseconds(600)))
+                _templateCache = task.Result;
+        }
+        catch (Exception)
+        {
+            // the cache is what there is
+        }
+        return _templateCache;
+    }
+
+    /// <summary>Prints a favorite at once with its saved values, tells so, and says clearly if it is no longer valid.</summary>
+    private async void PrintFavorite(string template, string favorite)
+    {
+        var title = _templateCache.FirstOrDefault(t => t.Name == template)?.Title ?? template;
+        var label = $"{title} — {favorite}";
+        try
+        {
+            if (TemplateFavorites.Read(TemplatesPanel.FavoritesPath).GetValueOrDefault(template)?.GetValueOrDefault(favorite) is not { } values)
+                throw new InvalidOperationException(Strings.Get("Tray.FavoriteGone"));
+            await _service!.Client.PrintTemplateAsync(template, values);
+            UpdatePreferences(p => p.WithRecentTemplate(template));
+            _tray!.Notify("MiniPrinter", Strings.Get("Tray.FavoritePrinting", label), warning: false);
+        }
+        catch (Exception ex)
+        {
+            _tray!.Notify("MiniPrinter", Strings.Get("Tray.FavoriteFailed", label, ex.Message), warning: true);
+        }
+    }
+
+    /// <summary>Opens the panel on a template (with its last values), without printing.</summary>
+    private void OpenTemplate(string template)
+    {
+        OpenPanel();
+        _window?.ShowTemplate(template);
+    }
+
+    /// <summary>Remembers a template as one of the latest used.</summary>
+    public void RecordRecentTemplate(string template) => UpdatePreferences(p => p.WithRecentTemplate(template));
+
     private void ExitApp()
     {
-        _window?.Close();
+        // The panel may ask about unsaved settings first; if the user keeps editing, the tray keeps running.
+        _exitRequested = true;
+        if (_window is { } panel)
+        {
+            panel.Close();
+            if (_window is not null)
+            {
+                _exitRequested = panel.ClosePending;
+                return;
+            }
+        }
         Shutdown();
     }
 }

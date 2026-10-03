@@ -54,6 +54,7 @@ public sealed class SettingsStore
         RawPort = s.RawPort is >= 1024 and < 65536 ? s.RawPort : 9100,
         PrinterName = string.IsNullOrWhiteSpace(s.PrinterName) ? "X5h Thermal Printer" : s.PrinterName.Trim(),
         JobRetryMinutes = Math.Clamp(s.JobRetryMinutes, 0, 1440),
+        JobHistoryKeep = Math.Clamp(s.JobHistoryKeep, 0, 50),
         PageGapMm = Math.Clamp(s.PageGapMm, 0, 50),
         LowBatteryPercent = Math.Clamp(s.LowBatteryPercent, 5, 50),
         TextFont = string.IsNullOrWhiteSpace(s.TextFont) ? "Segoe UI" : s.TextFont.Trim(),

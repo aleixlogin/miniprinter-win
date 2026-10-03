@@ -12,6 +12,7 @@ builder.WebHost.ConfigureKestrel(k => k.Listen(IPAddress.Loopback, controlPort))
 builder.Services.AddSingleton(paths);
 builder.Services.AddSingleton<SettingsStore>();
 builder.Services.AddSingleton<PrinterManager>();
+builder.Services.AddSingleton<JobArchive>();
 builder.Services.AddSingleton<JobQueue>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<JobQueue>());
 builder.Services.AddSingleton<IppHost>();
@@ -25,6 +26,10 @@ builder.Services.AddSingleton<DraftStore>();
 builder.Services.AddSingleton<IPowerShellRunner, SystemPowerShellRunner>();
 builder.Services.AddSingleton<WindowsQueue>();
 builder.Services.AddSingleton<PrintRequests>();
+builder.Services.AddSingleton<TemplateThumbnails>();
+builder.Services.AddSingleton(sp => new DiagnosticsService(DiagnosticsService.RealProbes(sp.GetRequiredService<StatusBuilder>(),
+    sp.GetRequiredService<WindowsQueue>(), sp.GetRequiredService<SettingsStore>(), sp.GetRequiredService<RawPortHost>(),
+    sp.GetRequiredService<ILogger<DiagnosticsService>>())));
 builder.Services.AddSingleton<AutomationToken>();
 builder.Services.AddSingleton(sp => new TelemetryLog(paths, sp.GetRequiredService<ILogger<TelemetryLog>>(), sp.GetRequiredService<PrinterManager>()));
 

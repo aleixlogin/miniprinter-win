@@ -1,0 +1,29 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Semantic brushes of the light theme (the look the panel always had). -->
+    <SolidColorBrush x:Key="Brush.Surface" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="Brush.SurfaceAlt" Color="#F6F8FA" />
+    <SolidColorBrush x:Key="Brush.Text" Color="#1F2328" />
+    <SolidColorBrush x:Key="Brush.TextMuted" Color="#57606A" />
+    <SolidColorBrush x:Key="Brush.Disabled" Color="#8C959F" />
+    <SolidColorBrush x:Key="Brush.Border" Color="#D0D7DE" />
+    <SolidColorBrush x:Key="Brush.Accent" Color="#0969DA" />
+    <SolidColorBrush x:Key="Brush.AccentText" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="Brush.Hover" Color="#EAEEF2" />
+    <SolidColorBrush x:Key="Brush.Pressed" Color="#D8DEE4" />
+    <SolidColorBrush x:Key="Brush.Selection" Color="#DDF4FF" />
+    <SolidColorBrush x:Key="Brush.SelectionText" Color="#1F2328" />
+    <SolidColorBrush x:Key="Brush.Ok" Color="#1A7F37" />
+    <SolidColorBrush x:Key="Brush.Warn" Color="#9A6700" />
+    <SolidColorBrush x:Key="Brush.Error" Color="#CF222E" />
+    <SolidColorBrush x:Key="Brush.WarnBackground" Color="#FFF8C5" />
+    <SolidColorBrush x:Key="Brush.WarnBorder" Color="#D4A72C" />
+    <SolidColorBrush x:Key="Brush.OkBackground" Color="#DAFBE1" />
+    <SolidColorBrush x:Key="Brush.OkBorder" Color="#4AC26B" />
+    <SolidColorBrush x:Key="Brush.ErrorBackground" Color="#FFEBE9" />
+    <SolidColorBrush x:Key="Brush.ErrorBorder" Color="#FF8182" />
+    <SolidColorBrush x:Key="Brush.InfoBackground" Color="#DDF4FF" />
+    <SolidColorBrush x:Key="Brush.InfoBorder" Color="#54AEFF" />
+    <SolidColorBrush x:Key="Brush.Preview" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="Brush.PreviewBorder" Color="#D0D7DE" />
+</ResourceDictionary>

@@ -1,0 +1,1843 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Alarm.LowBattery" xml:space="preserve">
+    <value>batería baja</value>
+  </data>
+  <data name="Alarm.OutOfPaper" xml:space="preserve">
+    <value>sin papel</value>
+  </data>
+  <data name="Alarm.OutOfPaper.Notice" xml:space="preserve">
+    <value>sin papel o tapa abierta</value>
+  </data>
+  <data name="Alarm.Overheated" xml:space="preserve">
+    <value>sobrecalentada</value>
+  </data>
+  <data name="App.BusyText" xml:space="preserve">
+    <value>Otra aplicación (TiMini-Print, la app del móvil…) está usando la impresora.</value>
+  </data>
+  <data name="App.BusyTitle" xml:space="preserve">
+    <value>Impresora ocupada</value>
+  </data>
+  <data name="App.HotkeyUnavailableText" xml:space="preserve">
+    <value>No se pudo registrar {0} (¿lo usa otro programa?). Elige otro en Ajustes.</value>
+  </data>
+  <data name="App.HotkeyUnavailableTitle" xml:space="preserve">
+    <value>Atajo no disponible</value>
+  </data>
+  <data name="App.KeepAliveOff" xml:space="preserve">
+    <value>Keep-alive desactivado: la impresora se liberará tras el tiempo de inactividad.</value>
+  </data>
+  <data name="App.KeepAliveOn" xml:space="preserve">
+    <value>Keep-alive activado: la impresora se mantendrá conectada.</value>
+  </data>
+  <data name="App.LowBatteryText" xml:space="preserve">
+    <value>La impresora está al {0} %. Conéctala para cargar.</value>
+  </data>
+  <data name="App.LowBatteryTitle" xml:space="preserve">
+    <value>Batería baja</value>
+  </data>
+  <data name="App.NeedsAttention" xml:space="preserve">
+    <value>La impresora necesita atención</value>
+  </data>
+  <data name="App.NoPrinter" xml:space="preserve">
+    <value>Sin impresora seleccionada</value>
+  </data>
+  <data name="App.PrintFailed" xml:space="preserve">
+    <value>No se pudo imprimir: {0}</value>
+  </data>
+  <data name="App.ServiceUnavailable" xml:space="preserve">
+    <value>Servicio no disponible</value>
+  </data>
+  <data name="App.TestPrintSent" xml:space="preserve">
+    <value>Página de prueba enviada.</value>
+  </data>
+  <data name="App.TipConnecting" xml:space="preserve">
+    <value>{0}: conectando…</value>
+  </data>
+  <data name="App.TipDisconnected" xml:space="preserve">
+    <value>{0}: desconectada (se conecta al imprimir)</value>
+  </data>
+  <data name="App.TipPrinting" xml:space="preserve">
+    <value>{0}: imprimiendo</value>
+  </data>
+  <data name="App.TipReady" xml:space="preserve">
+    <value>{0}: lista</value>
+  </data>
+  <data name="App.TipReadyKeepAlive" xml:space="preserve">
+    <value>{0}: lista (keep-alive)</value>
+  </data>
+  <data name="App.TipReconnecting" xml:space="preserve">
+    <value>{0}: reconectando…</value>
+  </data>
+  <data name="Appearance.TextLarge" xml:space="preserve">
+    <value>Grande</value>
+  </data>
+  <data name="Appearance.TextNormal" xml:space="preserve">
+    <value>Normal</value>
+  </data>
+  <data name="Appearance.TextSize" xml:space="preserve">
+    <value>Tamaño del texto</value>
+  </data>
+  <data name="Appearance.TextSmall" xml:space="preserve">
+    <value>Pequeño</value>
+  </data>
+  <data name="Appearance.Theme" xml:space="preserve">
+    <value>Tema</value>
+  </data>
+  <data name="Appearance.ThemeAuto" xml:space="preserve">
+    <value>Automático (como Windows)</value>
+  </data>
+  <data name="Appearance.ThemeDark" xml:space="preserve">
+    <value>Oscuro</value>
+  </data>
+  <data name="Appearance.ThemeLight" xml:space="preserve">
+    <value>Claro</value>
+  </data>
+  <data name="Bluetooth.AlreadyPaired" xml:space="preserve">
+    <value>Ya estaba emparejada.</value>
+  </data>
+  <data name="Bluetooth.Paired" xml:space="preserve">
+    <value>Emparejada correctamente.</value>
+  </data>
+  <data name="Bluetooth.PairFailed" xml:space="preserve">
+    <value>No se pudo emparejar (¿PIN distinto de 0000?). Prueba desde Configuración &gt; Bluetooth.</value>
+  </data>
+  <data name="Bluetooth.PairStatus" xml:space="preserve">
+    <value>Emparejamiento: {0}</value>
+  </data>
+  <data name="Diag.Action.ConnectPrinter" xml:space="preserve">
+    <value>Conectar</value>
+  </data>
+  <data name="Diag.Action.FindPrinters" xml:space="preserve">
+    <value>Buscar impresoras</value>
+  </data>
+  <data name="Diag.Action.OpenBluetoothSettings" xml:space="preserve">
+    <value>Abrir Bluetooth</value>
+  </data>
+  <data name="Diag.Action.OpenSettingsNetwork" xml:space="preserve">
+    <value>Abrir Ajustes › Red</value>
+  </data>
+  <data name="Diag.Action.OpenSettingsPaper" xml:space="preserve">
+    <value>Abrir Ajustes › Papel</value>
+  </data>
+  <data name="Diag.Action.OpenSettingsRaw" xml:space="preserve">
+    <value>Abrir Ajustes › Impresión directa</value>
+  </data>
+  <data name="Diag.bluetooth.fail" xml:space="preserve">
+    <value>El Bluetooth de Windows está apagado.</value>
+  </data>
+  <data name="Diag.bluetooth.fail.Hint" xml:space="preserve">
+    <value>Enciende el Bluetooth en la Configuración de Windows.</value>
+  </data>
+  <data name="Diag.bluetooth.ok" xml:space="preserve">
+    <value>El Bluetooth de Windows está encendido.</value>
+  </data>
+  <data name="Diag.bluetooth.Title" xml:space="preserve">
+    <value>Bluetooth de Windows</value>
+  </data>
+  <data name="Diag.bluetooth.unknown" xml:space="preserve">
+    <value>No se pudo comprobar el Bluetooth.</value>
+  </data>
+  <data name="Diag.bluetooth.unknown.Hint" xml:space="preserve">
+    <value>Comprueba en la Configuración de Windows que el Bluetooth está encendido.</value>
+  </data>
+  <data name="Diag.Checking" xml:space="preserve">
+    <value>Comprobando…</value>
+  </data>
+  <data name="Diag.Close" xml:space="preserve">
+    <value>Cerrar</value>
+  </data>
+  <data name="Diag.Copied" xml:space="preserve">
+    <value>Informe copiado al portapapeles.</value>
+  </data>
+  <data name="Diag.Copy" xml:space="preserve">
+    <value>Copiar informe</value>
+  </data>
+  <data name="Diag.fonts.ok" xml:space="preserve">
+    <value>Hay fuentes para japonés, chino, coreano, árabe y tailandés.</value>
+  </data>
+  <data name="Diag.fonts.Title" xml:space="preserve">
+    <value>Fuentes de idiomas</value>
+  </data>
+  <data name="Diag.fonts.unknown" xml:space="preserve">
+    <value>No se pudieron comprobar las fuentes.</value>
+  </data>
+  <data name="Diag.fonts.warn" xml:space="preserve">
+    <value>Faltan fuentes para: {0}.</value>
+  </data>
+  <data name="Diag.fonts.warn.Hint" xml:space="preserve">
+    <value>Instala esos idiomas en la Configuración de Windows (Hora e idioma) para que esos tickets salgan bien.</value>
+  </data>
+  <data name="Diag.Generic.fail" xml:space="preserve">
+    <value>Hay un problema.</value>
+  </data>
+  <data name="Diag.Generic.Hint" xml:space="preserve">
+    <value>Vuelve a comprobar dentro de unos segundos.</value>
+  </data>
+  <data name="Diag.Generic.ok" xml:space="preserve">
+    <value>Correcto.</value>
+  </data>
+  <data name="Diag.Generic.unknown" xml:space="preserve">
+    <value>No se pudo comprobar.</value>
+  </data>
+  <data name="Diag.Generic.warn" xml:space="preserve">
+    <value>Hay un aviso.</value>
+  </data>
+  <data name="Diag.ipp.fail" xml:space="preserve">
+    <value>Nada escucha en el puerto {0}: Windows no podrá imprimir.</value>
+  </data>
+  <data name="Diag.ipp.fail.Hint" xml:space="preserve">
+    <value>Reinicia el servicio MiniPrinter; si otro programa usa ese puerto, cámbialo en Ajustes › Red.</value>
+  </data>
+  <data name="Diag.ipp.ok" xml:space="preserve">
+    <value>El servicio escucha en el puerto {0} para Windows.</value>
+  </data>
+  <data name="Diag.ipp.Title" xml:space="preserve">
+    <value>Impresión desde Windows (IPP)</value>
+  </data>
+  <data name="Diag.ipp.unknown" xml:space="preserve">
+    <value>No se pudo comprobar la escucha del puerto.</value>
+  </data>
+  <data name="Diag.link.fail" xml:space="preserve">
+    <value>No hay conexión con la impresora. {0}</value>
+  </data>
+  <data name="Diag.link.fail.Hint" xml:space="preserve">
+    <value>Enciende la impresora, acércala al PC y pulsa Conectar en la pestaña Estado.</value>
+  </data>
+  <data name="Diag.link.ok" xml:space="preserve">
+    <value>Conectada, o lista para conectarse al imprimir.</value>
+  </data>
+  <data name="Diag.link.Title" xml:space="preserve">
+    <value>Conexión con la impresora</value>
+  </data>
+  <data name="Diag.link.unknown" xml:space="preserve">
+    <value>Se sabrá cuando el servicio responda.</value>
+  </data>
+  <data name="Diag.link.warn" xml:space="preserve">
+    <value>Conectando con la impresora…</value>
+  </data>
+  <data name="Diag.link.warn.Hint" xml:space="preserve">
+    <value>Espera unos segundos y vuelve a comprobar.</value>
+  </data>
+  <data name="Diag.Open" xml:space="preserve">
+    <value>Diagnosticar</value>
+  </data>
+  <data name="Diag.paired.fail" xml:space="preserve">
+    <value>La impresora elegida no está emparejada con este PC.</value>
+  </data>
+  <data name="Diag.paired.fail.Hint" xml:space="preserve">
+    <value>Búscala y empareja en «Buscar impresoras».</value>
+  </data>
+  <data name="Diag.paired.ok" xml:space="preserve">
+    <value>La impresora está emparejada con este PC.</value>
+  </data>
+  <data name="Diag.paired.Title" xml:space="preserve">
+    <value>Impresora emparejada</value>
+  </data>
+  <data name="Diag.paired.unknown" xml:space="preserve">
+    <value>No se pudo comprobar el emparejamiento (¿hay una impresora elegida?).</value>
+  </data>
+  <data name="Diag.paired.unknown.Hint" xml:space="preserve">
+    <value>Elige tu impresora en «Buscar impresoras».</value>
+  </data>
+  <data name="Diag.paper.ok" xml:space="preserve">
+    <value>Con papel y sin alarmas.</value>
+  </data>
+  <data name="Diag.paper.Title" xml:space="preserve">
+    <value>Papel y alarmas</value>
+  </data>
+  <data name="Diag.paper.unknown" xml:space="preserve">
+    <value>Se sabrá cuando la impresora esté conectada.</value>
+  </data>
+  <data name="Diag.paper.warn" xml:space="preserve">
+    <value>La impresora avisa: {0}.</value>
+  </data>
+  <data name="Diag.paper.warn.Hint" xml:space="preserve">
+    <value>Pon papel, cierra bien la tapa o deja que se enfríe: los trabajos esperan solos.</value>
+  </data>
+  <data name="Diag.queue.fail" xml:space="preserve">
+    <value>No existe la impresora «{0}» en Windows.</value>
+  </data>
+  <data name="Diag.queue.fail.Hint" xml:space="preserve">
+    <value>Pulsa «Recrear impresora de Windows» en Ajustes › Papel.</value>
+  </data>
+  <data name="Diag.queue.ok" xml:space="preserve">
+    <value>La impresora «{0}» existe en Windows.</value>
+  </data>
+  <data name="Diag.queue.Title" xml:space="preserve">
+    <value>Impresora en Windows</value>
+  </data>
+  <data name="Diag.queue.unknown" xml:space="preserve">
+    <value>No se pudo comprobar la impresora de Windows.</value>
+  </data>
+  <data name="Diag.queue.warn" xml:space="preserve">
+    <value>La impresora de Windows se está recreando…</value>
+  </data>
+  <data name="Diag.queue.warn.Hint" xml:space="preserve">
+    <value>Espera a que termine y vuelve a comprobar.</value>
+  </data>
+  <data name="Diag.raw.fail" xml:space="preserve">
+    <value>El puerto 9100 no pudo abrirse: {0}</value>
+  </data>
+  <data name="Diag.raw.fail.Hint" xml:space="preserve">
+    <value>Otro programa usa ese puerto: cámbialo en Ajustes › Impresión directa.</value>
+  </data>
+  <data name="Diag.raw.ok" xml:space="preserve">
+    <value>Escuchando en {0}.</value>
+  </data>
+  <data name="Diag.raw.ok.Off" xml:space="preserve">
+    <value>Desactivado (solo hace falta para imprimir por TCP desde otros programas o equipos).</value>
+  </data>
+  <data name="Diag.raw.Title" xml:space="preserve">
+    <value>Impresión directa (puerto 9100)</value>
+  </data>
+  <data name="Diag.raw.unknown" xml:space="preserve">
+    <value>No se pudo comprobar el puerto 9100.</value>
+  </data>
+  <data name="Diag.raw.unknown.Firewall" xml:space="preserve">
+    <value>El puerto 9100 escucha, pero no se pudo comprobar el cortafuegos.</value>
+  </data>
+  <data name="Diag.raw.warn" xml:space="preserve">
+    <value>El puerto 9100 todavía no escucha.</value>
+  </data>
+  <data name="Diag.raw.warn.Firewall" xml:space="preserve">
+    <value>El puerto 9100 está activo, pero falta la regla del cortafuegos para otros equipos.</value>
+  </data>
+  <data name="Diag.raw.warn.Hint" xml:space="preserve">
+    <value>Revisa Ajustes › Impresión directa: aplica de nuevo el cambio o cambia el puerto.</value>
+  </data>
+  <data name="Diag.Report.Date" xml:space="preserve">
+    <value>Fecha: {0}</value>
+  </data>
+  <data name="Diag.Report.Header" xml:space="preserve">
+    <value>MiniPrinter · informe de diagnóstico</value>
+  </data>
+  <data name="Diag.Report.Lan" xml:space="preserve">
+    <value>red local</value>
+  </data>
+  <data name="Diag.Report.LastError" xml:space="preserve">
+    <value>Último error: {0}</value>
+  </data>
+  <data name="Diag.Report.Local" xml:space="preserve">
+    <value>solo este PC</value>
+  </data>
+  <data name="Diag.Report.NoPrinter" xml:space="preserve">
+    <value>Impresora: ninguna elegida</value>
+  </data>
+  <data name="Diag.Report.Off" xml:space="preserve">
+    <value>desactivada</value>
+  </data>
+  <data name="Diag.Report.On" xml:space="preserve">
+    <value>activada</value>
+  </data>
+  <data name="Diag.Report.Paper" xml:space="preserve">
+    <value>{0} de {1} tamaños activos</value>
+  </data>
+  <data name="Diag.Report.Printer" xml:space="preserve">
+    <value>Impresora: perfil {0}, conexión {1}</value>
+  </data>
+  <data name="Diag.Report.RawListening" xml:space="preserve">
+    <value>Escuchando</value>
+  </data>
+  <data name="Diag.Report.RawOn" xml:space="preserve">
+    <value>activado en el {0}</value>
+  </data>
+  <data name="Diag.Report.Results" xml:space="preserve">
+    <value>Resultados:</value>
+  </data>
+  <data name="Diag.Report.Settings" xml:space="preserve">
+    <value>Ajustes: red {0} · puerto IPP {1} · puerto 9100 {2} · API de automatización {3} · mantener activa {4} · papel {5} · historial {6}</value>
+  </data>
+  <data name="Diag.Report.Versions" xml:space="preserve">
+    <value>Aplicación {0} · Servicio {1} · {2}</value>
+  </data>
+  <data name="Diag.Run" xml:space="preserve">
+    <value>Volver a comprobar</value>
+  </data>
+  <data name="Diag.service.fail" xml:space="preserve">
+    <value>El servicio no responde. {0}</value>
+  </data>
+  <data name="Diag.service.fail.Hint" xml:space="preserve">
+    <value>Inicia el servicio «MiniPrinter» en los Servicios de Windows (services.msc) o reinstala la aplicación.</value>
+  </data>
+  <data name="Diag.service.ok" xml:space="preserve">
+    <value>El servicio responde.</value>
+  </data>
+  <data name="Diag.service.Title" xml:space="preserve">
+    <value>Servicio de MiniPrinter</value>
+  </data>
+  <data name="Diag.Summary.AllGood" xml:space="preserve">
+    <value>Todo en orden.</value>
+  </data>
+  <data name="Diag.Summary.OneProblem" xml:space="preserve">
+    <value>Hay un problema.</value>
+  </data>
+  <data name="Diag.Summary.OneUnknown" xml:space="preserve">
+    <value>No se pudo comprobar una cosa.</value>
+  </data>
+  <data name="Diag.Summary.OneWarning" xml:space="preserve">
+    <value>Hay un aviso.</value>
+  </data>
+  <data name="Diag.Summary.Problems" xml:space="preserve">
+    <value>Hay {0} problemas.</value>
+  </data>
+  <data name="Diag.Summary.Unknowns" xml:space="preserve">
+    <value>No se pudieron comprobar {0} cosas.</value>
+  </data>
+  <data name="Diag.Summary.Warnings" xml:space="preserve">
+    <value>Hay {0} avisos.</value>
+  </data>
+  <data name="Diag.Title" xml:space="preserve">
+    <value>Diagnóstico</value>
+  </data>
+  <data name="Dialog.Cancel" xml:space="preserve">
+    <value>Cancelar</value>
+  </data>
+  <data name="Dialog.Ok" xml:space="preserve">
+    <value>Aceptar</value>
+  </data>
+  <data name="Editor.AddBlock" xml:space="preserve">
+    <value>+ Añadir ▾</value>
+  </data>
+  <data name="Editor.AddField" xml:space="preserve">
+    <value>Añadir campo</value>
+  </data>
+  <data name="Editor.BlockTitle" xml:space="preserve">
+    <value>Bloque {0} — {1}</value>
+  </data>
+  <data name="Editor.BuiltInBanner" xml:space="preserve">
+    <value>Esta es una plantilla integrada: al guardarla con el mismo nombre se crea una versión de usuario que la sustituye. Usa «Guardar como…» para crear otra con un nombre nuevo.</value>
+  </data>
+  <data name="Editor.Choices" xml:space="preserve">
+    <value>Opciones (separadas por comas)</value>
+  </data>
+  <data name="Editor.CommentsBanner" xml:space="preserve">
+    <value>El JSON original tiene comentarios: se perderán al guardar desde el editor.</value>
+  </data>
+  <data name="Editor.DefaultValue" xml:space="preserve">
+    <value>Valor por defecto</value>
+  </data>
+  <data name="Editor.Delete" xml:space="preserve">
+    <value>Borrar</value>
+  </data>
+  <data name="Editor.DeleteField" xml:space="preserve">
+    <value>Borrar campo</value>
+  </data>
+  <data name="Editor.DeleteFieldConfirm" xml:space="preserve">
+    <value>El campo «{0}» se usa en: {1}.
+
+Si lo borras, esos marcadores quedarán sin valor y la plantilla puede dejar de ser válida. ¿Borrarlo?</value>
+  </data>
+  <data name="Editor.DeleteFieldTitle" xml:space="preserve">
+    <value>Borrar campo</value>
+  </data>
+  <data name="Editor.Description" xml:space="preserve">
+    <value>Descripción</value>
+  </data>
+  <data name="Editor.Down" xml:space="preserve">
+    <value>Bajar</value>
+  </data>
+  <data name="Editor.Duplicate" xml:space="preserve">
+    <value>Duplicar</value>
+  </data>
+  <data name="Editor.Fields" xml:space="preserve">
+    <value>Campos</value>
+  </data>
+  <data name="Editor.FieldWithFilter" xml:space="preserve">
+    <value>Campo con filtro</value>
+  </data>
+  <data name="Editor.Frame" xml:space="preserve">
+    <value>Marco (vacío = sin marco; p. ej. {{marco}})</value>
+  </data>
+  <data name="Editor.Gap" xml:space="preserve">
+    <value>Hueco ({0}–{1})</value>
+  </data>
+  <data name="Editor.ImageEditorFailed" xml:space="preserve">
+    <value>No se pudo preparar el editor de imágenes: {0}</value>
+  </data>
+  <data name="Editor.ImageTooBig" xml:space="preserve">
+    <value>La imagen supera el máximo de 1 MB.</value>
+  </data>
+  <data name="Editor.InsertCounter" xml:space="preserve">
+    <value>{{counter}}  (número consecutivo)</value>
+  </data>
+  <data name="Editor.InsertDate" xml:space="preserve">
+    <value>{{now:dd/MM/yyyy}}  (fecha)</value>
+  </data>
+  <data name="Editor.InsertNow" xml:space="preserve">
+    <value>{{now}}  (fecha y hora)</value>
+  </data>
+  <data name="Editor.InsertTime" xml:space="preserve">
+    <value>{{now:HH:mm}}  (hora)</value>
+  </data>
+  <data name="Editor.InsertTip" xml:space="preserve">
+    <value>Insertar un campo o un valor automático</value>
+  </data>
+  <data name="Editor.InvalidName" xml:space="preserve">
+    <value>El nombre '{0}' no es válido (letras, dígitos, guion y guion bajo; máximo 40).</value>
+  </data>
+  <data name="Editor.JsonOk" xml:space="preserve">
+    <value>JSON válido: aplicado.</value>
+  </data>
+  <data name="Editor.Kind" xml:space="preserve">
+    <value>Tipo</value>
+  </data>
+  <data name="Editor.Label" xml:space="preserve">
+    <value>Etiqueta</value>
+  </data>
+  <data name="Editor.Mode" xml:space="preserve">
+    <value>Modo</value>
+  </data>
+  <data name="Editor.Name" xml:space="preserve">
+    <value>Nombre</value>
+  </data>
+  <data name="Editor.NameTaken" xml:space="preserve">
+    <value>Ya existe una plantilla llamada '{0}'. Usa «Guardar como…» con otro nombre.</value>
+  </data>
+  <data name="Editor.NameTip" xml:space="preserve">
+    <value>El nombre no se cambia: usa «Guardar como…» para crear otra plantilla.</value>
+  </data>
+  <data name="Editor.NewFieldPrompt" xml:space="preserve">
+    <value>Nombre del campo (letras, dígitos y guion bajo):</value>
+  </data>
+  <data name="Editor.NewFieldTitle" xml:space="preserve">
+    <value>Nuevo campo</value>
+  </data>
+  <data name="Editor.NoBlock" xml:space="preserve">
+    <value>Ningún bloque seleccionado</value>
+  </data>
+  <data name="Editor.NoFields" xml:space="preserve">
+    <value>(la plantilla no tiene campos: añádelos en la pestaña Plantilla)</value>
+  </data>
+  <data name="Editor.NoFieldsShort" xml:space="preserve">
+    <value>La plantilla no tiene campos.</value>
+  </data>
+  <data name="Editor.PreviewFailed" xml:space="preserve">
+    <value>No se pudo actualizar la vista previa: {0}</value>
+  </data>
+  <data name="Editor.Redo" xml:space="preserve">
+    <value>↷ Rehacer</value>
+  </data>
+  <data name="Editor.Remove" xml:space="preserve">
+    <value>Quitar</value>
+  </data>
+  <data name="Editor.Required" xml:space="preserve">
+    <value>Obligatorio</value>
+  </data>
+  <data name="Editor.SampleMultiline" xml:space="preserve">
+    <value>Línea 1
+Línea 2</value>
+  </data>
+  <data name="Editor.SampleText" xml:space="preserve">
+    <value>Ejemplo</value>
+  </data>
+  <data name="Editor.Save" xml:space="preserve">
+    <value>Guardar</value>
+  </data>
+  <data name="Editor.SaveAs" xml:space="preserve">
+    <value>Guardar como…</value>
+  </data>
+  <data name="Editor.SaveAsPrompt" xml:space="preserve">
+    <value>Nombre de la nueva plantilla:</value>
+  </data>
+  <data name="Editor.SaveAsTitle" xml:space="preserve">
+    <value>Guardar como…</value>
+  </data>
+  <data name="Editor.SaveFailed" xml:space="preserve">
+    <value>No se pudo guardar: {0}</value>
+  </data>
+  <data name="Editor.TabBlocks" xml:space="preserve">
+    <value>Bloques</value>
+  </data>
+  <data name="Editor.TabJson" xml:space="preserve">
+    <value>JSON</value>
+  </data>
+  <data name="Editor.TabTemplate" xml:space="preserve">
+    <value>Plantilla</value>
+  </data>
+  <data name="Editor.TabTestData" xml:space="preserve">
+    <value>Datos de prueba</value>
+  </data>
+  <data name="Editor.TestNote" xml:space="preserve">
+    <value>Valores solo para la vista previa: no se guardan en la plantilla.</value>
+  </data>
+  <data name="Editor.TitleEdit" xml:space="preserve">
+    <value>Editar plantilla — {0}</value>
+  </data>
+  <data name="Editor.TitleLabel" xml:space="preserve">
+    <value>Título</value>
+  </data>
+  <data name="Editor.TitleNew" xml:space="preserve">
+    <value>Nueva plantilla — {0}</value>
+  </data>
+  <data name="Editor.Undo" xml:space="preserve">
+    <value>↶ Deshacer</value>
+  </data>
+  <data name="Editor.UnknownBlock" xml:space="preserve">
+    <value>Tipo de bloque desconocido: {0}. Edítalo en la pestaña JSON.</value>
+  </data>
+  <data name="Editor.UnsavedPrompt" xml:space="preserve">
+    <value>Hay cambios sin guardar. ¿Quieres guardarlos antes de cerrar?</value>
+  </data>
+  <data name="Editor.Up" xml:space="preserve">
+    <value>Subir</value>
+  </data>
+  <data name="Editor.UploadFailed" xml:space="preserve">
+    <value>No se pudo preparar la subida de la imagen: el servicio no responde.</value>
+  </data>
+  <data name="Editor.UsageBlock" xml:space="preserve">
+    <value>bloque {0}</value>
+  </data>
+  <data name="Editor.UsageFrame" xml:space="preserve">
+    <value>el marco</value>
+  </data>
+  <data name="Job.Source.Api" xml:space="preserve">
+    <value>API</value>
+  </data>
+  <data name="Job.Source.Panel" xml:space="preserve">
+    <value>Panel</value>
+  </data>
+  <data name="Job.Source.Raw" xml:space="preserve">
+    <value>Puerto 9100</value>
+  </data>
+  <data name="Job.Source.Windows" xml:space="preserve">
+    <value>Windows</value>
+  </data>
+  <data name="Job.State.Aborted" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="Job.State.Canceled" xml:space="preserve">
+    <value>Cancelado</value>
+  </data>
+  <data name="Job.State.Completed" xml:space="preserve">
+    <value>Completado</value>
+  </data>
+  <data name="Job.State.Pending" xml:space="preserve">
+    <value>En cola</value>
+  </data>
+  <data name="Job.State.PendingHeld" xml:space="preserve">
+    <value>Retenido</value>
+  </data>
+  <data name="Job.State.Processing" xml:space="preserve">
+    <value>Imprimiendo</value>
+  </data>
+  <data name="Job.State.ProcessingStopped" xml:space="preserve">
+    <value>En espera</value>
+  </data>
+  <data name="Main.AbrirLaPlantillaEnEl" xml:space="preserve">
+    <value>Abrir la plantilla en el editor</value>
+  </data>
+  <data name="Main.AceptarImpresionDirectaPorTcp" xml:space="preserve">
+    <value>Aceptar impresión directa por TCP: ESC/POS, imágenes, PDF y texto (se aplica al guardar)</value>
+  </data>
+  <data name="Main.ActualizarLaListaDePlantillas" xml:space="preserve">
+    <value>Actualizar la lista de plantillas</value>
+  </data>
+  <data name="Main.Ajustes" xml:space="preserve">
+    <value>Ajustes</value>
+  </data>
+  <data name="Main.Aplicar" xml:space="preserve">
+    <value>Aplicar</value>
+  </data>
+  <data name="Main.AppVersion" xml:space="preserve">
+    <value>aplicación v{0}</value>
+  </data>
+  <data name="Main.AtajoDeNotaRapida" xml:space="preserve">
+    <value>Atajo de nota rápida</value>
+  </data>
+  <data name="Main.AtkinsonFotos" xml:space="preserve">
+    <value>Atkinson (fotos)</value>
+  </data>
+  <data name="Main.AutomaticoTextoEnModoTexto" xml:space="preserve">
+    <value>Automático (texto en modo texto, fotos en modo imagen)</value>
+  </data>
+  <data name="Main.AutomaticoTextoNitidoFotosTramadas" xml:space="preserve">
+    <value>Automático (texto nítido, fotos tramadas)</value>
+  </data>
+  <data name="Main.AutomationHeader" xml:space="preserve">
+    <value>Cabecera: Authorization: Bearer &lt;token&gt;</value>
+  </data>
+  <data name="Main.AutomationOff" xml:space="preserve">
+    <value>Desactivada.</value>
+  </data>
+  <data name="Main.AvanceExtraAlFinal" xml:space="preserve">
+    <value>Avance extra al final</value>
+  </data>
+  <data name="Main.AvanzarPapel" xml:space="preserve">
+    <value>Avanzar papel</value>
+  </data>
+  <data name="Main.AvisarPorDebajoDe" xml:space="preserve">
+    <value>Avisar por debajo de</value>
+  </data>
+  <data name="Main.Bateria" xml:space="preserve">
+    <value>Batería</value>
+  </data>
+  <data name="Main.BatteryLow" xml:space="preserve">
+    <value>  ·  BATERÍA BAJA</value>
+  </data>
+  <data name="Main.BluetoothRfcommRecomendado" xml:space="preserve">
+    <value>Bluetooth RFCOMM (recomendado)</value>
+  </data>
+  <data name="Main.Borrar" xml:space="preserve">
+    <value>Borrar</value>
+  </data>
+  <data name="Main.Buscar" xml:space="preserve">
+    <value>Buscar</value>
+  </data>
+  <data name="Main.BuscarAhora" xml:space="preserve">
+    <value>Buscar ahora</value>
+  </data>
+  <data name="Main.BuscarImpresoras" xml:space="preserve">
+    <value>Buscar impresoras</value>
+  </data>
+  <data name="Main.CancelarTrabajo" xml:space="preserve">
+    <value>Cancelar trabajo</value>
+  </data>
+  <data name="Main.CargarCsv" xml:space="preserve">
+    <value>Cargar CSV…</value>
+  </data>
+  <data name="Main.CliMissing" xml:space="preserve">
+    <value>No se encuentra miniprinter.exe junto a la bandeja: reinstala MiniPrinter para poder pedir permisos de administrador.</value>
+  </data>
+  <data name="Main.Comprobar" xml:space="preserve">
+    <value>Comprobar</value>
+  </data>
+  <data name="Main.ComprobarActualizacionesAutomaticamenteCada24" xml:space="preserve">
+    <value>Comprobar actualizaciones automáticamente (cada 24 h)</value>
+  </data>
+  <data name="Main.Conectar" xml:space="preserve">
+    <value>Conectar</value>
+  </data>
+  <data name="Main.Conexion" xml:space="preserve">
+    <value>Conexión</value>
+  </data>
+  <data name="Main.Conexion2" xml:space="preserve">
+    <value>Conexión:</value>
+  </data>
+  <data name="Main.Copiar" xml:space="preserve">
+    <value>Copiar</value>
+  </data>
+  <data name="Main.Copias" xml:space="preserve">
+    <value>Copias:</value>
+  </data>
+  <data name="Main.Crear" xml:space="preserve">
+    <value>Crear</value>
+  </data>
+  <data name="Main.CrearUnaPlantillaNuevaEn" xml:space="preserve">
+    <value>Crear una plantilla nueva (en blanco o a partir de otra)</value>
+  </data>
+  <data name="Main.DecimasDeVoltio" xml:space="preserve">
+    <value>Décimas de voltio</value>
+  </data>
+  <data name="Main.DesconectarTras" xml:space="preserve">
+    <value>Desconectar tras</value>
+  </data>
+  <data name="Main.DesconocidaMostrarValorEnBruto" xml:space="preserve">
+    <value>Desconocida (mostrar valor en bruto)</value>
+  </data>
+  <data name="Main.Detalle" xml:space="preserve">
+    <value>Detalle</value>
+  </data>
+  <data name="Main.Direccion" xml:space="preserve">
+    <value>Dirección</value>
+  </data>
+  <data name="Main.Direcciones" xml:space="preserve">
+    <value>Direcciones</value>
+  </data>
+  <data name="Main.Disconnect" xml:space="preserve">
+    <value>Desconectar</value>
+  </data>
+  <data name="Main.Documento" xml:space="preserve">
+    <value>Documento</value>
+  </data>
+  <data name="Main.Editar" xml:space="preserve">
+    <value>Editar</value>
+  </data>
+  <data name="Main.EjCtrlAltPTambien" xml:space="preserve">
+    <value>Ej.: Ctrl+Alt+P. También puedes soltar archivos en esta ventana o usar «Enviar a &gt; MiniPrinter».</value>
+  </data>
+  <data name="Main.ElevationCanceled" xml:space="preserve">
+    <value>Se canceló la petición de permisos de administrador. La impresora de Windows sigue como estaba.</value>
+  </data>
+  <data name="Main.ElevationFailed" xml:space="preserve">
+    <value>No se pudo pedir permisos de administrador: {0}</value>
+  </data>
+  <data name="Main.ElevationNoResult" xml:space="preserve">
+    <value>El ayudante con permisos de administrador terminó sin informar del resultado.</value>
+  </data>
+  <data name="Main.ElevationReadFailed" xml:space="preserve">
+    <value>No se pudo leer el resultado del ayudante: {0}</value>
+  </data>
+  <data name="Main.ElevationStartFailed" xml:space="preserve">
+    <value>No se pudo iniciar el ayudante con permisos de administrador.</value>
+  </data>
+  <data name="Main.EligeUnFavoritoOEscribe" xml:space="preserve">
+    <value>Elige un favorito, o escribe un nombre y pulsa Guardar</value>
+  </data>
+  <data name="Main.Eliminar" xml:space="preserve">
+    <value>Eliminar</value>
+  </data>
+  <data name="Main.ElPuertoNoTieneAutenticacion" xml:space="preserve">
+    <value>El puerto no tiene autenticación: cualquiera que llegue a él puede imprimir. Úsalo solo en redes de confianza; en «Solo este PC» únicamente este equipo puede usarlo.</value>
+  </data>
+  <data name="Main.Emparejada" xml:space="preserve">
+    <value>Emparejada</value>
+  </data>
+  <data name="Main.Emparejar" xml:space="preserve">
+    <value>Emparejar</value>
+  </data>
+  <data name="Main.EnciendeLaImpresoraPulsacionLarga" xml:space="preserve">
+    <value>Enciende la impresora (pulsación larga). Se listan los dispositivos Bluetooth emparejados y cercanos; las impresoras reconocidas aparecen arriba.</value>
+  </data>
+  <data name="Main.EnModoRedLocalSolo" xml:space="preserve">
+    <value>En modo red local solo se comparte la impresión; este panel nunca es accesible desde la red.</value>
+  </data>
+  <data name="Main.Estado" xml:space="preserve">
+    <value>Estado</value>
+  </data>
+  <data name="Main.ExportarRegistroDeBateria" xml:space="preserve">
+    <value>Exportar registro de batería</value>
+  </data>
+  <data name="Main.Favoritos" xml:space="preserve">
+    <value>Favoritos:</value>
+  </data>
+  <data name="Main.Firmware" xml:space="preserve">
+    <value>Firmware</value>
+  </data>
+  <data name="Main.FloydSteinberg" xml:space="preserve">
+    <value>Floyd–Steinberg</value>
+  </data>
+  <data name="Main.Guardar" xml:space="preserve">
+    <value>Guardar</value>
+  </data>
+  <data name="Main.Hora" xml:space="preserve">
+    <value>Hora</value>
+  </data>
+  <data name="Main.HotkeyActive" xml:space="preserve">
+    <value>Atajo {0} activo.</value>
+  </data>
+  <data name="Main.HotkeyInvalid" xml:space="preserve">
+    <value>Formato no válido. Usa algo como Ctrl+Alt+P.</value>
+  </data>
+  <data name="Main.HotkeyTaken" xml:space="preserve">
+    <value>No se pudo registrar {0}: lo usa otro programa.</value>
+  </data>
+  <data name="Main.Impresora" xml:space="preserve">
+    <value>Impresora</value>
+  </data>
+  <data name="Main.ImpresoraDeWindows" xml:space="preserve">
+    <value>Impresora de Windows</value>
+  </data>
+  <data name="Main.Imprimir" xml:space="preserve">
+    <value>Imprimir</value>
+  </data>
+  <data name="Main.ImprimirDesde" xml:space="preserve">
+    <value>Imprimir desde</value>
+  </data>
+  <data name="Main.LinkConnected" xml:space="preserve">
+    <value>Conectada</value>
+  </data>
+  <data name="Main.LinkConnectedKeepAlive" xml:space="preserve">
+    <value>Conectada · activa (keep-alive)</value>
+  </data>
+  <data name="Main.LinkConnecting" xml:space="preserve">
+    <value>Conectando…</value>
+  </data>
+  <data name="Main.LinkDisconnected" xml:space="preserve">
+    <value>Desconectada (se conecta automáticamente al imprimir)</value>
+  </data>
+  <data name="Main.LinkError" xml:space="preserve">
+    <value>Error: {0}</value>
+  </data>
+  <data name="Main.LinkReconnecting" xml:space="preserve">
+    <value>Reconectando… ({0})</value>
+  </data>
+  <data name="Main.MantenerActiva" xml:space="preserve">
+    <value>Mantener activa</value>
+  </data>
+  <data name="Main.MantenerConectadaKeepAliveLatido" xml:space="preserve">
+    <value>Mantener conectada (keep-alive), latido cada</value>
+  </data>
+  <data name="Main.Mm" xml:space="preserve">
+    <value>mm</value>
+  </data>
+  <data name="Main.Modelo" xml:space="preserve">
+    <value>Modelo</value>
+  </data>
+  <data name="Main.ModoDeImpresion" xml:space="preserve">
+    <value>Modo de impresión</value>
+  </data>
+  <data name="Main.MuestrearBateria8H" xml:space="preserve">
+    <value>Muestrear batería 8 h</value>
+  </data>
+  <data name="Main.Nombre" xml:space="preserve">
+    <value>Nombre</value>
+  </data>
+  <data name="Main.NombreEnWindows" xml:space="preserve">
+    <value>Nombre en Windows</value>
+  </data>
+  <data name="Main.Oscuridad" xml:space="preserve">
+    <value>Oscuridad</value>
+  </data>
+  <data name="Main.PaginaDePrueba" xml:space="preserve">
+    <value>Página de prueba</value>
+  </data>
+  <data name="Main.PaginasContinuas" xml:space="preserve">
+    <value>Páginas continuas</value>
+  </data>
+  <data name="Main.PairFailed" xml:space="preserve">
+    <value>Error al emparejar: {0}</value>
+  </data>
+  <data name="Main.PairFirst" xml:space="preserve">
+    <value>Primero empareja la impresora.</value>
+  </data>
+  <data name="Main.Pairing" xml:space="preserve">
+    <value>Emparejando {0}…</value>
+  </data>
+  <data name="Main.PapelQueSeMuestraA" xml:space="preserve">
+    <value>Papel que se muestra a Windows</value>
+  </data>
+  <data name="Main.PermitirImprimirDesdeScriptsHome" xml:space="preserve">
+    <value>Permitir imprimir desde scripts, Home Assistant o n8n (se aplica al guardar)</value>
+  </data>
+  <data name="Main.Plantilla" xml:space="preserve">
+    <value>Plantilla:</value>
+  </data>
+  <data name="Main.Plantillas" xml:space="preserve">
+    <value>Plantillas</value>
+  </data>
+  <data name="Main.Porcentaje" xml:space="preserve">
+    <value>Porcentaje</value>
+  </data>
+  <data name="Main.PrinterConfiguredPrompt" xml:space="preserve">
+    <value>Impresora configurada. ¿Imprimir una página de prueba?</value>
+  </data>
+  <data name="Main.PrinterNone" xml:space="preserve">
+    <value>Ninguna (ve a «Buscar impresoras»)</value>
+  </data>
+  <data name="Main.Puerto" xml:space="preserve">
+    <value>Puerto</value>
+  </data>
+  <data name="Main.PuertoCom" xml:space="preserve">
+    <value>Puerto COM</value>
+  </data>
+  <data name="Main.PuertoIpp" xml:space="preserve">
+    <value>Puerto IPP</value>
+  </data>
+  <data name="Main.QueueMissing" xml:space="preserve">
+    <value>No se encuentra la impresora «{0}» en Windows: puedes crearla con este botón.</value>
+  </data>
+  <data name="Main.QueueNeedsElevation" xml:space="preserve">
+    <value>El servicio no tiene permisos para gestionar impresoras. Windows va a pedir permiso de administrador…</value>
+  </data>
+  <data name="Main.QueueRecreateFailed" xml:space="preserve">
+    <value>No se pudo recrear la impresora de Windows.</value>
+  </data>
+  <data name="Main.QueueRecreating" xml:space="preserve">
+    <value>Recreando la impresora de Windows…</value>
+  </data>
+  <data name="Main.QueueStale" xml:space="preserve">
+    <value>Los cambios están guardados, pero Windows seguirá con los tamaños o el nombre antiguos hasta que recrees la impresora.</value>
+  </data>
+  <data name="Main.QueueStillDefault" xml:space="preserve">
+    <value>Sigue siendo la impresora predeterminada.</value>
+  </data>
+  <data name="Main.QueueTooSlow" xml:space="preserve">
+    <value>La operación tarda demasiado. Comprueba el estado más tarde.</value>
+  </data>
+  <data name="Main.QueueUpdated" xml:space="preserve">
+    <value>La impresora de Windows se ha actualizado.</value>
+  </data>
+  <data name="Main.QuitarCsv" xml:space="preserve">
+    <value>Quitar CSV</value>
+  </data>
+  <data name="Main.RawLanConfirm" xml:space="preserve">
+    <value>Con «Toda la red local», cualquier equipo de tu red privada podrá imprimir por el puerto {0} sin autenticarse.
+
+¿Activar la impresión directa?</value>
+  </data>
+  <data name="Main.RawPortListening" xml:space="preserve">
+    <value>Escuchando en {0}</value>
+  </data>
+  <data name="Main.RawPortOff" xml:space="preserve">
+    <value>Desactivado</value>
+  </data>
+  <data name="Main.RawPortStarting" xml:space="preserve">
+    <value>Iniciando…</value>
+  </data>
+  <data name="Main.RecrearImpresoraDeWindows" xml:space="preserve">
+    <value>Recrear impresora de Windows</value>
+  </data>
+  <data name="Main.Regenerar" xml:space="preserve">
+    <value>Regenerar</value>
+  </data>
+  <data name="Main.RegenerateTokenConfirm" xml:space="preserve">
+    <value>El token actual dejará de funcionar en tus scripts y automatizaciones. ¿Continuar?</value>
+  </data>
+  <data name="Main.SamplingStop" xml:space="preserve">
+    <value>Detener muestreo</value>
+  </data>
+  <data name="Main.SamplingUntil" xml:space="preserve">
+    <value>Muestreando hasta las {0:HH:mm}</value>
+  </data>
+  <data name="Main.Saved" xml:space="preserve">
+    <value>Guardado.</value>
+  </data>
+  <data name="Main.SavedNetwork" xml:space="preserve">
+    <value>Guardado. El modo red se aplica cuando no hay trabajos en curso.</value>
+  </data>
+  <data name="Main.ScanActive" xml:space="preserve">
+    <value>{0} dispositivos. La búsqueda sigue activa.</value>
+  </data>
+  <data name="Main.ScanFailed" xml:space="preserve">
+    <value>No se pudo buscar: {0}</value>
+  </data>
+  <data name="Main.Scanning" xml:space="preserve">
+    <value>Buscando…</value>
+  </data>
+  <data name="Main.SegundosSinUsoLiberaLa" xml:space="preserve">
+    <value>segundos sin uso (libera la impresora para el móvil)</value>
+  </data>
+  <data name="Main.SelectDevice" xml:space="preserve">
+    <value>Selecciona un dispositivo.</value>
+  </data>
+  <data name="Main.SelectPrinter" xml:space="preserve">
+    <value>Selecciona la impresora en la lista.</value>
+  </data>
+  <data name="Main.SElMovilNoPodra" xml:space="preserve">
+    <value>s · el móvil no podrá usarla mientras tanto</value>
+  </data>
+  <data name="Main.ServiceNotAvailable" xml:space="preserve">
+    <value>No disponible</value>
+  </data>
+  <data name="Main.ServiceRunning" xml:space="preserve">
+    <value>En ejecución (v{0})</value>
+  </data>
+  <data name="Main.Servicio" xml:space="preserve">
+    <value>Servicio</value>
+  </data>
+  <data name="Main.SiempreImagen" xml:space="preserve">
+    <value>Siempre imagen</value>
+  </data>
+  <data name="Main.SiempreTextoMasEnergia" xml:space="preserve">
+    <value>Siempre texto (más energía)</value>
+  </data>
+  <data name="Main.SimuladaPruebas" xml:space="preserve">
+    <value>Simulada (pruebas)</value>
+  </data>
+  <data name="Main.Situacion" xml:space="preserve">
+    <value>Situación</value>
+  </data>
+  <data name="Main.SoloConUnaUnidadConocida" xml:space="preserve">
+    <value>% (solo con una unidad conocida)</value>
+  </data>
+  <data name="Main.SoloEstePc" xml:space="preserve">
+    <value>Solo este PC</value>
+  </data>
+  <data name="Main.SoloImpresorasReconocidas" xml:space="preserve">
+    <value>Solo impresoras reconocidas</value>
+  </data>
+  <data name="Main.TodaLaRedLocalOtros" xml:space="preserve">
+    <value>Toda la red local (otros PCs, iPhone y Android la encuentran solos)</value>
+  </data>
+  <data name="Main.Token" xml:space="preserve">
+    <value>Token</value>
+  </data>
+  <data name="Main.Trabajos" xml:space="preserve">
+    <value>Trabajos</value>
+  </data>
+  <data name="Main.Tramado" xml:space="preserve">
+    <value>Tramado</value>
+  </data>
+  <data name="Main.UmbralSoloTexto" xml:space="preserve">
+    <value>Umbral (solo texto)</value>
+  </data>
+  <data name="Main.UnaEtiquetaPorFilaLa" xml:space="preserve">
+    <value>Una etiqueta por fila; la cabecera lleva los nombres de los campos</value>
+  </data>
+  <data name="Main.UnidadDelValor" xml:space="preserve">
+    <value>Unidad del valor</value>
+  </data>
+  <data name="Main.UnirLasPaginasEnUna" xml:space="preserve">
+    <value>Unir las páginas en una tira, separadas por</value>
+  </data>
+  <data name="Main.UnknownPrinterConfirm" xml:space="preserve">
+    <value>«{0}» no está en el catálogo de impresoras conocidas. ¿Usarla con el perfil d1 (X5h)?</value>
+  </data>
+  <data name="Main.UnsavedChanges" xml:space="preserve">
+    <value>Cambios sin guardar.</value>
+  </data>
+  <data name="Main.UsarEstaImpresora" xml:space="preserve">
+    <value>Usar esta impresora</value>
+  </data>
+  <data name="Main.VistaPreviaDelUltimoTrabajo" xml:space="preserve">
+    <value>Vista previa del último trabajo</value>
+  </data>
+  <data name="Main.WizardBanner" xml:space="preserve">
+    <value>Bienvenido. Paso 1: enciende la impresora y pulsa «Buscar». Paso 2: selecciónala y pulsa «Emparejar» si no lo está. Paso 3: «Usar esta impresora». Después imprimiremos una página de prueba.</value>
+  </data>
+  <data name="Main.WizardDone" xml:space="preserve">
+    <value>¡Listo! Se ha enviado una página de prueba. La impresora ya aparece como «{0}» en el diálogo de impresión de Windows.</value>
+  </data>
+  <data name="Message.Canceled" xml:space="preserve">
+    <value>Cancelado</value>
+  </data>
+  <data name="Message.Printed" xml:space="preserve">
+    <value>Impreso</value>
+  </data>
+  <data name="Message.PrinterBusy" xml:space="preserve">
+    <value>La impresora la usa otra aplicación</value>
+  </data>
+  <data name="Message.PrinterDidNotAnswer" xml:space="preserve">
+    <value>La impresora no respondió</value>
+  </data>
+  <data name="Message.PrinterUnavailable" xml:space="preserve">
+    <value>Impresora no disponible: {0}</value>
+  </data>
+  <data name="Message.Printing" xml:space="preserve">
+    <value>Imprimiendo</value>
+  </data>
+  <data name="Message.ServiceStopped" xml:space="preserve">
+    <value>Servicio detenido</value>
+  </data>
+  <data name="Name.Blank" xml:space="preserve">
+    <value>En blanco</value>
+  </data>
+  <data name="Name.Duplicate" xml:space="preserve">
+    <value>Duplicar «{0}»</value>
+  </data>
+  <data name="Paper.Add" xml:space="preserve">
+    <value>Añadir…</value>
+  </data>
+  <data name="Paper.AddTitle" xml:space="preserve">
+    <value>Añadir tamaño de papel</value>
+  </data>
+  <data name="Paper.Default" xml:space="preserve">
+    <value>por defecto</value>
+  </data>
+  <data name="Paper.DefaultDisabledTip" xml:space="preserve">
+    <value>Activa el tamaño para poder elegirlo por defecto</value>
+  </data>
+  <data name="Paper.DefaultTip" xml:space="preserve">
+    <value>Tamaño por defecto</value>
+  </data>
+  <data name="Paper.Delete" xml:space="preserve">
+    <value>Borrar</value>
+  </data>
+  <data name="Paper.Edit" xml:space="preserve">
+    <value>Editar…</value>
+  </data>
+  <data name="Paper.EditTitle" xml:space="preserve">
+    <value>Editar tamaño de papel</value>
+  </data>
+  <data name="Paper.Factory" xml:space="preserve">
+    <value>Restaurar valores de fábrica</value>
+  </data>
+  <data name="Paper.Intro" xml:space="preserve">
+    <value>Elige qué tamaños de papel ve Windows, y cuál es el tamaño por defecto. La marca ● indica el por defecto.</value>
+  </data>
+  <data name="Paper.IsDefault" xml:space="preserve">
+    <value>Es el tamaño por defecto: elige antes otro tamaño por defecto.</value>
+  </data>
+  <data name="Paper.Length" xml:space="preserve">
+    <value>Largo ({0}–{1} mm)</value>
+  </data>
+  <data name="Paper.Name" xml:space="preserve">
+    <value>Nombre</value>
+  </data>
+  <data name="Paper.NeedOne" xml:space="preserve">
+    <value>Debe haber al menos un tamaño activo.</value>
+  </data>
+  <data name="Paper.NotWholeNumbers" xml:space="preserve">
+    <value>El ancho y el largo deben ser números enteros de milímetros.</value>
+  </data>
+  <data name="Paper.Own" xml:space="preserve">
+    <value>(propio)</value>
+  </data>
+  <data name="Paper.OwnLabel" xml:space="preserve">
+    <value>{0} — {1} × {2} mm</value>
+  </data>
+  <data name="Paper.SideMargins" xml:space="preserve">
+    <value>Se anunciarán márgenes laterales de {0} mm, de modo que el área imprimible sea de 48 mm.</value>
+  </data>
+  <data name="Paper.Width" xml:space="preserve">
+    <value>Ancho ({0}–{1} mm)</value>
+  </data>
+  <data name="Preview.Close" xml:space="preserve">
+    <value>Cerrar</value>
+  </data>
+  <data name="Preview.Last" xml:space="preserve">
+    <value>Vista previa del último trabajo</value>
+  </data>
+  <data name="Preview.NoLast" xml:space="preserve">
+    <value>Todavía no se ha imprimido nada con esta versión del servicio.</value>
+  </data>
+  <data name="Preview.NotFinished" xml:space="preserve">
+    <value>El trabajo todavía no ha terminado: sus páginas se guardan al terminar.</value>
+  </data>
+  <data name="Preview.NotKept" xml:space="preserve">
+    <value>Este trabajo ya no está guardado (el historial conserva los últimos trabajos; se ajusta en Ajustes › Impresión).</value>
+  </data>
+  <data name="Preview.Page" xml:space="preserve">
+    <value>Página {0} de {1}</value>
+  </data>
+  <data name="Preview.Title" xml:space="preserve">
+    <value>Vista previa del trabajo</value>
+  </data>
+  <data name="Preview.TooLarge" xml:space="preserve">
+    <value>El trabajo es demasiado grande: solo se guardan los que tienen hasta {0} páginas.</value>
+  </data>
+  <data name="Quick.ClipboardEmpty" xml:space="preserve">
+    <value>No hay nada que imprimir en el portapapeles.</value>
+  </data>
+  <data name="Quick.ClipboardImageSent" xml:space="preserve">
+    <value>Imagen del portapapeles enviada a la impresora.</value>
+  </data>
+  <data name="Quick.ClipboardTextSent" xml:space="preserve">
+    <value>Texto del portapapeles enviado a la impresora.</value>
+  </data>
+  <data name="Quick.FilesSent" xml:space="preserve">
+    <value>{0} archivos enviados a la impresora.</value>
+  </data>
+  <data name="Quick.OneFileSent" xml:space="preserve">
+    <value>1 archivo enviado a la impresora.</value>
+  </data>
+  <data name="Quick.Skipped" xml:space="preserve">
+    <value>Formato no admitido: {0}.</value>
+  </data>
+  <data name="QuickNote.PaperLength" xml:space="preserve">
+    <value>{0:0} mm de papel</value>
+  </data>
+  <data name="QuickNote.Points" xml:space="preserve">
+    <value>pt</value>
+  </data>
+  <data name="QuickNote.Print" xml:space="preserve">
+    <value>Imprimir (Ctrl+Enter)</value>
+  </data>
+  <data name="QuickNote.Size" xml:space="preserve">
+    <value>Tamaño:</value>
+  </data>
+  <data name="QuickNote.Title" xml:space="preserve">
+    <value>Nota rápida — MiniPrinter</value>
+  </data>
+  <data name="Raw.Addresses" xml:space="preserve">
+    <value>Direcciones</value>
+  </data>
+  <data name="Raw.Client.Job" xml:space="preserve">
+    <value>trabajo {0}</value>
+  </data>
+  <data name="Raw.Client.OneTicket" xml:space="preserve">
+    <value>1 ticket</value>
+  </data>
+  <data name="Raw.Client.Tickets" xml:space="preserve">
+    <value>{0} tickets</value>
+  </data>
+  <data name="Raw.Clients" xml:space="preserve">
+    <value>Últimos clientes</value>
+  </data>
+  <data name="Raw.ClientsRefresh" xml:space="preserve">
+    <value>Actualizar</value>
+  </data>
+  <data name="Raw.Col.Address" xml:space="preserve">
+    <value>Dirección</value>
+  </data>
+  <data name="Raw.Col.Detail" xml:space="preserve">
+    <value>Detalle</value>
+  </data>
+  <data name="Raw.Col.Kind" xml:space="preserve">
+    <value>Tipo</value>
+  </data>
+  <data name="Raw.Col.Result" xml:space="preserve">
+    <value>Resultado</value>
+  </data>
+  <data name="Raw.Col.Size" xml:space="preserve">
+    <value>Tamaño</value>
+  </data>
+  <data name="Raw.Col.Time" xml:space="preserve">
+    <value>Hora</value>
+  </data>
+  <data name="Raw.Copied" xml:space="preserve">
+    <value>Dirección copiada: {0}</value>
+  </data>
+  <data name="Raw.CopyAddress" xml:space="preserve">
+    <value>Copiar</value>
+  </data>
+  <data name="Raw.NeedsNetwork" xml:space="preserve">
+    <value>Solo este PC puede usar el puerto. Para imprimir desde otro equipo o el móvil, elige «Toda la red local» en Red.</value>
+  </data>
+  <data name="Raw.NoClients" xml:space="preserve">
+    <value>Todavía no se ha conectado nadie desde que arrancó el servicio.</value>
+  </data>
+  <data name="Raw.Qr" xml:space="preserve">
+    <value>Mostrar código QR</value>
+  </data>
+  <data name="Raw.QrHint" xml:space="preserve">
+    <value>Escanéalo con la aplicación de impresión del móvil o el equipo.</value>
+  </data>
+  <data name="Raw.QrTitle" xml:space="preserve">
+    <value>Código QR de la dirección</value>
+  </data>
+  <data name="Raw.Result.ClosedByLimit" xml:space="preserve">
+    <value>Cortado por superar un límite</value>
+  </data>
+  <data name="Raw.Result.Empty" xml:space="preserve">
+    <value>Sin nada que imprimir</value>
+  </data>
+  <data name="Raw.Result.Error" xml:space="preserve">
+    <value>Error de conexión</value>
+  </data>
+  <data name="Raw.Result.Queued" xml:space="preserve">
+    <value>Aceptado</value>
+  </data>
+  <data name="Raw.Result.RefusedLimit" xml:space="preserve">
+    <value>Rechazado: demasiadas conexiones</value>
+  </data>
+  <data name="Raw.Result.Rejected" xml:space="preserve">
+    <value>Rechazado: contenido no reconocido</value>
+  </data>
+  <data name="Raw.Test.Sending" xml:space="preserve">
+    <value>Enviando el ticket de prueba…</value>
+  </data>
+  <data name="Raw.Test.Sent" xml:space="preserve">
+    <value>Ticket de prueba enviado: trabajo {0}.</value>
+  </data>
+  <data name="Raw.TestButton" xml:space="preserve">
+    <value>Imprimir ticket de prueba</value>
+  </data>
+  <data name="Recreate.Continue" xml:space="preserve">
+    <value>Continuar</value>
+  </data>
+  <data name="Recreate.Details" xml:space="preserve">
+    <value>• Se perderán las preferencias de impresión de esa impresora (papel elegido, orientación…).
+• Los trabajos pendientes en su cola de Windows deben haber terminado.
+• Si es tu impresora predeterminada, seguirá siéndolo.
+• Si algo falla, la impresora anterior sigue funcionando.</value>
+  </data>
+  <data name="Recreate.Intro" xml:space="preserve">
+    <value>Para que Windows vea los cambios hay que volver a crear la impresora de Windows.</value>
+  </data>
+  <data name="Recreate.SaveOnly" xml:space="preserve">
+    <value>Guardar sin recrear</value>
+  </data>
+  <data name="Recreate.SaveOnlyNote" xml:space="preserve">
+    <value>«Guardar sin recrear» guarda los ajustes, pero Windows seguirá con los tamaños antiguos hasta que la recrees (botón «Recrear impresora de Windows»).</value>
+  </data>
+  <data name="Recreate.Title" xml:space="preserve">
+    <value>Recrear la impresora de Windows</value>
+  </data>
+  <data name="Service.BadToken" xml:space="preserve">
+    <value>Token del servicio no válido (¿se reinstaló?).</value>
+  </data>
+  <data name="Service.NotInstalled" xml:space="preserve">
+    <value>El servicio MiniPrinter no está instalado o no se ha iniciado nunca.</value>
+  </data>
+  <data name="Service.NoTokenAccess" xml:space="preserve">
+    <value>Sin permiso para leer el token del servicio.</value>
+  </data>
+  <data name="Service.Unavailable" xml:space="preserve">
+    <value>Servicio no disponible.</value>
+  </data>
+  <data name="Service.Unreachable" xml:space="preserve">
+    <value>No se puede contactar con el servicio MiniPrinter.</value>
+  </data>
+  <data name="Settings.Apply" xml:space="preserve">
+    <value>Aplicar</value>
+  </data>
+  <data name="Settings.CheckErrors" xml:space="preserve">
+    <value>Corrige los campos marcados antes de aplicar.</value>
+  </data>
+  <data name="Settings.ClosePrompt" xml:space="preserve">
+    <value>Hay cambios sin guardar en: {0}.
+
+Sí: aplicarlos · No: descartarlos · Cancelar: seguir editando</value>
+  </data>
+  <data name="Settings.Conflict" xml:space="preserve">
+    <value>Estos ajustes cambiaron en el servicio mientras los editabas.</value>
+  </data>
+  <data name="Settings.ConflictPrompt" xml:space="preserve">
+    <value>Estos ajustes cambiaron en el servicio mientras los editabas.
+
+¿Quieres sobrescribirlos con tus cambios?
+Si respondes No, se recargan los del servicio.</value>
+  </data>
+  <data name="Settings.Discard" xml:space="preserve">
+    <value>Descartar</value>
+  </data>
+  <data name="Settings.Error.Empty" xml:space="preserve">
+    <value>No puede estar vacío.</value>
+  </data>
+  <data name="Settings.Error.Number" xml:space="preserve">
+    <value>Escribe un número entero.</value>
+  </data>
+  <data name="Settings.Error.Range" xml:space="preserve">
+    <value>Debe estar entre {0} y {1}.</value>
+  </data>
+  <data name="Settings.NoMatches" xml:space="preserve">
+    <value>Ningún ajuste coincide con la búsqueda.</value>
+  </data>
+  <data name="Settings.Print.History" xml:space="preserve">
+    <value>Historial de trabajos</value>
+  </data>
+  <data name="Settings.Print.HistoryPrivacy" xml:space="preserve">
+    <value>Se guardan en este PC las imágenes de los últimos trabajos para poder verlos y reimprimirlos. Pueden contener datos personales: pon 0 para no guardar nada. Se borran al desinstalar.</value>
+  </data>
+  <data name="Settings.Print.HistoryUnit" xml:space="preserve">
+    <value>trabajos (0 para no guardar ninguno)</value>
+  </data>
+  <data name="Settings.Print.Retry" xml:space="preserve">
+    <value>Reintentos</value>
+  </data>
+  <data name="Settings.Print.RetryUnit" xml:space="preserve">
+    <value>minutos esperando a la impresora antes de abortar el trabajo</value>
+  </data>
+  <data name="Settings.Print.TextFont" xml:space="preserve">
+    <value>Fuente del texto</value>
+  </data>
+  <data name="Settings.Print.TextSize" xml:space="preserve">
+    <value>Tamaño del texto</value>
+  </data>
+  <data name="Settings.Print.TextSizeUnit" xml:space="preserve">
+    <value>puntos</value>
+  </data>
+  <data name="Settings.Search" xml:space="preserve">
+    <value>Buscar un ajuste</value>
+  </data>
+  <data name="Settings.Section.Appearance" xml:space="preserve">
+    <value>Aspecto</value>
+  </data>
+  <data name="Settings.Section.Automation" xml:space="preserve">
+    <value>Automatización</value>
+  </data>
+  <data name="Settings.Section.Battery" xml:space="preserve">
+    <value>Batería</value>
+  </data>
+  <data name="Settings.Section.General" xml:space="preserve">
+    <value>General</value>
+  </data>
+  <data name="Settings.Section.Network" xml:space="preserve">
+    <value>Red</value>
+  </data>
+  <data name="Settings.Section.Paper" xml:space="preserve">
+    <value>Papel</value>
+  </data>
+  <data name="Settings.Section.Print" xml:space="preserve">
+    <value>Impresión</value>
+  </data>
+  <data name="Settings.Section.Raw" xml:space="preserve">
+    <value>Impresión directa</value>
+  </data>
+  <data name="Settings.Terms.Addresses" xml:space="preserve">
+    <value>direcciones urls api</value>
+  </data>
+  <data name="Settings.Terms.AutomationEnabled" xml:space="preserve">
+    <value>api automatización scripts home assistant</value>
+  </data>
+  <data name="Settings.Terms.Continuous" xml:space="preserve">
+    <value>páginas continuas tira rollo hueco separación</value>
+  </data>
+  <data name="Settings.Terms.Darkness" xml:space="preserve">
+    <value>oscuridad intensidad negro contraste claro</value>
+  </data>
+  <data name="Settings.Terms.Dither" xml:space="preserve">
+    <value>tramado puntos fotos atkinson floyd steinberg umbral</value>
+  </data>
+  <data name="Settings.Terms.ExtraFeed" xml:space="preserve">
+    <value>avance papel final margen corte</value>
+  </data>
+  <data name="Settings.Terms.History" xml:space="preserve">
+    <value>historial trabajos guardar imágenes reimprimir privacidad</value>
+  </data>
+  <data name="Settings.Terms.Hotkey" xml:space="preserve">
+    <value>atajo nota rápida teclado tecla</value>
+  </data>
+  <data name="Settings.Terms.Idle" xml:space="preserve">
+    <value>desconectar inactividad espera liberar móvil</value>
+  </data>
+  <data name="Settings.Terms.IppPort" xml:space="preserve">
+    <value>puerto ipp 8631</value>
+  </data>
+  <data name="Settings.Terms.KeepAlive" xml:space="preserve">
+    <value>mantener activa keep-alive conexión latido móvil</value>
+  </data>
+  <data name="Settings.Terms.Low" xml:space="preserve">
+    <value>aviso batería baja porcentaje</value>
+  </data>
+  <data name="Settings.Terms.Name" xml:space="preserve">
+    <value>nombre impresora windows cola</value>
+  </data>
+  <data name="Settings.Terms.PrintMode" xml:space="preserve">
+    <value>modo texto imagen energía automático</value>
+  </data>
+  <data name="Settings.Terms.Queue" xml:space="preserve">
+    <value>impresora windows recrear cola</value>
+  </data>
+  <data name="Settings.Terms.RawEnabled" xml:space="preserve">
+    <value>impresión directa puerto 9100 raw tcp esc pos jetdirect</value>
+  </data>
+  <data name="Settings.Terms.RawPort" xml:space="preserve">
+    <value>puerto 9100 raw</value>
+  </data>
+  <data name="Settings.Terms.RawStatus" xml:space="preserve">
+    <value>situación escuchando direcciones error</value>
+  </data>
+  <data name="Settings.Terms.Retry" xml:space="preserve">
+    <value>reintentos esperar impresora abortar sin papel</value>
+  </data>
+  <data name="Settings.Terms.Scope" xml:space="preserve">
+    <value>red local este pc alcance lan móvil iphone android</value>
+  </data>
+  <data name="Settings.Terms.Sizes" xml:space="preserve">
+    <value>papel tamaños medidas ancho largo etiquetas</value>
+  </data>
+  <data name="Settings.Terms.TextFont" xml:space="preserve">
+    <value>fuente letra tipografía texto</value>
+  </data>
+  <data name="Settings.Terms.TextSize" xml:space="preserve">
+    <value>tamaño letra texto puntos</value>
+  </data>
+  <data name="Settings.Terms.TextSizePanel" xml:space="preserve">
+    <value>tamaño texto panel letra grande pequeño</value>
+  </data>
+  <data name="Settings.Terms.Theme" xml:space="preserve">
+    <value>tema claro oscuro modo noche contraste</value>
+  </data>
+  <data name="Settings.Terms.Token" xml:space="preserve">
+    <value>token clave acceso api copiar regenerar</value>
+  </data>
+  <data name="Settings.Terms.Unit" xml:space="preserve">
+    <value>unidad batería porcentaje voltaje decivoltios</value>
+  </data>
+  <data name="Settings.Terms.Updates" xml:space="preserve">
+    <value>actualizaciones versión buscar comprobar</value>
+  </data>
+  <data name="Settings.Unsaved" xml:space="preserve">
+    <value>Cambios sin guardar</value>
+  </data>
+  <data name="Settings.UnsavedMarker" xml:space="preserve">
+    <value>Esta sección tiene cambios sin guardar</value>
+  </data>
+  <data name="Status.Connecting.Message" xml:space="preserve">
+    <value>Buscando la impresora.</value>
+  </data>
+  <data name="Status.Connecting.Title" xml:space="preserve">
+    <value>Conectando…</value>
+  </data>
+  <data name="Status.Details" xml:space="preserve">
+    <value>Detalles</value>
+  </data>
+  <data name="Status.Disconnected.Action" xml:space="preserve">
+    <value>Conectar</value>
+  </data>
+  <data name="Status.Disconnected.Message" xml:space="preserve">
+    <value>Se conecta sola al imprimir.</value>
+  </data>
+  <data name="Status.Disconnected.Title" xml:space="preserve">
+    <value>Desconectada</value>
+  </data>
+  <data name="Status.LinkError.Action" xml:space="preserve">
+    <value>Reintentar</value>
+  </data>
+  <data name="Status.LinkError.Message" xml:space="preserve">
+    <value>No se pudo hablar con la impresora.</value>
+  </data>
+  <data name="Status.LinkError.Title" xml:space="preserve">
+    <value>Error de conexión</value>
+  </data>
+  <data name="Status.LowBatteryAlarm.Message" xml:space="preserve">
+    <value>Conecta el cargador para seguir imprimiendo.</value>
+  </data>
+  <data name="Status.LowBatteryAlarm.Title" xml:space="preserve">
+    <value>Batería baja</value>
+  </data>
+  <data name="Status.More" xml:space="preserve">
+    <value>Más acciones</value>
+  </data>
+  <data name="Status.NoPrinter.Action" xml:space="preserve">
+    <value>Buscar impresoras</value>
+  </data>
+  <data name="Status.NoPrinter.Message" xml:space="preserve">
+    <value>Busca tu impresora y elígela para empezar a imprimir.</value>
+  </data>
+  <data name="Status.NoPrinter.Title" xml:space="preserve">
+    <value>Ninguna impresora</value>
+  </data>
+  <data name="Status.Origin" xml:space="preserve">
+    <value>Origen</value>
+  </data>
+  <data name="Status.OtherAlarm.Message" xml:space="preserve">
+    <value>La impresora necesita atención.</value>
+  </data>
+  <data name="Status.OutOfPaper.Message" xml:space="preserve">
+    <value>Pon papel o cierra la tapa: los trabajos esperan y se imprimirán solos.</value>
+  </data>
+  <data name="Status.OutOfPaper.Title" xml:space="preserve">
+    <value>Sin papel</value>
+  </data>
+  <data name="Status.Overheated.Message" xml:space="preserve">
+    <value>Deja que se enfríe unos minutos: los trabajos esperan.</value>
+  </data>
+  <data name="Status.Overheated.Title" xml:space="preserve">
+    <value>Sobrecalentada</value>
+  </data>
+  <data name="Status.Preview" xml:space="preserve">
+    <value>Ver páginas</value>
+  </data>
+  <data name="Status.Printing.Message" xml:space="preserve">
+    <value>Hay un trabajo en curso.</value>
+  </data>
+  <data name="Status.Printing.Title" xml:space="preserve">
+    <value>Imprimiendo</value>
+  </data>
+  <data name="Status.Ready.KeepAlive" xml:space="preserve">
+    <value>Conectada y manteniéndose activa; sin alarmas.</value>
+  </data>
+  <data name="Status.Ready.Message" xml:space="preserve">
+    <value>Conectada y sin alarmas.</value>
+  </data>
+  <data name="Status.Ready.Title" xml:space="preserve">
+    <value>Lista</value>
+  </data>
+  <data name="Status.Reconnecting.Message" xml:space="preserve">
+    <value>Se perdió la conexión y se está recuperando.</value>
+  </data>
+  <data name="Status.Reconnecting.Title" xml:space="preserve">
+    <value>Reconectando…</value>
+  </data>
+  <data name="Status.Reprint" xml:space="preserve">
+    <value>Reimprimir</value>
+  </data>
+  <data name="Status.ServiceUnavailable.Message" xml:space="preserve">
+    <value>Comprueba que el servicio MiniPrinter está iniciado.</value>
+  </data>
+  <data name="Status.ServiceUnavailable.Title" xml:space="preserve">
+    <value>Servicio no disponible</value>
+  </data>
+  <data name="Templates.BatchConfirm" xml:space="preserve">
+    <value>Se van a imprimir {0} etiquetas. ¿Continuar?</value>
+  </data>
+  <data name="Templates.BuiltInCannotDelete" xml:space="preserve">
+    <value>Las plantillas integradas no se pueden eliminar</value>
+  </data>
+  <data name="Templates.ChooseImage" xml:space="preserve">
+    <value>Elegir imagen…</value>
+  </data>
+  <data name="Templates.CopiesRange" xml:space="preserve">
+    <value>Las copias deben estar entre 1 y 50.</value>
+  </data>
+  <data name="Templates.CreatePrompt" xml:space="preserve">
+    <value>Nombre de la plantilla (letras, dígitos, guion y guion bajo):</value>
+  </data>
+  <data name="Templates.CreateTitle" xml:space="preserve">
+    <value>Crear plantilla</value>
+  </data>
+  <data name="Templates.CsvFilter" xml:space="preserve">
+    <value>CSV|*.csv;*.txt|Todos|*.*</value>
+  </data>
+  <data name="Templates.CsvLabels" xml:space="preserve">
+    <value>{0} etiqueta(s) del CSV</value>
+  </data>
+  <data name="Templates.Delete" xml:space="preserve">
+    <value>Eliminar</value>
+  </data>
+  <data name="Templates.Deleted" xml:space="preserve">
+    <value>Plantilla eliminada.</value>
+  </data>
+  <data name="Templates.DeleteQuestion" xml:space="preserve">
+    <value>¿Eliminar la plantilla «{0}»? No se puede deshacer.</value>
+  </data>
+  <data name="Templates.DeleteTitle" xml:space="preserve">
+    <value>Eliminar plantilla</value>
+  </data>
+  <data name="Templates.FavoriteDeleted" xml:space="preserve">
+    <value>Favorito '{0}' borrado.</value>
+  </data>
+  <data name="Templates.FavoriteNeedsName" xml:space="preserve">
+    <value>Escribe un nombre para el favorito.</value>
+  </data>
+  <data name="Templates.FavoriteSaved" xml:space="preserve">
+    <value>Favorito '{0}' guardado.</value>
+  </data>
+  <data name="Templates.IgnoredColumns" xml:space="preserve">
+    <value>se ignoran las columnas: {0}</value>
+  </data>
+  <data name="Templates.ImageFilter" xml:space="preserve">
+    <value>Imágenes|*.png;*.jpg;*.jpeg</value>
+  </data>
+  <data name="Templates.NameExists" xml:space="preserve">
+    <value>Ya existe una plantilla llamada '{0}'.</value>
+  </data>
+  <data name="Templates.NameRules" xml:space="preserve">
+    <value>Solo letras, dígitos, guion y guion bajo (máximo 40) y no una palabra reservada.</value>
+  </data>
+  <data name="Templates.NoImage" xml:space="preserve">
+    <value>(ninguna)</value>
+  </data>
+  <data name="Templates.NoMatches" xml:space="preserve">
+    <value>Ninguna plantilla coincide con la búsqueda.</value>
+  </data>
+  <data name="Templates.NoThumbnail" xml:space="preserve">
+    <value>Sin vista previa</value>
+  </data>
+  <data name="Templates.OverrideNote" xml:space="preserve">
+    <value>Una plantilla de usuario sustituye a esta plantilla integrada.</value>
+  </data>
+  <data name="Templates.PaperLength" xml:space="preserve">
+    <value>{0:0} mm de papel</value>
+  </data>
+  <data name="Templates.RestoreBuiltIn" xml:space="preserve">
+    <value>Restaurar integrada</value>
+  </data>
+  <data name="Templates.Restored" xml:space="preserve">
+    <value>Plantilla integrada restaurada.</value>
+  </data>
+  <data name="Templates.RestoreQuestion" xml:space="preserve">
+    <value>Se borrará tu versión de «{0}» y volverá a usarse la plantilla integrada. ¿Continuar?</value>
+  </data>
+  <data name="Templates.RestoreTitle" xml:space="preserve">
+    <value>Restaurar plantilla integrada</value>
+  </data>
+  <data name="Templates.Search" xml:space="preserve">
+    <value>Buscar una plantilla</value>
+  </data>
+  <data name="Templates.Sent" xml:space="preserve">
+    <value>Enviado a la impresora.</value>
+  </data>
+  <data name="Templates.Source.BuiltIn" xml:space="preserve">
+    <value>Integrada</value>
+  </data>
+  <data name="Templates.Source.Override" xml:space="preserve">
+    <value>Sustituye a la integrada</value>
+  </data>
+  <data name="Templates.Source.User" xml:space="preserve">
+    <value>Propia</value>
+  </data>
+  <data name="Templates.Title" xml:space="preserve">
+    <value>Plantillas</value>
+  </data>
+  <data name="Templates.ViewGallery" xml:space="preserve">
+    <value>Galería</value>
+  </data>
+  <data name="Templates.ViewList" xml:space="preserve">
+    <value>Lista</value>
+  </data>
+  <data name="Tray.CheckUpdates" xml:space="preserve">
+    <value>Buscar actualizaciones</value>
+  </data>
+  <data name="Tray.Connect" xml:space="preserve">
+    <value>Conectar</value>
+  </data>
+  <data name="Tray.ConnectingService" xml:space="preserve">
+    <value>Conectando con el servicio…</value>
+  </data>
+  <data name="Tray.Disconnect" xml:space="preserve">
+    <value>Desconectar</value>
+  </data>
+  <data name="Tray.Exit" xml:space="preserve">
+    <value>Salir</value>
+  </data>
+  <data name="Tray.FavoriteFailed" xml:space="preserve">
+    <value>No se pudo imprimir «{0}»: {1}</value>
+  </data>
+  <data name="Tray.FavoriteGone" xml:space="preserve">
+    <value>Ese favorito ya no existe.</value>
+  </data>
+  <data name="Tray.FavoritePrinting" xml:space="preserve">
+    <value>Imprimiendo «{0}»… Puedes cancelarlo desde la pestaña Estado.</value>
+  </data>
+  <data name="Tray.Favorites" xml:space="preserve">
+    <value>Favoritos</value>
+  </data>
+  <data name="Tray.FeedPaper" xml:space="preserve">
+    <value>Avanzar papel</value>
+  </data>
+  <data name="Tray.KeepAlive" xml:space="preserve">
+    <value>Mantener activa (keep-alive)</value>
+  </data>
+  <data name="Tray.NoFavorites" xml:space="preserve">
+    <value>(sin favoritos)</value>
+  </data>
+  <data name="Tray.NoRecent" xml:space="preserve">
+    <value>(ninguna reciente)</value>
+  </data>
+  <data name="Tray.OpenPanel" xml:space="preserve">
+    <value>Abrir panel</value>
+  </data>
+  <data name="Tray.PrintClipboard" xml:space="preserve">
+    <value>Imprimir portapapeles</value>
+  </data>
+  <data name="Tray.QuickNote" xml:space="preserve">
+    <value>Nota rápida…</value>
+  </data>
+  <data name="Tray.Recent" xml:space="preserve">
+    <value>Recientes</value>
+  </data>
+  <data name="Tray.Templates" xml:space="preserve">
+    <value>Plantillas</value>
+  </data>
+  <data name="Tray.TestPrint" xml:space="preserve">
+    <value>Imprimir página de prueba</value>
+  </data>
+  <data name="Update.AvailableText" xml:space="preserve">
+    <value>MiniPrinter {0} disponible. Pulsa aquí para ver las novedades.</value>
+  </data>
+  <data name="Update.AvailableTitle" xml:space="preserve">
+    <value>Actualización disponible</value>
+  </data>
+  <data name="Update.Canceled" xml:space="preserve">
+    <value>Actualización cancelada (no se concedieron permisos de administrador). La versión actual sigue funcionando.</value>
+  </data>
+  <data name="Update.CheckFailed" xml:space="preserve">
+    <value>No se pudo comprobar si hay actualizaciones: {0}</value>
+  </data>
+  <data name="Update.DialogTitle" xml:space="preserve">
+    <value>MiniPrinter {0} disponible</value>
+  </data>
+  <data name="Update.DownloadFailed" xml:space="preserve">
+    <value>No se pudo descargar la actualización: {0}</value>
+  </data>
+  <data name="Update.Downloading" xml:space="preserve">
+    <value>Descargando y verificando la actualización…</value>
+  </data>
+  <data name="Update.Install" xml:space="preserve">
+    <value>Actualizar</value>
+  </data>
+  <data name="Update.Installing" xml:space="preserve">
+    <value>Instalando… acepta el aviso de Windows para continuar. MiniPrinter se cerrará y volverá a abrirse.</value>
+  </data>
+  <data name="Update.JobsInQueue" xml:space="preserve">
+    <value>Hay {0} trabajo(s) en la cola: la actualización reinicia el servicio y los interrumpiría. Espera a que terminen.</value>
+  </data>
+  <data name="Update.Later" xml:space="preserve">
+    <value>Más tarde</value>
+  </data>
+  <data name="Update.NewVersion" xml:space="preserve">
+    <value>Hay una versión nueva: {0} (tienes la {1}).</value>
+  </data>
+  <data name="Update.NoNotes" xml:space="preserve">
+    <value>(Sin notas de la versión)</value>
+  </data>
+  <data name="Update.Skip" xml:space="preserve">
+    <value>Omitir esta versión</value>
+  </data>
+  <data name="Update.StartFailed" xml:space="preserve">
+    <value>No se pudo iniciar el instalador: {0}</value>
+  </data>
+  <data name="Update.UpToDate" xml:space="preserve">
+    <value>MiniPrinter está actualizado (versión {0}).</value>
+  </data>
+  <data name="Update.VerifyFailed" xml:space="preserve">
+    <value>La actualización no supera la verificación de seguridad ({0}). No se ha instalado nada.</value>
+  </data>
+</root>

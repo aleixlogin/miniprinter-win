@@ -56,6 +56,13 @@ public static class ControlApi
 
         api.MapGet("/status", (StatusBuilder status) => Json(status.Build()));
 
+        api.MapGet("/diagnostics", async (DiagnosticsService diagnostics, CancellationToken ct) => Json(await diagnostics.RunAsync(ct)));
+
+        api.MapGet("/raw-port/clients", (RawPortHost raw) => Json(raw.Clients));
+
+        api.MapPost("/raw-port/test", (SettingsStore settings, RawPortHost raw, JobQueue queue, CancellationToken ct) =>
+            RawPortTest.RunAsync(settings.Current, raw.Current, queue, DiagnosticsService.DetectFonts().Cjk, ct));
+
         api.MapGet("/settings", (SettingsStore settings) => Json(settings.Current));
 
         api.MapPut("/settings", async (HttpContext http, SettingsStore settings) =>
@@ -168,6 +175,11 @@ public static class ControlApi
 
         TemplateEndpoints.Map(api, app.Services.GetRequiredService<Imaging.TemplateCatalog>(), app.Services.GetRequiredService<DraftStore>(), app.Services.GetRequiredService<PrintRequests>());
 
+        api.MapGet("/templates/{name}/thumbnail", (string name, int? width, TemplateThumbnails thumbnails) =>
+            thumbnails.Get(name, width ?? TemplateThumbnails.DefaultWidth) is { } png
+                ? Results.File(png, "image/png")
+                : Results.Json(new ApiError($"Unknown template '{name}'."), ControlDefaults.Json, statusCode: 404));
+
         api.MapPost("/print/template/{name}", async (string name, HttpContext http, PrintRequests print) =>
         {
             var request = await TemplateEndpoints.ReadRequest(http);
@@ -210,7 +222,26 @@ public static class ControlApi
         });
 
 
-        api.MapGet("/jobs", (JobQueue queue) => Json(queue.AllJobs().Select(ToDto).ToList()));
+        api.MapGet("/jobs", (JobQueue queue) => Json(queue.AllJobs().Select(j => ToDto(j, queue.CanReprint(j.Id))).ToList()));
+
+        api.MapGet("/jobs/{id:int}/pages/{page:int}", (int id, int page, JobQueue queue) =>
+            queue.KeptPagePath(id, page) is { } path
+                ? Results.File(File.ReadAllBytes(path), "image/png")
+                : Results.Json(new ApiError("No preview for that page."), ControlDefaults.Json, statusCode: 404));
+
+        api.MapPost("/jobs/{id:int}/reprint", (int id, JobQueue queue) =>
+        {
+            try
+            {
+                return queue.Reprint(id) is { } job
+                    ? Json(ToDto(job))
+                    : Results.Json(new ApiError("The pages of that job were not kept."), ControlDefaults.Json, statusCode: 404);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.Json(new ApiError(ex.Message), ControlDefaults.Json, statusCode: 409);
+            }
+        });
 
         api.MapDelete("/jobs/{id:int}", (int id, JobQueue queue) =>
             queue.CancelJob(id) ? Results.NoContent() : Results.Json(new ApiError("Job not found or already finished."), ControlDefaults.Json, statusCode: 404));
@@ -275,8 +306,13 @@ public static class ControlApi
         automation.Current,
         ipp.Urls.Select(u => u.Replace("ipp://", "http://", StringComparison.Ordinal).Replace("/ipp/print", "/api/v1", StringComparison.Ordinal)).ToList());
 
-    public static JobDto ToDto(JobInfo job) => new(job.Id, job.Name, job.UserName, job.State.ToString(), job.StateMessage,
-        job.Created, job.Completed, job.PagesCompleted, job.SizeBytes);
+    public static JobDto ToDto(JobInfo job, bool canReprint = false) => new(job.Id, job.Name, job.UserName, job.State.ToString(), job.StateMessage,
+        job.Created, job.Completed, job.PagesCompleted, job.SizeBytes)
+    {
+        Source = job.Source.ToString(),
+        Origin = job.Origin,
+        CanReprint = canReprint,
+    };
 
     private static IResult Json<T>(T value) => Results.Json(value, ControlDefaults.Json);
 

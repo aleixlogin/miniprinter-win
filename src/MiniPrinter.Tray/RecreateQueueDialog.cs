@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using MiniPrinter.Gui;
 
 namespace MiniPrinter.Tray;
 
@@ -14,14 +15,14 @@ public enum RecreateChoice
 /// Confirmation before the Windows print queue is recreated (spec paper-sizes-settings): explains what is lost and,
 /// when settings are being saved, offers to save without recreating (Windows then keeps the old sizes).
 /// </summary>
-public sealed class RecreateQueueDialog : Window
+public sealed class RecreateQueueDialog : ThemedWindow
 {
     public RecreateChoice Choice { get; private set; } = RecreateChoice.Cancel;
 
     public RecreateQueueDialog(Window owner, bool offerSaveOnly)
     {
         Owner = owner;
-        Title = "Recrear la impresora de Windows";
+        Title = Strings.Get("Recreate.Title");
         SizeToContent = SizeToContent.WidthAndHeight;
         ResizeMode = ResizeMode.NoResize;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
@@ -30,7 +31,7 @@ public sealed class RecreateQueueDialog : Window
         var panel = new StackPanel { Margin = new Thickness(16), MaxWidth = 440 };
         panel.Children.Add(new TextBlock
         {
-            Text = "Para que Windows vea los cambios hay que volver a crear la impresora de Windows.",
+            Text = Strings.Get("Recreate.Intro"),
             TextWrapping = TextWrapping.Wrap,
             FontWeight = FontWeights.SemiBold,
         });
@@ -38,25 +39,21 @@ public sealed class RecreateQueueDialog : Window
         {
             Margin = new Thickness(0, 8, 0, 0),
             TextWrapping = TextWrapping.Wrap,
-            Text = "• Se perderán las preferencias de impresión de esa impresora (papel elegido, orientación…).\n" +
-                   "• Los trabajos pendientes en su cola de Windows deben haber terminado.\n" +
-                   "• Si es tu impresora predeterminada, seguirá siéndolo.\n" +
-                   "• Si algo falla, la impresora anterior sigue funcionando.",
+            Text = Strings.Get("Recreate.Details"),
         });
         if (offerSaveOnly)
-            panel.Children.Add(new TextBlock
+            panel.Children.Add(Themed.Brush(new TextBlock
             {
                 Margin = new Thickness(0, 8, 0, 0),
                 TextWrapping = TextWrapping.Wrap,
-                Foreground = System.Windows.Media.Brushes.DimGray,
-                Text = "«Guardar sin recrear» guarda los ajustes, pero Windows seguirá con los tamaños antiguos hasta que la recrees (botón «Recrear impresora de Windows»).",
-            });
+                Text = Strings.Get("Recreate.SaveOnlyNote"),
+            }, Themed.Muted));
 
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 14, 0, 0) };
-        buttons.Children.Add(Button("Continuar", RecreateChoice.Recreate, isDefault: true));
+        buttons.Children.Add(Button(Strings.Get("Recreate.Continue"), RecreateChoice.Recreate, isDefault: true));
         if (offerSaveOnly)
-            buttons.Children.Add(Button("Guardar sin recrear", RecreateChoice.SaveOnly));
-        buttons.Children.Add(Button("Cancelar", RecreateChoice.Cancel, isCancel: true));
+            buttons.Children.Add(Button(Strings.Get("Recreate.SaveOnly"), RecreateChoice.SaveOnly));
+        buttons.Children.Add(Button(Strings.Get("Dialog.Cancel"), RecreateChoice.Cancel, isCancel: true));
         panel.Children.Add(buttons);
         Content = panel;
     }

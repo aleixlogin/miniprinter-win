@@ -20,6 +20,7 @@ public sealed class JobQueue : IPrintBackend, IHostedService, IAsyncDisposable
     private readonly SettingsStore _settings;
     private readonly string _diagnosticsDir;
     private readonly ILogger<JobQueue> _logger;
+    private readonly JobArchive _archive;
     private readonly Channel<int> _pending = Channel.CreateUnbounded<int>();
     private readonly Dictionary<int, QueuedJob> _jobs = [];
     private readonly object _gate = new();
@@ -30,8 +31,10 @@ public sealed class JobQueue : IPrintBackend, IHostedService, IAsyncDisposable
     private int _stopped;
     private bool _pageEndSent; // set by the last PrintPageAsync attempt that sent a page end (single worker)
 
-    public JobQueue(PrinterManager printer, SettingsStore settings, ServicePaths paths, ILogger<JobQueue> logger)
+    public JobQueue(PrinterManager printer, SettingsStore settings, ServicePaths paths, JobArchive archive, ILogger<JobQueue> logger)
     {
+        _archive = archive;
+        settings.Changed += (_, current) => archive.Trim(current.JobHistoryKeep);
         _printer = printer;
         _settings = settings;
         _diagnosticsDir = Path.Combine(paths.DataDirectory, "last-job");
@@ -114,13 +117,16 @@ public sealed class JobQueue : IPrintBackend, IHostedService, IAsyncDisposable
         return new PrinterSnapshot(printerState, reasons.Count > 0 ? reasons : ["none"], message ?? status.LastError, true, queued);
     }
 
-    public JobInfo CreateJob(string name, string userName)
+    public JobInfo CreateJob(string name, string userName) => CreateJob(name, userName, JobSource.Windows, userName);
+
+    /// <summary>Creates a job and records the entrance it came through and who sent it.</summary>
+    public JobInfo CreateJob(string name, string userName, JobSource source, string? origin)
     {
         QueuedJob job;
         lock (_gate)
         {
             var id = _nextId++;
-            job = new QueuedJob(new JobInfo { Id = id, Name = name, UserName = userName, StateReasons = ["job-incoming"] });
+            job = new QueuedJob(new JobInfo { Id = id, Name = name, UserName = userName, Source = source, Origin = origin, StateReasons = ["job-incoming"] });
             _jobs[id] = job;
             Prune();
         }
@@ -188,13 +194,15 @@ public sealed class JobQueue : IPrintBackend, IHostedService, IAsyncDisposable
     public Task IdentifyAsync(CancellationToken cancellationToken) => _printer.FeedAsync(48, cancellationToken);
 
     /// <summary>Queues a raster directly (test prints, rendered text, templates).</summary>
-    public JobInfo SubmitBitmap(string name, MonoBitmap page, bool isText = false, string user = "MiniPrinter", int? darkness = null) =>
-        SubmitBitmaps(name, [page], isText, user, darkness);
+    public JobInfo SubmitBitmap(string name, MonoBitmap page, bool isText = false, string user = "MiniPrinter", int? darkness = null,
+        JobSource source = JobSource.Panel, string? origin = null) =>
+        SubmitBitmaps(name, [page], isText, user, darkness, source, origin);
 
     /// <summary>Queues several rasters as one job (copies and label batches): one page each, in order.</summary>
-    public JobInfo SubmitBitmaps(string name, IReadOnlyList<MonoBitmap> pages, bool isText = false, string user = "MiniPrinter", int? darkness = null)
+    public JobInfo SubmitBitmaps(string name, IReadOnlyList<MonoBitmap> pages, bool isText = false, string user = "MiniPrinter", int? darkness = null,
+        JobSource source = JobSource.Panel, string? origin = null)
     {
-        var info = CreateJob(name, user);
+        var info = CreateJob(name, user, source, origin ?? user);
         lock (_gate)
         {
             var job = _jobs[info.Id];
@@ -224,30 +232,25 @@ public sealed class JobQueue : IPrintBackend, IHostedService, IAsyncDisposable
             try
             {
                 await ProcessAsync(job, linked.Token);
-                lock (_gate)
-                    Finish(job, JobState.Completed, "job-completed-successfully", "Printed");
+                FinishArchived(job, JobState.Completed, "job-completed-successfully", "Printed");
             }
             catch (OperationCanceledException) when (job.Cancellation.IsCancellationRequested)
             {
-                lock (_gate)
-                    Finish(job, JobState.Canceled, "job-canceled-by-user", "Canceled");
+                FinishArchived(job, JobState.Canceled, "job-canceled-by-user", "Canceled");
             }
             catch (OperationCanceledException) when (stopping.IsCancellationRequested)
             {
-                lock (_gate)
-                    Finish(job, JobState.Aborted, "aborted-by-system", "Service stopped");
+                FinishArchived(job, JobState.Aborted, "aborted-by-system", "Service stopped");
                 return;
             }
             catch (NotSupportedException ex)
             {
-                lock (_gate)
-                    Finish(job, JobState.Aborted, "document-format-error", ex.Message);
+                FinishArchived(job, JobState.Aborted, "document-format-error", ex.Message);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Job {Id} failed", job.Info.Id);
-                lock (_gate)
-                    Finish(job, JobState.Aborted, "job-aborted-by-system", ex.Message);
+                FinishArchived(job, JobState.Aborted, "job-aborted-by-system", ex.Message);
             }
             finally
             {
@@ -285,6 +288,9 @@ public sealed class JobQueue : IPrintBackend, IHostedService, IAsyncDisposable
         Update(job, j => j with { State = JobState.Processing, StateReasons = ["job-printing"], Processing = DateTimeOffset.UtcNow, StateMessage = "Printing" });
 
         BeginDiagnostics(job);
+        var keep = settings.JobHistoryKeep;
+        if (keep > 0)
+            _archive.Begin(job.Info.Id);
         IEnumerable<RasterResult> pages = job.Bitmaps is { } bitmaps
             ? bitmaps
             : ImageDecoder.Decode(job.Document!, job.Format, job.Options is { } o ? o.Includes : null)
@@ -306,6 +312,8 @@ public sealed class JobQueue : IPrintBackend, IHostedService, IAsyncDisposable
                 SavePageDiagnostics(++index, page);
                 if (page.Height == 0)
                     continue; // blank page after trimming
+                if (keep > 0)
+                    KeepPage(job, page, pageIsText);
                 var isText = settings.PrintMode switch
                 {
                     PrintModeChoice.Text => true,
@@ -341,6 +349,75 @@ public sealed class JobQueue : IPrintBackend, IHostedService, IAsyncDisposable
             await ClosePageAsync(options);
             throw;
         }
+    }
+
+    /// <summary>Writes down what was kept and then marks the job finished, so that whoever sees it finished also finds its pages.</summary>
+    private void FinishArchived(QueuedJob job, JobState state, string reason, string message)
+    {
+        EndArchive(job);
+        lock (_gate)
+            Finish(job, state, reason, message);
+    }
+
+    private void KeepPage(QueuedJob job, MonoBitmap page, bool isText)
+    {
+        job.PagesSeen++;
+        job.AnyText |= isText;
+        if (job.PagesSeen <= JobArchive.MaxPagesPerJob && _archive.AddPage(job.Info.Id, job.PagesSeen, page))
+            job.PagesKept++;
+    }
+
+    /// <summary>Writes down what was kept of the job (pages and what is needed to print it again) and trims the archive.</summary>
+    private void EndArchive(QueuedJob job)
+    {
+        var keep = _settings.Current.JobHistoryKeep;
+        if (job.PagesSeen == 0 && keep > 0)
+        {
+            _archive.End(job.Info.Id, new JobArchiveEntry(job.Info.Name, 0, false, job.Darkness), keep);
+            return;
+        }
+        // A job that was cancelled or failed keeps the pages it reached and can be printed again; one with more pages than are kept cannot.
+        var complete = job.PagesKept == job.PagesSeen;
+        _archive.End(job.Info.Id, new JobArchiveEntry(job.Info.Name, job.PagesKept, job.AnyText, job.Darkness, Truncated: !complete), keep);
+    }
+
+    /// <summary>Whether the pages of a finished job were kept and it can be printed again.</summary>
+    public bool CanReprint(int id) => _archive.CanReprint(id);
+
+    public string? KeptPagePath(int id, int number)
+    {
+        if (_archive.PagePath(id, number) is { } kept)
+            return kept;
+        // With the history off only the last job is kept, for the preview of the panel.
+        try
+        {
+            var first = File.ReadLines(Path.Combine(_diagnosticsDir, "job.txt")).FirstOrDefault();
+            var page = Path.Combine(_diagnosticsDir, $"page-{number}.png");
+            return first == id.ToString() && File.Exists(page) ? page : null;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Prints the kept pages of a finished job again as a new job. Returns null when nothing was kept
+    /// and throws <see cref="InvalidOperationException"/> when the job is not finished or cannot be printed again.
+    /// </summary>
+    public JobInfo? Reprint(int id)
+    {
+        lock (_gate)
+        {
+            if (_jobs.TryGetValue(id, out var running) && !running.Info.IsTerminal)
+                throw new InvalidOperationException("The job has not finished yet.");
+        }
+        if (_archive.Find(id) is not { } entry || entry.Pages == 0)
+            return null;
+        if (entry.Truncated)
+            throw new InvalidOperationException("Only part of the job was kept, so it cannot be printed again.");
+        var pages = _archive.LoadPages(id, entry);
+        return SubmitBitmaps($"Reimpresión de {entry.Name}", pages, entry.IsText, "MiniPrinter", entry.Darkness, JobSource.Panel, Environment.UserName);
     }
 
     /// <summary>Adds <paramref name="rows"/> blank rows above a page (gap between continuous pages).</summary>
@@ -528,6 +605,9 @@ public sealed class JobQueue : IPrintBackend, IHostedService, IAsyncDisposable
         public int? Darkness { get; set; }
         public DocumentOptions? Options { get; set; }
         public IReadOnlyList<RasterResult>? Bitmaps { get; set; }
+        public int PagesSeen { get; set; }
+        public int PagesKept { get; set; }
+        public bool AnyText { get; set; }
         public CancellationTokenSource Cancellation { get; } = new();
     }
 

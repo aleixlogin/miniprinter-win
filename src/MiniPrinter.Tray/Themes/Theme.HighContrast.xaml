@@ -1,0 +1,29 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- High contrast: no colours of our own, only the ones Windows chose. -->
+    <SolidColorBrush x:Key="Brush.Surface" Color="{x:Static SystemColors.WindowColor}" />
+    <SolidColorBrush x:Key="Brush.SurfaceAlt" Color="{x:Static SystemColors.WindowColor}" />
+    <SolidColorBrush x:Key="Brush.Text" Color="{x:Static SystemColors.WindowTextColor}" />
+    <SolidColorBrush x:Key="Brush.TextMuted" Color="{x:Static SystemColors.WindowTextColor}" />
+    <SolidColorBrush x:Key="Brush.Disabled" Color="{x:Static SystemColors.GrayTextColor}" />
+    <SolidColorBrush x:Key="Brush.Border" Color="{x:Static SystemColors.WindowTextColor}" />
+    <SolidColorBrush x:Key="Brush.Accent" Color="{x:Static SystemColors.HighlightColor}" />
+    <SolidColorBrush x:Key="Brush.AccentText" Color="{x:Static SystemColors.HighlightTextColor}" />
+    <SolidColorBrush x:Key="Brush.Hover" Color="{x:Static SystemColors.HotTrackColor}" />
+    <SolidColorBrush x:Key="Brush.Pressed" Color="{x:Static SystemColors.HighlightColor}" />
+    <SolidColorBrush x:Key="Brush.Selection" Color="{x:Static SystemColors.HighlightColor}" />
+    <SolidColorBrush x:Key="Brush.SelectionText" Color="{x:Static SystemColors.HighlightTextColor}" />
+    <SolidColorBrush x:Key="Brush.Ok" Color="{x:Static SystemColors.WindowTextColor}" />
+    <SolidColorBrush x:Key="Brush.Warn" Color="{x:Static SystemColors.WindowTextColor}" />
+    <SolidColorBrush x:Key="Brush.Error" Color="{x:Static SystemColors.WindowTextColor}" />
+    <SolidColorBrush x:Key="Brush.WarnBackground" Color="{x:Static SystemColors.WindowColor}" />
+    <SolidColorBrush x:Key="Brush.WarnBorder" Color="{x:Static SystemColors.WindowTextColor}" />
+    <SolidColorBrush x:Key="Brush.OkBackground" Color="{x:Static SystemColors.WindowColor}" />
+    <SolidColorBrush x:Key="Brush.OkBorder" Color="{x:Static SystemColors.WindowTextColor}" />
+    <SolidColorBrush x:Key="Brush.ErrorBackground" Color="{x:Static SystemColors.WindowColor}" />
+    <SolidColorBrush x:Key="Brush.ErrorBorder" Color="{x:Static SystemColors.WindowTextColor}" />
+    <SolidColorBrush x:Key="Brush.InfoBackground" Color="{x:Static SystemColors.WindowColor}" />
+    <SolidColorBrush x:Key="Brush.InfoBorder" Color="{x:Static SystemColors.WindowTextColor}" />
+    <SolidColorBrush x:Key="Brush.Preview" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="Brush.PreviewBorder" Color="{x:Static SystemColors.WindowTextColor}" />
+</ResourceDictionary>

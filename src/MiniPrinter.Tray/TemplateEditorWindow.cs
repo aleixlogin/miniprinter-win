@@ -1,5 +1,6 @@
 using System.IO;
 using System.Windows;
+using MiniPrinter.Gui;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -15,7 +16,7 @@ namespace MiniPrinter.Tray;
 /// Everything edits one <see cref="TemplateEditorModel"/>; the window is built in code so the controls can
 /// follow the schema.
 /// </summary>
-public sealed partial class TemplateEditorWindow : Window
+public sealed partial class TemplateEditorWindow : ThemedWindow
 {
     private static readonly TimeSpan PreviewDelay = TimeSpan.FromMilliseconds(400);
     private static readonly TimeSpan RawDelay = TimeSpan.FromMilliseconds(800);
@@ -34,25 +35,25 @@ public sealed partial class TemplateEditorWindow : Window
     private readonly ListBox _blockList = new() { MinHeight = 160 };
     private readonly StackPanel _props = new() { Margin = new Thickness(8) };
     private readonly TextBlock _blockTitle = new() { FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 6) };
-    private readonly TextBlock _blockError = new() { Foreground = Brushes.Firebrick, TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed, Margin = new Thickness(0, 0, 0, 6) };
+    private readonly TextBlock _blockError = Themed.Brush(new TextBlock { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed, Margin = new Thickness(0, 0, 0, 6) }, Themed.Error);
     private readonly Image _preview = new() { Stretch = Stretch.None, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top };
     private readonly Canvas _overlay = new() { IsHitTestVisible = false, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top };
     private readonly Rectangle _highlight = new()
     {
-        Stroke = new SolidColorBrush(Color.FromRgb(0x09, 0x69, 0xDA)),
+        Stroke = new SolidColorBrush(Color.FromRgb(0x09, 0x69, 0xDA)),   // theme-ok: highlight over the white paper of the preview
         StrokeThickness = 2,
         StrokeDashArray = [4, 3],
-        Fill = new SolidColorBrush(Color.FromArgb(0x22, 0x09, 0x69, 0xDA)),
+        Fill = new SolidColorBrush(Color.FromArgb(0x22, 0x09, 0x69, 0xDA)),   // theme-ok: highlight over the white paper of the preview
         Visibility = Visibility.Collapsed,
     };
-    private readonly TextBlock _status = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(8), Foreground = Brushes.DimGray };
-    private readonly Button _undoButton = new() { Content = "↶ Deshacer", ToolTip = "Ctrl+Z" };
-    private readonly Button _redoButton = new() { Content = "↷ Rehacer", ToolTip = "Ctrl+Y" };
-    private readonly Button _addButton = new() { Content = "+ Añadir ▾" };
-    private readonly Button _duplicateButton = new() { Content = "Duplicar" };
-    private readonly Button _deleteButton = new() { Content = "Borrar" };
-    private readonly Button _upButton = new() { Content = "↑", ToolTip = "Subir" };
-    private readonly Button _downButton = new() { Content = "↓", ToolTip = "Bajar" };
+    private readonly TextBlock _status = Themed.Brush(new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(8) }, Themed.Muted);
+    private readonly Button _undoButton = new() { Content = Strings.Get("Editor.Undo"), ToolTip = "Ctrl+Z" };   // i18n-ok: keyboard shortcut
+    private readonly Button _redoButton = new() { Content = Strings.Get("Editor.Redo"), ToolTip = "Ctrl+Y" };   // i18n-ok: keyboard shortcut
+    private readonly Button _addButton = new() { Content = Strings.Get("Editor.AddBlock") };
+    private readonly Button _duplicateButton = new() { Content = Strings.Get("Editor.Duplicate") };
+    private readonly Button _deleteButton = new() { Content = Strings.Get("Editor.Delete") };
+    private readonly Button _upButton = new() { Content = "↑", ToolTip = Strings.Get("Editor.Up") };
+    private readonly Button _downButton = new() { Content = "↓", ToolTip = Strings.Get("Editor.Down") };
 
     // state
     private string? _draft;
@@ -81,7 +82,7 @@ public sealed partial class TemplateEditorWindow : Window
         _source = source;
         _existingNames = existingNames;
 
-        Title = $"{(existing ? "Editar plantilla" : "Nueva plantilla")} — {_model.Name}";
+        Title = Strings.Get(existing ? "Editor.TitleEdit" : "Editor.TitleNew", _model.Name);
         Width = 1280;
         Height = 820;
         MinWidth = 1000;
@@ -121,9 +122,9 @@ public sealed partial class TemplateEditorWindow : Window
         // Toolbar and banners
         var top = new StackPanel();
         var bar = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(8) };
-        var save = new Button { Content = "Guardar", FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 8, 0), Padding = new Thickness(14, 4, 14, 4) };
+        var save = new Button { Content = Strings.Get("Editor.Save"), FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 8, 0), Padding = new Thickness(14, 4, 14, 4) };
         save.Click += async (_, _) => await SaveAsync(asName: null);
-        var saveAs = new Button { Content = "Guardar como…", Margin = new Thickness(0, 0, 16, 0), Padding = new Thickness(10, 4, 10, 4) };
+        var saveAs = new Button { Content = Strings.Get("Editor.SaveAs"), Margin = new Thickness(0, 0, 16, 0), Padding = new Thickness(10, 4, 10, 4) };
         saveAs.Click += async (_, _) => await SaveAsAsync();
         _undoButton.Click += (_, _) => _model.Undo();
         _redoButton.Click += (_, _) => _model.Redo();
@@ -132,10 +133,9 @@ public sealed partial class TemplateEditorWindow : Window
             bar.Children.Add(b);
         top.Children.Add(bar);
         if (_source == TemplateEditorSources.BuiltIn)
-            top.Children.Add(Banner("Esta es una plantilla integrada: al guardarla con el mismo nombre se crea una versión de usuario que la sustituye. " +
-                                    "Usa «Guardar como…» para crear otra con un nombre nuevo."));
+            top.Children.Add(Banner(Strings.Get("Editor.BuiltInBanner")));
         if (_model.HadComments)
-            top.Children.Add(Banner("El JSON original tiene comentarios: se perderán al guardar desde el editor."));
+            top.Children.Add(Banner(Strings.Get("Editor.CommentsBanner")));
         DockPanel.SetDock(top, Dock.Top);
         root.Children.Add(top);
 
@@ -153,7 +153,7 @@ public sealed partial class TemplateEditorWindow : Window
         Grid.SetColumn(center, 1);
         grid.Children.Add(center);
 
-        var right = new Border { BorderBrush = new SolidColorBrush(Color.FromRgb(0xD0, 0xD7, 0xDE)), BorderThickness = new Thickness(1), Margin = new Thickness(8, 0, 0, 0) };
+        var right = Themed.Frame(new Border { BorderThickness = new Thickness(1), Margin = new Thickness(8, 0, 0, 0) }, null, Themed.Border);
         var rightPanel = new DockPanel();
         var header = new StackPanel { Margin = new Thickness(8, 8, 8, 0) };
         header.Children.Add(_blockTitle);
@@ -169,19 +169,18 @@ public sealed partial class TemplateEditorWindow : Window
         return root;
     }
 
-    private static Border Banner(string text) => new()
+    private static Border Banner(string text) => Themed.Frame(new Border
     {
-        Background = new SolidColorBrush(Color.FromRgb(0xFF, 0xF8, 0xC5)),
-        BorderBrush = new SolidColorBrush(Color.FromRgb(0xD4, 0xA7, 0x2C)),
         BorderThickness = new Thickness(1),
         Margin = new Thickness(8, 0, 8, 6),
         Padding = new Thickness(8, 4, 8, 4),
         Child = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap },
-    };
+    }, Themed.WarnBackground, Themed.WarnBorder);
 
     private UIElement BuildPreviewPane()
     {
-        var host = new Grid { Width = 384, HorizontalAlignment = HorizontalAlignment.Left, Background = Brushes.White };
+        var host = new Grid { Width = 384, HorizontalAlignment = HorizontalAlignment.Left };
+        host.SetResourceReference(Panel.BackgroundProperty, Themed.Preview);   // the paper: white in every theme
         host.Children.Add(_preview);
         _overlay.Children.Add(_highlight);
         host.Children.Add(_overlay);
@@ -195,7 +194,7 @@ public sealed partial class TemplateEditorWindow : Window
             HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
             Content = new Border { Margin = new Thickness(12), Child = host },
         };
-        var border = new Border { BorderBrush = new SolidColorBrush(Color.FromRgb(0xD0, 0xD7, 0xDE)), BorderThickness = new Thickness(1), Background = new SolidColorBrush(Color.FromRgb(0xF6, 0xF8, 0xFA)), Child = scroll };
+        var border = Themed.Frame(new Border { BorderThickness = new Thickness(1), Child = scroll }, Themed.SurfaceAlt, Themed.Border);
 
         var pane = new DockPanel { Margin = new Thickness(8, 0, 0, 0) };
         DockPanel.SetDock(_status, Dock.Bottom);
@@ -207,10 +206,10 @@ public sealed partial class TemplateEditorWindow : Window
     private TabControl BuildLeftTabs()
     {
         var tabs = new TabControl();
-        tabs.Items.Add(new TabItem { Header = "Bloques", Content = BuildBlocksTab() });
-        tabs.Items.Add(new TabItem { Header = "Plantilla", Content = BuildTemplateTab() });
-        tabs.Items.Add(new TabItem { Header = "Datos de prueba", Content = BuildTestDataTab() });
-        tabs.Items.Add(new TabItem { Header = "JSON", Content = BuildRawTab() });
+        tabs.Items.Add(new TabItem { Header = Strings.Get("Editor.TabBlocks"), Content = BuildBlocksTab() });
+        tabs.Items.Add(new TabItem { Header = Strings.Get("Editor.TabTemplate"), Content = BuildTemplateTab() });
+        tabs.Items.Add(new TabItem { Header = Strings.Get("Editor.TabTestData"), Content = BuildTestDataTab() });
+        tabs.Items.Add(new TabItem { Header = Strings.Get("Editor.TabJson"), Content = BuildRawTab() });
         return tabs;
     }
 
@@ -354,13 +353,12 @@ public sealed partial class TemplateEditorWindow : Window
             var type = _model.BlockType(i);
             var title = _schema.Blocks.FirstOrDefault(b => b.Type == type)?.Title ?? type;
             var broken = _error?.Block == i + 1;
-            var text = new TextBlock
+            var text = Themed.Brush(new TextBlock
             {
-                Text = $"{i + 1}. {(broken ? "⚠ " : "")}{title}{Summary(i)}",
-                Foreground = broken ? Brushes.Firebrick : Brushes.Black,
+                Text = $"{i + 1}. {(broken ? "⚠ " : "")}{title}{Summary(i)}",   // i18n-ok: list item built from the title and the summary
                 TextTrimming = TextTrimming.CharacterEllipsis,
                 ToolTip = broken ? _error!.Message : null,
-            };
+            }, broken ? Themed.Error : Themed.Normal);
             _blockList.Items.Add(text);
         }
         _selected = _model.BlockCount == 0 ? -1 : Math.Clamp(_selected, 0, _model.BlockCount - 1);
@@ -445,7 +443,7 @@ public sealed partial class TemplateEditorWindow : Window
     private void SetStatus(string text, bool error)
     {
         _status.Text = text;
-        _status.Foreground = error ? Brushes.Firebrick : Brushes.DimGray;
+        Themed.Foreground(_status, error ? Themed.Error : Themed.Muted);
     }
 }
 

@@ -51,6 +51,41 @@ public sealed class ControlClient : IDisposable
         return await response.Content.ReadAsByteArrayAsync(ct).ConfigureAwait(false);
     }
 
+    /// <summary>The checks the service makes (link, paper, Windows printer, listeners, fonts).</summary>
+    public Task<IReadOnlyList<DiagnosticCheckDto>> GetDiagnosticsAsync(CancellationToken ct = default) =>
+        Get<IReadOnlyList<DiagnosticCheckDto>>("diagnostics", ct);
+
+    /// <summary>The latest clients of the RAW port, newest first.</summary>
+    public Task<IReadOnlyList<RawClientDto>> GetRawClientsAsync(CancellationToken ct = default) =>
+        Get<IReadOnlyList<RawClientDto>>("raw-port/clients", ct);
+
+    /// <summary>Sends a test ticket to the RAW port itself and returns the job it became (409 if the port is off, 503 if busy).</summary>
+    public Task<JobDto> SendRawTestAsync(CancellationToken ct = default) => Send<JobDto>(HttpMethod.Post, "raw-port/test", null, ct);
+
+    /// <summary>A small picture (PNG) of a template drawn with example values; null when the template does not exist.</summary>
+    public async Task<byte[]?> GetTemplateThumbnailAsync(string name, int width = 160, CancellationToken ct = default)
+    {
+        using var response = await _http.GetAsync($"templates/{Uri.EscapeDataString(name)}/thumbnail?width={width}", ct).ConfigureAwait(false);
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            return null;
+        await EnsureSuccess(response, ct).ConfigureAwait(false);
+        return await response.Content.ReadAsByteArrayAsync(ct).ConfigureAwait(false);
+    }
+
+    /// <summary>PNG of a page of a finished job, as it was sent to the printer (null when it was not kept).</summary>
+    public async Task<byte[]?> GetJobPageAsync(int jobId, int page, CancellationToken ct = default)
+    {
+        using var response = await _http.GetAsync($"jobs/{jobId}/pages/{page}", ct).ConfigureAwait(false);
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            return null;
+        await EnsureSuccess(response, ct).ConfigureAwait(false);
+        return await response.Content.ReadAsByteArrayAsync(ct).ConfigureAwait(false);
+    }
+
+    /// <summary>Prints the kept pages of a finished job again as a new job (404 if they were not kept, 409 if it has not finished).</summary>
+    public Task<JobDto> ReprintJobAsync(int jobId, CancellationToken ct = default) =>
+        Send<JobDto>(HttpMethod.Post, $"jobs/{jobId}/reprint", null, ct);
+
     /// <summary>Keeps the printer connected and samples its state every minute for <paramref name="duration"/>.</summary>
     public Task<StatusDto> StartSamplingAsync(TimeSpan duration, CancellationToken ct = default) =>
         Send<StatusDto>(HttpMethod.Post, "telemetry/sampling", new { minutes = (int)duration.TotalMinutes }, ct);

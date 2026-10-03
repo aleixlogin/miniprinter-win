@@ -6,36 +6,9 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media.Imaging;
 using MiniPrinter.Control;
+using MiniPrinter.Gui;
 
 namespace MiniPrinter.Tray;
-
-/// <summary>Per-user tray preferences (%LocalAppData%\MiniPrinter\tray.json).</summary>
-public sealed record TrayPreferences
-{
-    public string QuickNoteHotkey { get; init; } = "Ctrl+Alt+P";
-    public float QuickNoteSizePt { get; init; } = 12;
-
-    private static readonly string PathOnDisk = System.IO.Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MiniPrinter", "tray.json");
-
-    public static TrayPreferences Load()
-    {
-        try
-        {
-            return File.Exists(PathOnDisk) ? JsonSerializer.Deserialize<TrayPreferences>(File.ReadAllText(PathOnDisk)) ?? new() : new();
-        }
-        catch (Exception ex) when (ex is IOException or JsonException)
-        {
-            return new();
-        }
-    }
-
-    public void Save()
-    {
-        Directory.CreateDirectory(System.IO.Path.GetDirectoryName(PathOnDisk)!);
-        File.WriteAllText(PathOnDisk, JsonSerializer.Serialize(this));
-    }
-}
 
 /// <summary>System-wide hotkey through Win32 RegisterHotKey on a hidden message window.</summary>
 public sealed class GlobalHotkey : IDisposable
@@ -117,13 +90,16 @@ public sealed class GlobalHotkey : IDisposable
     private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
 }
 
+/// <summary>What a quick print tells the user: the text, and whether it is a warning (nothing printed, or files skipped).</summary>
+public sealed record QuickPrintResult(string Message, bool Warning);
+
 /// <summary>Clipboard, dropped and "Send to" files: everything goes to the service.</summary>
 public static class QuickPrint
 {
     public static readonly string[] SupportedExtensions = [".png", ".jpg", ".jpeg", ".pdf", ".pwg", ".txt"];
 
-    /// <summary>Prints the clipboard (image, text or copied files). Returns a message for the user.</summary>
-    public static async Task<string> PrintClipboardAsync(ControlClient client)
+    /// <summary>Prints the clipboard (image, text or copied files).</summary>
+    public static async Task<QuickPrintResult> PrintClipboardAsync(ControlClient client)
     {
         if (Clipboard.ContainsImage() && Clipboard.GetImage() is { } image)
         {
@@ -132,20 +108,20 @@ public static class QuickPrint
             using var png = new MemoryStream();
             encoder.Save(png);
             await client.PrintFileAsync(png.ToArray(), "portapapeles.png", "image/png");
-            return "Imagen del portapapeles enviada a la impresora.";
+            return new QuickPrintResult(Strings.Get("Quick.ClipboardImageSent"), false);
         }
         if (Clipboard.ContainsFileDropList())
             return await PrintFilesAsync(client, Clipboard.GetFileDropList().Cast<string>().ToArray());
         if (Clipboard.ContainsText() && !string.IsNullOrWhiteSpace(Clipboard.GetText()))
         {
             await client.PrintTextAsync(Clipboard.GetText());
-            return "Texto del portapapeles enviado a la impresora.";
+            return new QuickPrintResult(Strings.Get("Quick.ClipboardTextSent"), false);
         }
-        return "No hay nada que imprimir en el portapapeles.";
+        return new QuickPrintResult(Strings.Get("Quick.ClipboardEmpty"), true);
     }
 
     /// <summary>One job per supported file, in order; unsupported files are reported.</summary>
-    public static async Task<string> PrintFilesAsync(ControlClient client, IReadOnlyList<string> paths)
+    public static async Task<QuickPrintResult> PrintFilesAsync(ControlClient client, IReadOnlyList<string> paths)
     {
         var sent = 0;
         var skipped = new List<string>();
@@ -159,8 +135,10 @@ public static class QuickPrint
             await client.PrintFileAsync(await File.ReadAllBytesAsync(path), path);
             sent++;
         }
-        var message = sent == 1 ? "1 archivo enviado a la impresora." : $"{sent} archivos enviados a la impresora.";
-        return skipped.Count == 0 ? message : $"{message} Formato no admitido: {string.Join(", ", skipped)}.";
+        var message = sent == 1 ? Strings.Get("Quick.OneFileSent") : Strings.Get("Quick.FilesSent", sent);
+        return skipped.Count == 0
+            ? new QuickPrintResult(message, false)
+            : new QuickPrintResult($"{message} {Strings.Get("Quick.Skipped", string.Join(", ", skipped))}", true);
     }
 
     /// <summary>Creates the "Send to > MiniPrinter" shortcut for the current user if it is missing.</summary>

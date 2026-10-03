@@ -51,7 +51,7 @@ internal static class TemplateEngine
             Counters = options.Counters,
             ConsumeCounters = options.ConsumeCounters,
         };
-        var context = new BlockContext { Width = options.Width, Interpolator = interpolator, AssetsDir = options.AssetsDir, FallbackAssetsDir = options.FallbackAssetsDir };
+        var context = new BlockContext { Width = options.Width, Interpolator = interpolator, AssetsDir = options.AssetsDir, FallbackAssetsDir = options.FallbackAssetsDir, Lenient = options.Lenient };
 
         var blocks = new List<MonoBitmap>();
         var rendered = new List<BlockSpec>();

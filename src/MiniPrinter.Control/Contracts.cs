@@ -78,6 +78,9 @@ public sealed record ServiceSettings
     /// <summary>Minutes a job waits for an unavailable printer before it is aborted.</summary>
     public int JobRetryMinutes { get; init; } = 10;
 
+    /// <summary>How many finished jobs keep their pages, to show them again and print them again (0 to 50; 0 keeps none).</summary>
+    public int JobHistoryKeep { get; init; } = 10;
+
     public PrintModeChoice PrintMode { get; init; } = PrintModeChoice.Auto;
 
     /// <summary>Print the pages of a job as one continuous strip (no paper advance between pages).</summary>
@@ -129,7 +132,17 @@ public sealed record JobDto(
     DateTimeOffset Created,
     DateTimeOffset? Completed,
     int Pages,
-    long SizeBytes);
+    long SizeBytes)
+{
+    /// <summary>Entrance of the job: Windows, Panel, Api or Raw (empty for services before 0.9).</summary>
+    public string? Source { get; init; }
+
+    /// <summary>The Windows user or the address of the client that sent it.</summary>
+    public string? Origin { get; init; }
+
+    /// <summary>Whether the service kept the pages and can print them again.</summary>
+    public bool CanReprint { get; init; }
+}
 
 public sealed record StatusDto
 {
@@ -266,4 +279,52 @@ public static class TemplatePrintParameters
 /// <param name="Listening">The port is open and accepting connections.</param>
 /// <param name="Error">Why it is not listening although enabled (port in use, ...).</param>
 /// <param name="Addresses">host:port pairs clients can use in the current network mode.</param>
+/// <summary>The result of a check (GET /api/diagnostics).</summary>
+public static class DiagnosticStatus
+{
+    public const string Ok = "ok";
+    public const string Warn = "warn";
+    public const string Fail = "fail";
+
+    /// <summary>The check could not be completed: the window does not accuse what it could not look at.</summary>
+    public const string Unknown = "unknown";
+}
+
+/// <summary>The names of the checks (what to do about each is text of the interface, not of the service).</summary>
+public static class DiagnosticIds
+{
+    public const string Service = "service";
+    public const string Bluetooth = "bluetooth";
+    public const string Paired = "paired";
+    public const string Link = "link";
+    public const string Paper = "paper";
+    public const string Queue = "queue";
+    public const string Ipp = "ipp";
+    public const string Raw = "raw";
+    public const string Fonts = "fonts";
+}
+
+/// <param name="Id">One of <see cref="DiagnosticIds"/>.</param>
+/// <param name="Status">One of <see cref="DiagnosticStatus"/>.</param>
+/// <param name="Detail">A fact worth showing next to the result (an error, an address, a name), or null.</param>
+public sealed record DiagnosticCheckDto(string Id, string Status, string? Detail);
+
+/// <summary>How a connection to the RAW port ended.</summary>
+public static class RawClientResult
+{
+    public const string Queued = "queued";
+    public const string Rejected = "rejected";
+    public const string ClosedByLimit = "closed-by-limit";
+    public const string RefusedLimit = "refused-limit";
+    public const string Empty = "empty";
+    public const string Error = "error";
+}
+
+/// <summary>One recent client of the RAW port (GET /api/raw-port/clients): who, what it sent, how much and what became of it.</summary>
+/// <param name="Kind">ESC/POS, PNG, JPEG, PDF, PWG, text or unknown.</param>
+/// <param name="Tickets">Tickets queued (ESC/POS connections).</param>
+/// <param name="JobId">The last job queued by the connection, if any.</param>
+/// <param name="Result">One of <see cref="RawClientResult"/>.</param>
+public sealed record RawClientDto(DateTimeOffset Time, string Address, string Kind, long Bytes, int Tickets, int? JobId, string Result);
+
 public sealed record RawPortDto(bool Enabled, int Port, bool Listening, string? Error, IReadOnlyList<string> Addresses);

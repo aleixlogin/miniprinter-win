@@ -14,6 +14,30 @@ public static class FirewallRule
     public static bool Remove(ILogger logger, string name = Name) =>
         Run($"advfirewall firewall delete rule name=\"{name}\"", logger);
 
+    /// <summary>Whether a rule with that name exists; null when it could not be asked.</summary>
+    public static bool? Exists(string name, ILogger logger)
+    {
+        try
+        {
+            using var process = Process.Start(new ProcessStartInfo("netsh", $"advfirewall firewall show rule name=\"{name}\"")
+            {
+                CreateNoWindow = true,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+            })!;
+            process.StandardOutput.ReadToEnd();
+            if (!process.WaitForExit(10_000))
+                return null;
+            return process.ExitCode == 0;
+        }
+        catch (Exception ex)
+        {
+            logger.LogDebug(ex, "Could not ask the firewall for {Name}", name);
+            return null;
+        }
+    }
+
     private static bool Run(string arguments, ILogger logger)
     {
         try

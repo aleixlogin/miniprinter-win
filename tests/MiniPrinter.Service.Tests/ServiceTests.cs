@@ -230,7 +230,8 @@ public sealed class JobQueueTests : IAsyncLifetime
         _settings = new SettingsStore(new ServicePaths(TestEnv.TempDirectory()), NullLogger<SettingsStore>.Instance);
         _settings.Update(s => s with { Printer = TestEnv.Simulated, JobRetryMinutes = 1 });
         _printer = new PrinterManager(_settings, NullLogger<PrinterManager>.Instance);
-        _queue = new JobQueue(_printer, _settings, new ServicePaths(TestEnv.TempDirectory()), NullLogger<JobQueue>.Instance) { RetryInterval = TimeSpan.FromMilliseconds(50) };
+        var paths = new ServicePaths(TestEnv.TempDirectory());
+        _queue = new JobQueue(_printer, _settings, paths, new JobArchive(paths, NullLogger<JobArchive>.Instance), NullLogger<JobQueue>.Instance) { RetryInterval = TimeSpan.FromMilliseconds(50) };
         await _queue.StartAsync(CancellationToken.None);
     }
 
