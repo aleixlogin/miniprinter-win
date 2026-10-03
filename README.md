@@ -396,6 +396,9 @@ Instalador en local: `powershell -ExecutionPolicy Bypass -File scripts\build-ins
 
 ## Historial de cambios
 
+### 0.9.4 — rechazar el permiso al actualizar
+- Si en la ventana de actualización se pulsa **No** en la ventana de permisos de administrador (UAC), la ventana vuelve a activar los botones **sin mostrar ningún error**; el mensaje solo sale si el instalador falla de verdad.
+
 ### 0.9.3 — versión de prueba
 - **Versión de prueba, sin cambios** respecto a la 0.9.2: sirve para comprobar la ventana de actualización. No hace falta instalarla.
 

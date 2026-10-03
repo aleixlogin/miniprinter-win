@@ -1813,9 +1813,6 @@ Si respondes No, se recargan los del servicio.</value>
   <data name="Update.Install" xml:space="preserve">
     <value>Actualizar</value>
   </data>
-  <data name="Update.InstallerEnded" xml:space="preserve">
-    <value>La instalación no se llegó a ejecutar (¿has rechazado el permiso de administrador?). Puedes volver a intentarlo.</value>
-  </data>
   <data name="Update.InstallerFailed" xml:space="preserve">
     <value>El instalador terminó con un error (código {0}). Puedes volver a intentarlo.</value>
   </data>
