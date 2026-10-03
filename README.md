@@ -121,6 +121,7 @@ Base: `http://<equipo>:8631/api/v1` · Cabecera: `Authorization: Bearer <token>`
 | `POST /print/template/{nombre}` | JSON con los campos de la plantilla (ver `miniprinter templates`); admite `copies` y `rows` |
 | `GET /jobs/{id}` | Estado: `pending`, `processing`, `completed`, `canceled` o `aborted` |
 | `GET /templates` · `GET /templates/{nombre}` | Lista las plantillas (con `source`: `builtin`, `user` o `override`) y lee el JSON de una |
+| `GET /templates/{nombre}/fields` | Solo los campos de una plantilla (nombre, etiqueta, tipo, obligatorio, opciones, valor por defecto) y `printParameters` (`copies` 1–50, `rows` hasta 200, `darkness` 1–5). `404` si no existe |
 | `PUT /templates/{nombre}` | JSON de la plantilla (ver [Plantillas](#plantillas)): la valida y la crea o reemplaza. `200` con su definición |
 | `DELETE /templates/{nombre}` | Borra una plantilla de usuario y sus imágenes (`204`). Las integradas no se pueden borrar |
 | `POST /templates/validate` | Valida un JSON de plantilla sin guardarlo |
@@ -261,7 +262,7 @@ Invoke-RestMethod -Method Put -Uri http://127.0.0.1:8631/api/v1/templates/mitiqu
 
 ```powershell
 miniprinter templates                                              # plantillas y sus campos
-miniprinter template list | show label | validate mitique.json    # sin impresora
+miniprinter template list | show label | fields label | validate mitique.json    # sin impresora
 miniprinter template add mitique.json                             # vía el servicio (valida y guarda)
 miniprinter template remove mitique
 miniprinter template label --rfcomm 7A:E0:0C:1D:87:AE --csv etiquetas.csv --copies 2

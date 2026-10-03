@@ -16,7 +16,7 @@ const string usage = """
       miniprinter print        <target> <file.png|jpg|pwg|pdf> [--darkness 1..5] [--dither auto|atkinson|floyd|threshold] [--text] [--pages 2-3,5]
       miniprinter template     <name> <target> [--<field> <value> …] [--copies <n>] [--csv <file.csv>]
       miniprinter templates                                          list templates and their fields
-      miniprinter template list|show <name>|validate <file.json>     inspect templates (no printer needed)
+      miniprinter template list|show <name>|fields <name>|validate <file.json>   inspect templates (no printer needed)
       miniprinter template add <file.json> [--name <n>] | remove <name>   manage user templates (via the service)
       miniprinter feed         <target> [--dots <n>]
       miniprinter find-port    <mac>
@@ -100,6 +100,18 @@ try
                 {
                     var which = cli.Positional(1) ?? throw new CliException("template show needs a template name.");
                     Console.WriteLine(TemplateCatalog.Default.GetJson(which) ?? throw new CliException($"Unknown template '{which}'."));
+                    return 0;
+                }
+                case "fields":
+                {
+                    var which = cli.Positional(1) ?? throw new CliException("template fields needs a template name.");
+                    var found = TemplateCatalog.Default.Find(which)
+                        ?? throw new CliException($"Unknown template '{which}'. Available: {string.Join(", ", TemplateCatalog.Default.Definitions.Select(d => d.Name))}.");
+                    Console.WriteLine($"{found.Name} — {found.Title}");
+                    foreach (var f in found.Fields)
+                        Console.WriteLine($"  --{f.Name,-10} {f.Kind,-8} {f.Label}{(f.Required ? " (obligatorio)" : "")}{(f.Default is null ? "" : $" [por defecto: {f.Default}]")}{(f.Choices is null ? "" : $" [{string.Join('|', f.Choices)}]")}");
+                    foreach (var p in TemplatePrintParameters.All)
+                        Console.WriteLine(p.Name == "rows" ? $"  --{"csv",-10} {"file",-8} Un archivo CSV con una etiqueta por fila (hasta 200)." : $"  --{p.Name,-10} {p.Kind,-8} {p.Description}");
                     return 0;
                 }
                 case "validate":

@@ -14,7 +14,7 @@ public sealed partial class TemplateEditorModel
 {
     public const int MaxHistory = 100;
     public static readonly TimeSpan CoalesceWindow = TimeSpan.FromMilliseconds(600);
-    public static readonly string[] ReservedNames = ["list", "show", "add", "remove", "validate", "schema", "preview", "drafts"];
+    public static readonly string[] ReservedNames = ["list", "show", "add", "remove", "validate", "fields", "schema", "preview", "drafts"];
 
     private static readonly JsonSerializerOptions Canonical = new() { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 

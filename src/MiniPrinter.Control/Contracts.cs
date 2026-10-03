@@ -236,3 +236,20 @@ public sealed record WindowsQueueDto(bool Exists, string Name, string State, str
 
 /// <summary>Body of POST /api/windows-queue/recreate; <c>PreviousName</c> is the queue to replace after a rename.</summary>
 public sealed record RecreateQueueRequest(string? PreviousName = null);
+
+/// <summary>A parameter accepted when printing a template that is not one of its fields (copies, rows, darkness).</summary>
+public sealed record TemplateParameterDto(string Name, string Description, string Kind, double? Min, double? Max);
+
+/// <summary>What GET /api/templates/{name}/fields returns: the fields of one template and the print parameters.</summary>
+public sealed record TemplateFieldsDto(string Name, string Title, string Source, IReadOnlyList<TemplateFieldDto> Fields, IReadOnlyList<TemplateParameterDto> PrintParameters);
+
+/// <summary>The parameters of <c>POST /print/template/{name}</c> besides the template's own fields.</summary>
+public static class TemplatePrintParameters
+{
+    public static IReadOnlyList<TemplateParameterDto> All { get; } =
+    [
+        new("copies", "Copias de cada etiqueta (1 a 50).", "int", 1, 50),
+        new("rows", "Una etiqueta por fila: lista de hasta 200 objetos con los campos de cada etiqueta (sobrescriben los campos base).", "list", 1, 200),
+        new("darkness", "Oscuridad de la impresión (1 a 5); si falta se usa la de los ajustes.", "int", 1, 5),
+    ];
+}

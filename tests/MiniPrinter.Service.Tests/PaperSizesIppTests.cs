@@ -61,9 +61,9 @@ public sealed class PaperSizesIppTests : IAsyncLifetime
     private async Task<string[]> OfferedSizes()
     {
         string[] sizes = [];
-        await TestEnv.WaitUntil(() =>
+        await TestEnv.WaitUntilAsync(async () =>
         {
-            sizes = PrinterAttributes().Result?["media-supported"]?.Values.Select(v => v.AsString()).ToArray() ?? [];
+            sizes = (await PrinterAttributes())?["media-supported"]?.Values.Select(v => v.AsString()).ToArray() ?? [];
             return sizes.Length > 0;
         });
         return sizes;
@@ -85,7 +85,7 @@ public sealed class PaperSizesIppTests : IAsyncLifetime
         var list = PaperCatalog.Presets.Select(p => p with { Enabled = p.Id is "48x100" or "48x50" }).Append(Own(57, 150, "Ticket")).ToList();
         await client.SaveSettingsAsync(settings with { PaperSizes = list, DefaultPaperId = "c57x150" });
 
-        await TestEnv.WaitUntil(() => PrinterAttributes().Result?["media-default"]?.Value.AsString() == "om_x5h-57x150mm_57x150mm");
+        await TestEnv.WaitUntilAsync(async () => (await PrinterAttributes())?["media-default"]?.Value.AsString() == "om_x5h-57x150mm_57x150mm");
         var printer = (await PrinterAttributes())!;
         Assert.Equal(["om_x5h-57x150mm_57x150mm", "om_x5h-48x100mm_48x100mm", "om_x5h-48x50mm_48x50mm"],
             printer["media-supported"]!.Values.Select(v => v.AsString()));

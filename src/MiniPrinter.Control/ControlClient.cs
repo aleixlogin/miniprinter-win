@@ -161,6 +161,10 @@ public sealed class ControlClient : IDisposable
     /// <summary>The block catalog (types, properties, ranges, options) used to build the editor's controls.</summary>
     public Task<TemplateSchemaDto> GetTemplateSchemaAsync(CancellationToken ct = default) => Get<TemplateSchemaDto>("templates/schema", ct);
 
+    /// <summary>The fields of one template and the print parameters it accepts (copies, rows, darkness).</summary>
+    public Task<TemplateFieldsDto> GetTemplateFieldsAsync(string name, CancellationToken ct = default) =>
+        Get<TemplateFieldsDto>($"templates/{Uri.EscapeDataString(name)}/fields", ct);
+
     /// <summary>Preview of a saved template with the rows each block occupies.</summary>
     public async Task<TemplatePreviewDto> PreviewTemplateDetailedAsync(string name, IReadOnlyDictionary<string, string> fields, CancellationToken ct = default)
     {

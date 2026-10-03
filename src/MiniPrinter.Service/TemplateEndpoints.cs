@@ -96,6 +96,12 @@ public static class TemplateEndpoints
         // What the editor needs to build its controls (generated from the engine's block registry).
         api.MapGet("/templates/schema", () => Results.Json(BlockSchema.Build(), ControlDefaults.Json));
 
+        // The fields of one template and the print parameters, for scripts (smaller than the whole list or the JSON).
+        api.MapGet("/templates/{name}/fields", (string name) =>
+            catalog.Find(name) is { } definition
+                ? Results.Json(new { definition.Name, definition.Title, definition.Source, definition.Fields, PrintParameters = TemplatePrintParameters.All }, ControlDefaults.Json)
+                : Results.Json(new ApiError($"Unknown template '{name}'. Available: {string.Join(", ", catalog.Definitions.Select(d => d.Name))}."), ControlDefaults.Json, statusCode: 404));
+
         api.MapGet("/templates/{name}", (string name) =>
             catalog.GetJson(name) is { } json
                 ? Results.Text(json, "application/json; charset=utf-8")

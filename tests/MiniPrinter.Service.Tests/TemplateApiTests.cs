@@ -66,7 +66,7 @@ public sealed class TemplateApiTests : IAsyncLifetime
         Assert.True(File.Exists(Path.Combine(_dataDir, "templates", "recibo.json")));
 
         var job = await client.PrintTemplateAsync("recibo", Client_("Ana"));
-        await TestEnv.WaitUntil(() => client.GetJobsAsync().Result.Single(j => j.Id == job.Id).State == "Completed");
+        await TestEnv.WaitUntilAsync(async () => (await client.GetJobsAsync()).Single(j => j.Id == job.Id).State == "Completed");
 
         await client.ValidateTemplateAsync(ReceiptJson);
         var invalid = await Assert.ThrowsAsync<ControlApiException>(() =>
@@ -101,7 +101,7 @@ public sealed class TemplateApiTests : IAsyncLifetime
 
         var rows = new IReadOnlyDictionary<string, string>[] { Client_("Ana"), Client_("Luis"), Client_("Eva") };
         var job = await client.PrintTemplateAsync("recibo", new Dictionary<string, string>(), copies: 2, rows: rows);
-        await TestEnv.WaitUntil(() => client.GetJobsAsync().Result.Single(j => j.Id == job.Id).State == "Completed");
+        await TestEnv.WaitUntilAsync(async () => (await client.GetJobsAsync()).Single(j => j.Id == job.Id).State == "Completed");
 
         var jobs = await client.GetJobsAsync();
         Assert.Single(jobs);                       // one job for the whole batch
@@ -166,7 +166,7 @@ public sealed class TemplateApiTests : IAsyncLifetime
         var batch = await api.PostAsync("print/template/recibo",
             JsonBody("""{ "copies": 2, "rows": [ { "cliente": "Ana" }, { "cliente": "Luis" } ] }"""));
         Assert.Equal(HttpStatusCode.Accepted, batch.StatusCode);
-        await TestEnv.WaitUntil(() => client.GetJobsAsync().Result is [{ State: "Completed", Pages: 4 }]);
+        await TestEnv.WaitUntilAsync(async () => (await client.GetJobsAsync()) is [{ State: "Completed", Pages: 4 }]);
 
         Assert.Equal(HttpStatusCode.NoContent, (await api.DeleteAsync("templates/recibo")).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await api.GetAsync("templates/recibo")).StatusCode);

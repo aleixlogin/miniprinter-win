@@ -3,6 +3,8 @@
     <TargetFramework>$(WinTfm)</TargetFramework>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+    <!-- Blocking on .Result in a test can hang or flake: make the analyzer an error. -->
+    <WarningsAsErrors>$(WarningsAsErrors);xUnit1031</WarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.8" />

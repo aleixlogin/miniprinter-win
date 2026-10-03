@@ -37,7 +37,7 @@ public sealed partial class TemplateLayout
     private static partial Regex NamePattern();
 
     /// <summary>CLI subcommands and API routes (templates/schema, preview, drafts): a template cannot take these names.</summary>
-    public static readonly string[] ReservedNames = ["list", "show", "add", "remove", "validate", "schema", "preview", "drafts"];
+    public static readonly string[] ReservedNames = ["list", "show", "add", "remove", "validate", "fields", "schema", "preview", "drafts"];
 
     public static bool IsValidName(string? name) =>
         name is not null && NamePattern().IsMatch(name) && !ReservedNames.Contains(name, StringComparer.OrdinalIgnoreCase);

@@ -76,6 +76,18 @@ internal static class TestEnv
             await Task.Delay(25);
         }
     }
+
+    /// <summary>Like <see cref="WaitUntil"/> for conditions that call asynchronous APIs (no blocking on <c>.Result</c>).</summary>
+    public static async Task WaitUntilAsync(Func<Task<bool>> condition, int seconds = 10)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(seconds);
+        while (!await condition())
+        {
+            if (DateTime.UtcNow > deadline)
+                throw new TimeoutException("condition not reached");
+            await Task.Delay(25);
+        }
+    }
 }
 
 public class TelemetryTests
@@ -512,7 +524,7 @@ public sealed class ControlApiTests : IAsyncLifetime
         Assert.Equal(0x0E, status.PaperSensor);
 
         var job = await client.TestPrintAsync();
-        await TestEnv.WaitUntil(() => client.GetJobsAsync().Result.Single(j => j.Id == job.Id).State == "Completed");
+        await TestEnv.WaitUntilAsync(async () => (await client.GetJobsAsync()).Single(j => j.Id == job.Id).State == "Completed");
         var preview = await client.GetLastJobPageAsync(1);
         Assert.NotNull(preview);
         Assert.Equal(0x89, preview[0]); // PNG signature
@@ -560,10 +572,10 @@ public sealed class ControlApiTests : IAsyncLifetime
         var low = await client.GetStatusAsync();
         Assert.Equal(40, low.BatteryPercent);
         Assert.True(low.LowBattery);
-        Assert.Contains("other-warning", PrinterReasons());
+        Assert.Contains("other-warning", await PrinterReasons());
     }
 
-    private IEnumerable<string> PrinterReasons()
+    private async Task<IEnumerable<string>> PrinterReasons()
     {
         var request = new IppMessage { Code = IppOperation.GetPrinterAttributes, RequestId = 1 };
         request.GetOrAddGroup(IppGroupTag.Operation)
@@ -573,8 +585,8 @@ public sealed class ControlApiTests : IAsyncLifetime
         using var http = new HttpClient();
         var body = new ByteArrayContent(IppCodec.Encode(request));
         body.Headers.ContentType = new("application/ipp");
-        var response = http.PostAsync($"http://127.0.0.1:{_ippPort}/ipp/print", body).Result;
-        var ipp = IppCodec.ReadAsync(response.Content.ReadAsStream()).Result;
+        var response = await http.PostAsync($"http://127.0.0.1:{_ippPort}/ipp/print", body);
+        var ipp = await IppCodec.ReadAsync(await response.Content.ReadAsStreamAsync());
         return ipp.Group(IppGroupTag.Printer)!["printer-state-reasons"]!.Values.Select(v => v.AsString());
     }
 
@@ -592,7 +604,7 @@ public sealed class ControlApiTests : IAsyncLifetime
         var png = await client.PrintFileAsync(TestEnv.Png(384, 100), "foto.png");
         var txt = await client.PrintFileAsync(System.Text.Encoding.UTF8.GetBytes("Nota en un TXT ñ"), "nota.txt");
         Assert.Equal("nota.txt", txt.Name);
-        await TestEnv.WaitUntil(() => client.GetJobsAsync().Result.Count(j => j.State == "Completed") == 3);
+        await TestEnv.WaitUntilAsync(async () => (await client.GetJobsAsync()).Count(j => j.State == "Completed") == 3);
 
         var error = await Assert.ThrowsAsync<ControlApiException>(() => client.PrintTextAsync("   "));
         Assert.Equal(400, error.StatusCode);
@@ -614,7 +626,7 @@ public sealed class ControlApiTests : IAsyncLifetime
         Assert.Equal(0x89, (await client.PreviewTemplateAsync("qr", fields))[0]);
         var job = await client.PrintTemplateAsync("qr", fields);
         Assert.Equal("Código QR", job.Name);
-        await TestEnv.WaitUntil(() => client.GetJobsAsync().Result.Single(j => j.Id == job.Id).State == "Completed");
+        await TestEnv.WaitUntilAsync(async () => (await client.GetJobsAsync()).Single(j => j.Id == job.Id).State == "Completed");
 
         var unknown = await Assert.ThrowsAsync<ControlApiException>(() => client.PrintTemplateAsync("no-existe", fields));
         Assert.Equal(400, unknown.StatusCode);
@@ -653,8 +665,8 @@ public sealed class ControlApiTests : IAsyncLifetime
         var response = await api.PostAsync("print/text", JsonBody("{\"text\":\"Hola desde la API\",\"fontSize\":14}"));
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         var jobId = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement.GetProperty("jobId").GetInt32();
-        await TestEnv.WaitUntil(() =>
-            JsonDocument.Parse(api.GetStringAsync($"jobs/{jobId}").Result).RootElement.GetProperty("state").GetString() == "completed");
+        await TestEnv.WaitUntilAsync(async () =>
+            JsonDocument.Parse(await api.GetStringAsync($"jobs/{jobId}")).RootElement.GetProperty("state").GetString() == "completed");
 
         // Regenerating the token invalidates the old one immediately.
         var regenerated = await client.RegenerateAutomationTokenAsync();
@@ -694,7 +706,7 @@ public sealed class ControlApiTests : IAsyncLifetime
         using var raw = new HttpClient();
         foreach (var path in new[] { "/api/settings", "/api/status", "/api/printer", "/api/automation" })
             Assert.Equal(HttpStatusCode.NotFound, (await raw.GetAsync($"http://127.0.0.1:{_ippPort}{path}")).StatusCode);
-        await TestEnv.WaitUntil(() => client.GetJobsAsync().Result.Count(j => j.State == "Completed") == 4);
+        await TestEnv.WaitUntilAsync(async () => (await client.GetJobsAsync()).Count(j => j.State == "Completed") == 4);
     }
 
     [Fact]
@@ -707,7 +719,7 @@ public sealed class ControlApiTests : IAsyncLifetime
 
         // Re-selecting the printer (e.g. another transport) recreates the session.
         await client.SelectPrinterAsync(TestEnv.Simulated with { Name = "X5h-E07A (otra)" });
-        await TestEnv.WaitUntil(() => client.GetStatusAsync().Result.Printer?.Name == "X5h-E07A (otra)");
+        await TestEnv.WaitUntilAsync(async () => (await client.GetStatusAsync()).Printer?.Name == "X5h-E07A (otra)");
         var status = await client.GetStatusAsync();
         Assert.NotNull(status.SamplingUntil);
         Assert.Equal(started.SamplingUntil!.Value.ToUnixTimeSeconds(), status.SamplingUntil!.Value.ToUnixTimeSeconds());
@@ -722,7 +734,7 @@ public sealed class ControlApiTests : IAsyncLifetime
 
         var settings = await client.GetSettingsAsync();
         await client.SaveSettingsAsync(settings with { KeepAlive = true, KeepAliveIntervalSeconds = 10 });
-        await TestEnv.WaitUntil(() => client.GetStatusAsync().Result is { KeepAlive: true, Link: "Connected" });
+        await TestEnv.WaitUntilAsync(async () => (await client.GetStatusAsync()) is { KeepAlive: true, Link: "Connected" });
 
         // Turning it off keeps the session (no reconnect) but returns to on-demand mode.
         await client.SaveSettingsAsync((await client.GetSettingsAsync()) with { KeepAlive = false });
@@ -751,7 +763,7 @@ public sealed class ControlApiTests : IAsyncLifetime
         var ipp = await IppCodec.ReadAsync(await response.Content.ReadAsStreamAsync());
         Assert.Equal(IppStatus.SuccessfulOk, ipp.Code);
 
-        await TestEnv.WaitUntil(() => client.GetJobsAsync().Result.Any(j => j.Name == "from-ipp" && j.State == "Completed"));
+        await TestEnv.WaitUntilAsync(async () => (await client.GetJobsAsync()).Any(j => j.Name == "from-ipp" && j.State == "Completed"));
     }
 
     [Fact]
