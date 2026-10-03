@@ -35,7 +35,7 @@ public sealed class TemplateEditorApiTests : IAsyncLifetime
             b.UseEnvironment("Development");
         });
         _ = _factory.Server; // start
-        return Task.CompletedTask;
+        return TestEnv.WaitForPortAsync(_ippPort);
     }
 
     public async Task DisposeAsync() => await _factory.DisposeAsync();

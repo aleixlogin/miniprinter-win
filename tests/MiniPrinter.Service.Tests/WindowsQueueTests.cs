@@ -72,7 +72,7 @@ public sealed class WindowsQueueTests : IAsyncLifetime
             b.ConfigureServices(s => s.AddSingleton<IPowerShellRunner>(_ps));
         });
         _ = _factory.Server; // start
-        return Task.CompletedTask;
+        return TestEnv.WaitForPortAsync(_ippPort);
     }
 
     public async Task DisposeAsync() => await _factory.DisposeAsync();
@@ -412,10 +412,14 @@ public sealed class WindowsQueueTests : IAsyncLifetime
     {
         var host = _factory.Services.GetRequiredService<IppHost>();
         using var client = Client();
-        // Change the sizes and ask for an immediate answer: the restart cannot have finished yet in zero time.
-        await client.SaveSettingsAsync((await client.GetSettingsAsync()) with { IppPort = TestEnv.FreePort() });
-        var error = await Assert.ThrowsAnyAsync<Exception>(() => host.WaitForCurrentAsync(TimeSpan.Zero, CancellationToken.None));
-        Assert.True(error is TimeoutException || error is OperationCanceledException);
+        // The new port is taken by someone else, so the listener can never come up on it however fast the restart is:
+        // the wait must give up with a timeout (not depend on how quickly the machine restarts Kestrel).
+        var busy = TestEnv.FreePort();
+        using var occupant = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, busy);
+        occupant.Start();
+        await client.SaveSettingsAsync((await client.GetSettingsAsync()) with { IppPort = busy });
+        var error = await Assert.ThrowsAsync<TimeoutException>(() => host.WaitForCurrentAsync(TimeSpan.FromMilliseconds(500), CancellationToken.None));
+        Assert.Contains("IPP", error.Message);
     }
 
     [Fact]

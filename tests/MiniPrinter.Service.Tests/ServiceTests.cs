@@ -47,6 +47,29 @@ internal static class TestEnv
         }
     }
 
+    /// <summary>
+    /// Waits until the loopback port accepts connections: the IPP listener starts a moment after the host does, and on a
+    /// loaded machine a test that connects straight away is refused.
+    /// </summary>
+    public static async Task WaitForPortAsync(int port, int seconds = 20)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(seconds);
+        while (true)
+        {
+            try
+            {
+                using var tcp = new TcpClient();
+                await tcp.ConnectAsync(IPAddress.Loopback, port);
+                return;
+            }
+            catch (SocketException) when (DateTime.UtcNow < deadline)
+            {
+                await Task.Delay(25);
+            }
+        }
+    }
+
+
     public static PrinterSelection Simulated => new()
     {
         Name = "X5h-E07A",
@@ -484,7 +507,7 @@ public sealed class ControlApiTests : IAsyncLifetime
             b.UseEnvironment("Development");
         });
         _ = _factory.Server; // start
-        return Task.CompletedTask;
+        return TestEnv.WaitForPortAsync(_ippPort);
     }
 
     public async Task DisposeAsync() => await _factory.DisposeAsync();
