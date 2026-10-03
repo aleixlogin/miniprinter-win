@@ -396,6 +396,9 @@ Instalador en local: `powershell -ExecutionPolicy Bypass -File scripts\build-ins
 
 ## Historial de cambios
 
+### 0.9.3 — versión de prueba
+- **Versión de prueba, sin cambios** respecto a la 0.9.2: sirve para comprobar la ventana de actualización. No hace falta instalarla.
+
 ### 0.9.2 — la ventana de actualización no se bloquea
 - Si en la ventana de actualización se rechaza el permiso de administrador (UAC) o el instalador falla, la ventana lo dice y **vuelve a activar los botones** en vez de quedarse bloqueada.
 
